@@ -2,7 +2,7 @@
 
 # BLIP
 
-**P2P-мессенджер для локальных сетей — без облака, без серверов, без интернета.**
+**P2P messenger for local networks — no cloud, no servers, no internet.**
 
 [![Electron](https://img.shields.io/badge/Electron-35-47848F?style=flat-square&logo=electron&logoColor=white)](https://www.electronjs.org/)
 [![Vite](https://img.shields.io/badge/Vite-6-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev/)
@@ -11,38 +11,56 @@
 [![P2P](https://img.shields.io/badge/Network-P2P%20LAN-00ffc8?style=flat-square)]()
 [![Lang](https://img.shields.io/badge/i18n-EN%20%7C%20RU-e0e0e0?style=flat-square)]()
 
-*You're on the grid. You're the signal.* · *Ты в сети. Ты сигнал.*
+*You're on the grid. You're the signal.*
 
 </div>
+
+## Navigation
+
+| Section | English | Русский |
+|---------|---------|---------|
+| Language | [**English**](#english) | [**Русский**](#russian) |
+| Overview | [Overview](#en-overview) | [Обзор](#ru-overview) |
+| Features | [Features](#en-features) | [Возможности](#ru-features) |
+| Architecture | [Architecture](#en-architecture) | [Архитектура](#ru-architecture) |
+| Stack | [Stack](#en-stack) | [Стек](#ru-stack) |
+| Quick start | [Quick start](#en-quick-start) | [Быстрый старт](#ru-quick-start) |
+| npm scripts | [npm scripts](#en-scripts) | [Скрипты npm](#ru-scripts) |
+| Ports | [Ports](#en-ports) | [Порты](#ru-ports) |
+| Usage | [Usage](#en-usage) | [Использование](#ru-usage) |
+| Fonts | [Fonts](#en-fonts) | [Шрифты](#ru-fonts) |
+| Project layout | [Project layout](#en-layout) | [Структура](#ru-layout) |
+| Design tokens | [Design](#en-design) | [Дизайн](#ru-design) |
+| License | [License](#en-license) | [Лицензия](#ru-license) |
 
 ---
 
-</div>
+<h2 id="english">English</h2>
 
-## Обзор
+<h3 id="en-overview">Overview</h3>
 
 | | |
 |---|---|
-| **Что это** | Desktop-приложение: текст, голос и видео по LAN / Hamachi / Radmin VPN |
-| **Идентификация** | BLIP ID **1–64** (сетка 8×8, как чанк в Minecraft) |
-| **Серверы** | Нет — только UDP broadcast, TCP и WebRTC между пирами |
-| **Регистрация** | Нет |
-| **Стиль UI** | Pixel-art × liquid glass × brutalism, **0px border-radius** |
+| **What** | Desktop app: text, voice, and video over LAN / Hamachi / Radmin VPN |
+| **Identity** | BLIP ID **1–64** (8×8 grid, Minecraft-style chunk metaphor) |
+| **Servers** | None — UDP broadcast, TCP, and WebRTC peer-to-peer only |
+| **Sign-up** | None |
+| **UI** | Pixel-art × liquid glass × brutalism, **0px border-radius** |
 
-## Возможности
+<h3 id="en-features">Features</h3>
 
-| Функция | Описание |
-|---------|----------|
-| 🔢 **BLIP ID** | Выбор номера на сетке 8×8, конфликты через TCP ping |
-| 📡 **Discovery** | UDP `42069` + mDNS fallback |
-| 💬 **Чат** | TCP `42070`, JSON-сообщения |
-| 📞 **Звонки** | WebRTC без STUN/TURN (только LAN) |
-| 🎨 **Аватары** | 8×8 canvas, цвет от hash ID |
-| 🔊 **Звук** | Web Audio API — синтез, без файлов |
-| 🌐 **Языки** | English / Русский (`localStorage`) |
-| 🖥️ **Окно** | Кастомный title bar, system tray |
+| Feature | Description |
+|---------|-------------|
+| **BLIP ID** | Pick a number on the 8×8 grid; conflicts resolved via TCP ping |
+| **Discovery** | UDP `42069` + mDNS fallback |
+| **Chat** | TCP `42070`, JSON messages |
+| **Calls** | WebRTC without STUN/TURN (LAN only) |
+| **Avatars** | 8×8 canvas, colors from ID hash |
+| **Sound** | Web Audio API synthesis (no audio files) |
+| **Languages** | English / Russian (`localStorage`) |
+| **Window** | Custom title bar, system tray |
 
-## Архитектура
+<h3 id="en-architecture">Architecture</h3>
 
 ```mermaid
 flowchart LR
@@ -76,7 +94,190 @@ flowchart LR
 └─────────────────────────────────────────────────────────┘
 ```
 
-## Стек
+<h3 id="en-stack">Stack</h3>
+
+| Layer | Technology |
+|-------|------------|
+| Shell | Electron 35 |
+| Bundler | Vite 6 |
+| UI | Vanilla JS + CSS |
+| Discovery | `dgram` + `multicast-dns` |
+| Media | WebRTC (`RTCPeerConnection`) |
+| Fonts | **Minecraft** (bundled woff2) |
+
+<h3 id="en-quick-start">Quick start</h3>
+
+**Requirements**
+
+| | |
+|---|---|
+| Node.js | **18+** |
+| OS | Windows 10/11 (for `.exe` builds) |
+| Network | Same LAN / VPN (Hamachi, Radmin) |
+
+**Install**
+
+```bash
+git clone <repo-url>
+cd blip
+npm install
+```
+
+`postinstall` copies the Minecraft font into `renderer/assets/fonts/`.
+
+**Development (hot-reload)**
+
+```bash
+npm run electron:dev
+```
+
+Vite at `http://localhost:5173` + Electron.
+
+**Run locally**
+
+```bash
+npm run build
+npx electron .
+```
+
+Or `npm start` (runs `prebuild` automatically).
+
+**Windows builds**
+
+Icons: root `icon.svg` → `npm run build:icons` → `build/icon.ico`.
+
+| Command | Output |
+|---------|--------|
+| `npm run electron:build` | **`BLIP-Setup-0.1.0.exe`** — full NSIS installer |
+| `npm run electron:build:portable` | **`BLIP-0.1.0-Portable.exe`** — single-file portable |
+| `npm run electron:build:all` | Both artifacts |
+| `npm run electron:build:dir` | `dist-electron/win-unpacked/BLIP.exe` (debug folder) |
+
+- **Installer (NSIS):** choose install folder, Start Menu shortcut, optional desktop shortcut, icon from `icon.svg`.
+- **Portable:** one `.exe`, copy anywhere; settings live in `%APPDATA%`.
+
+<h3 id="en-scripts">npm scripts</h3>
+
+| Script | Purpose |
+|--------|---------|
+| `npm run dev` | Vite dev server only |
+| `npm run build` | Build renderer → `dist/` |
+| `npm start` | `prebuild` + Electron |
+| `npm run electron:dev` | Vite + Electron |
+| `npm run build:icons` | `icon.svg` → `build/icon.ico` + PNG |
+| `npm run electron:build` | NSIS installer |
+| `npm run electron:build:portable` | Portable `.exe` |
+| `npm run electron:build:all` | Installer + portable |
+| `npm run electron:build:dir` | Unpacked app folder |
+| `npm run copy-fonts` | Copy Minecraft font from npm package |
+
+<h3 id="en-ports">Ports & protocols</h3>
+
+| Port | Protocol | Purpose |
+|:----:|:--------:|---------|
+| **42069** | UDP | Announce: `blipId`, `displayName`, `ip` |
+| **42070** | TCP | Messages + WebRTC signaling |
+
+<details>
+<summary><strong>UDP announce example</strong></summary>
+
+```json
+{
+  "type": "announce",
+  "blipId": 17,
+  "displayName": "Cyber",
+  "ip": "192.168.1.42"
+}
+```
+
+</details>
+
+<h3 id="en-usage">Usage</h3>
+
+1. Launch **BLIP** on each machine on the same network.
+2. Pick a free number on the **8×8** grid.
+3. Set your display name in **SETTINGS** · switch **EN / RU**.
+4. Dial a BLIP ID or open **PEERS** → message or call.
+
+> Open firewall ports **42069–42070** only if peers are not discovered.
+
+<h3 id="en-fonts">Fonts</h3>
+
+| Font | Used for | Files |
+|------|----------|-------|
+| **Minecraft** | UI, buttons, headings | `renderer/assets/fonts/minecraft.woff2` |
+| **Minecraft** | Chat (as typed) | same face |
+| Fallback | monospace / DOS VGA | if woff2 is missing |
+
+Source: [`typeface-minecraft`](https://github.com/bs-community/typeface-minecraft) (MIT).  
+Re-copy manually: `npm run copy-fonts`.
+
+<h3 id="en-layout">Project layout</h3>
+
+```
+blip/
+├── main/              # Electron: discovery, TCP, tray
+├── renderer/          # UI, chat, call, i18n, styles
+│   └── assets/fonts/  # Minecraft woff2/ttf
+├── build/             # icon.ico, icon.png (generated)
+├── preload.cjs        # IPC bridge
+├── scripts/           # electron-dev, copy-fonts, build-icons
+├── icon.svg           # source app icon
+└── dist/              # Vite output (after npm run build)
+```
+
+<h3 id="en-design">Design tokens</h3>
+
+| Token | Value |
+|-------|-------|
+| Background | `#0a0a0a` |
+| Glass | `rgba(20,20,20,0.7)` + `blur(12px)` |
+| Accent | `#00ffc8` |
+| Danger | `#ff3366` |
+| Muted | `#333333` |
+| Borders | `2px solid` |
+| Radius | **0** everywhere |
+
+<h3 id="en-license">License</h3>
+
+This project is licensed under **[GNU GPL v3](LICENSE)**.
+
+The **Minecraft** font is licensed separately under [MIT](https://github.com/bs-community/typeface-minecraft) (see `renderer/assets/fonts/README.md`).
+
+---
+
+<h2 id="russian">Русский</h2>
+
+*Ты в сети. Ты сигнал.*
+
+<h3 id="ru-overview">Обзор</h3>
+
+| | |
+|---|---|
+| **Что это** | Desktop-приложение: текст, голос и видео по LAN / Hamachi / Radmin VPN |
+| **Идентификация** | BLIP ID **1–64** (сетка 8×8) |
+| **Серверы** | Нет — только UDP broadcast, TCP и WebRTC между пирами |
+| **Регистрация** | Нет |
+| **Стиль UI** | Pixel-art × liquid glass × brutalism, **0px border-radius** |
+
+<h3 id="ru-features">Возможности</h3>
+
+| Функция | Описание |
+|---------|----------|
+| **BLIP ID** | Выбор номера на сетке 8×8, конфликты через TCP ping |
+| **Discovery** | UDP `42069` + mDNS fallback |
+| **Чат** | TCP `42070`, JSON-сообщения |
+| **Звонки** | WebRTC без STUN/TURN (только LAN) |
+| **Аватары** | 8×8 canvas, цвет от hash ID |
+| **Звук** | Web Audio API — синтез, без файлов |
+| **Языки** | English / Русский (`localStorage`) |
+| **Окно** | Кастомный title bar, system tray |
+
+<h3 id="ru-architecture">Архитектура</h3>
+
+См. [диаграмму выше](#en-architecture) — та же схема для обоих языков.
+
+<h3 id="ru-stack">Стек</h3>
 
 | Слой | Технология |
 |------|------------|
@@ -87,9 +288,9 @@ flowchart LR
 | Media | WebRTC (`RTCPeerConnection`) |
 | Fonts | **Minecraft** (bundled woff2) |
 
-## Быстрый старт
+<h3 id="ru-quick-start">Быстрый старт</h3>
 
-### Требования
+**Требования**
 
 | | |
 |---|---|
@@ -97,17 +298,17 @@ flowchart LR
 | ОС | Windows 10/11 (сборка `.exe`) |
 | Сеть | Одна LAN / VPN (Hamachi, Radmin) |
 
-### Установка
+**Установка**
 
 ```bash
 git clone <repo-url>
-cd "Blip Dev"
+cd blip
 npm install
 ```
 
 `postinstall` копирует шрифт Minecraft в `renderer/assets/fonts/`.
 
-### Разработка (hot-reload)
+**Разработка (hot-reload)**
 
 ```bash
 npm run electron:dev
@@ -115,7 +316,7 @@ npm run electron:dev
 
 Vite → `http://localhost:5173` + Electron.
 
-### Локальный запуск
+**Локальный запуск**
 
 ```bash
 npm run build
@@ -124,22 +325,21 @@ npx electron .
 
 или `npm start` (сборка через `prebuild`).
 
-### Сборка Windows
+**Сборка Windows**
 
-Иконка берётся из корневого `icon.svg` → `npm run build:icons` → `build/icon.ico`.
+Иконка: корневой `icon.svg` → `npm run build:icons` → `build/icon.ico`.
 
 | Команда | Результат |
 |---------|-----------|
-| `npm run electron:build` | **`BLIP-Setup-0.1.0.exe`** — полноценный установщик (папка, ярлыки) |
-| `npm run electron:build:portable` | **`BLIP-0.1.0-Portable.exe`** — один файл, без установки |
-| `npm run electron:build:all` | Оба варианта сразу |
-| `npm run electron:build:dir` | `dist-electron/win-unpacked/BLIP.exe` (папка для отладки) |
+| `npm run electron:build` | **`BLIP-Setup-0.1.0.exe`** — установщик NSIS |
+| `npm run electron:build:portable` | **`BLIP-0.1.0-Portable.exe`** — portable |
+| `npm run electron:build:all` | Оба файла |
+| `npm run electron:build:dir` | `dist-electron/win-unpacked/BLIP.exe` |
 
-**Установщик (NSIS):** выбор каталога, ярлык в меню «Пуск», опция ярлыка на рабочем столе, иконка из `icon.svg`.
+- **Установщик:** выбор папки, ярлык в «Пуск», опция ярлыка на рабочем столе.
+- **Portable:** один `.exe`, настройки в `%APPDATA%`.
 
-**Portable:** один `.exe`, можно копировать куда угодно; настройки — в `%APPDATA%`.
-
-## Скрипты npm
+<h3 id="ru-scripts">Скрипты npm</h3>
 
 | Скрипт | Назначение |
 |--------|------------|
@@ -154,7 +354,7 @@ npx electron .
 | `npm run electron:build:dir` | Распакованная папка |
 | `npm run copy-fonts` | Скопировать Minecraft из npm-пакета |
 
-## Порты и протоколы
+<h3 id="ru-ports">Порты и протоколы</h3>
 
 | Порт | Протокол | Назначение |
 |:----:|:--------:|------------|
@@ -175,39 +375,41 @@ npx electron .
 
 </details>
 
-## Использование
+<h3 id="ru-usage">Использование</h3>
 
 1. Запустите **BLIP** на каждом ПК в одной сети.
 2. Выберите свободный номер на сетке **8×8**.
 3. Задайте имя в **НАСТРОЙКИ** · переключите **EN / RU**.
 4. Наберите BLIP ID или откройте **АБОНЕНТЫ** → сообщение / звонок.
 
-> ⚠️ Закройте порты **42069–42070** в firewall только если пиры не видны.
+> Откройте порты **42069–42070** в firewall, только если пиры не видны.
 
-## Шрифты
+<h3 id="ru-fonts">Шрифты</h3>
 
 | Шрифт | Где | Файлы |
 |-------|-----|-------|
-| **Minecraft** | Весь UI, кнопки, заголовки | `renderer/assets/fonts/minecraft.woff2` |
-| **Minecraft** | Чат (как набрано) | тот же face |
-| Fallback | monospace / DOS VGA | если woff2 недоступен |
+| **Minecraft** | Весь UI | `renderer/assets/fonts/minecraft.woff2` |
+| **Minecraft** | Чат | тот же face |
+| Fallback | monospace | если woff2 недоступен |
 
 Источник: [`typeface-minecraft`](https://github.com/bs-community/typeface-minecraft) (MIT).  
-Перекопировать вручную: `npm run copy-fonts`.
+Перекопировать: `npm run copy-fonts`.
 
-## Структура проекта
+<h3 id="ru-layout">Структура проекта</h3>
 
 ```
-Blip Dev/
+blip/
 ├── main/              # Electron: discovery, TCP, tray
 ├── renderer/          # UI, chat, call, i18n, styles
 │   └── assets/fonts/  # Minecraft woff2/ttf
+├── build/             # icon.ico, icon.png (генерируется)
 ├── preload.cjs        # IPC bridge
-├── scripts/           # electron-dev, copy-fonts
-└── dist/              # Vite build (после npm run build)
+├── scripts/           # electron-dev, copy-fonts, build-icons
+├── icon.svg           # исходная иконка
+└── dist/              # Vite build
 ```
 
-## Дизайн-система
+<h3 id="ru-design">Дизайн-система</h3>
 
 | Токен | Значение |
 |-------|----------|
@@ -219,7 +421,7 @@ Blip Dev/
 | Borders | `2px solid` |
 | Radius | **0** (везде) |
 
-## Лицензия
+<h3 id="ru-license">Лицензия</h3>
 
 Проект распространяется под **[GNU GPL v3](LICENSE)**.
 
@@ -230,5 +432,7 @@ Blip Dev/
 <div align="center">
 
 **BLIP** · local-only · peer-to-peer · 1–64
+
+[English](#english) · [Русский](#russian)
 
 </div>
