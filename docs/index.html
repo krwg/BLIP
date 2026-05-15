@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>BLIP — GitHub</title>
+    <meta
+      name="description"
+      content="BLIP: P2P LAN messenger — no cloud. Electron + Vite, WebRTC. Repository krwg/BLIP."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg0: #050506;
+        --bg1: #0a0a0a;
+        --glass: rgba(0, 255, 200, 0.06);
+        --border: rgba(0, 255, 200, 0.18);
+        --text: rgba(255, 255, 255, 0.93);
+        --muted: rgba(255, 255, 255, 0.52);
+        --accent: #00ffc8;
+        --accent2: #66ffe0;
+        --ease: cubic-bezier(0.4, 0, 0.2, 1);
+        --font-pixel: 'Press Start 2P', ui-monospace, monospace;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: var(--font-pixel);
+        background: linear-gradient(180deg, var(--bg1) 0%, var(--bg0) 55%, #030304 100%);
+        background-attachment: fixed;
+        color: var(--text);
+        line-height: 1.75;
+        letter-spacing: 0.04em;
+        font-size: 13px;
+        min-height: 100vh;
+      }
+      .header {
+        position: fixed;
+        inset: 0 0 auto 0;
+        z-index: 50;
+        background: rgba(10, 10, 10, 0.55);
+        backdrop-filter: blur(24px) saturate(180%);
+        -webkit-backdrop-filter: blur(24px) saturate(180%);
+        border-bottom: 1px solid var(--border);
+      }
+      .header-inner {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 12px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 14px;
+        flex-wrap: wrap;
+      }
+      .logo {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--accent2);
+        text-decoration: none;
+      }
+      .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .lang {
+        display: inline-flex;
+        border: 1px solid var(--border);
+        background: rgba(0, 0, 0, 0.35);
+      }
+      .lang button {
+        font-family: var(--font-pixel);
+        font-size: 9px;
+        padding: 8px 10px;
+        border: none;
+        background: transparent;
+        color: var(--muted);
+        cursor: pointer;
+        letter-spacing: 0.06em;
+      }
+      .lang button:hover {
+        color: var(--text);
+      }
+      .lang button[aria-pressed='true'] {
+        background: rgba(0, 255, 200, 0.15);
+        color: var(--accent2);
+      }
+      .nav-link {
+        font-family: var(--font-pixel);
+        font-size: 9px;
+        letter-spacing: 0.06em;
+        color: var(--muted);
+        text-decoration: none;
+        margin-left: 10px;
+      }
+      .nav-link:hover {
+        color: var(--text);
+      }
+      .hero {
+        min-height: 92vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 96px 16px 40px;
+      }
+      .hero-badge {
+        display: inline-flex;
+        padding: 8px 12px;
+        background: var(--glass);
+        border: 1px solid var(--border);
+        font-size: 9px;
+        color: var(--muted);
+        margin-bottom: 20px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        max-width: 36rem;
+        line-height: 1.6;
+      }
+      .hero-title {
+        font-size: clamp(12px, 2.8vw, 18px);
+        line-height: 1.55;
+        max-width: 22em;
+        margin-bottom: 18px;
+        text-shadow: 0 2px 24px rgba(0, 255, 200, 0.12);
+      }
+      .hero-sub {
+        font-size: clamp(9px, 1.7vw, 11px);
+        line-height: 1.65;
+        color: var(--muted);
+        max-width: 42rem;
+        margin-bottom: 32px;
+      }
+      .code-box {
+        width: 100%;
+        max-width: 520px;
+        background: var(--glass);
+        border: 1px solid var(--border);
+        padding: 12px 14px;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .code-text {
+        font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+        font-size: 11px;
+        letter-spacing: 0;
+        color: var(--text);
+        word-break: break-all;
+        text-align: left;
+        flex: 1;
+        min-width: 0;
+      }
+      .copy-btn {
+        font-family: var(--font-pixel);
+        border: 2px solid var(--border);
+        background: rgba(0, 0, 0, 0.45);
+        color: var(--muted);
+        padding: 8px 10px;
+        font-size: 7px;
+        cursor: pointer;
+        flex-shrink: 0;
+        box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.4);
+      }
+      .copy-btn:hover {
+        color: var(--text);
+        border-color: var(--accent);
+      }
+      .copy-btn.copied {
+        color: #34c759;
+        border-color: rgba(52, 199, 89, 0.5);
+      }
+      .cta-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: center;
+      }
+      .btn {
+        font-family: var(--font-pixel);
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 18px;
+        text-decoration: none;
+        border: 2px solid transparent;
+        transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
+        font-size: 8px;
+        letter-spacing: 0.04em;
+      }
+      .btn-primary {
+        background: var(--accent);
+        color: #050506;
+        border-color: rgba(0, 255, 200, 0.45);
+        box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.28);
+      }
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+      }
+      .btn-secondary {
+        background: rgba(0, 0, 0, 0.22);
+        color: var(--text);
+        border: 2px solid var(--border);
+        box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.35);
+      }
+      .btn-secondary:hover {
+        border-color: var(--accent);
+        color: var(--accent2);
+      }
+      .features {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 40px 18px 88px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+      }
+      .feature {
+        border: 1px solid var(--border);
+        background: rgba(0, 0, 0, 0.22);
+        padding: 20px;
+        text-align: left;
+      }
+      .feature h3 {
+        font-size: 9px;
+        margin-bottom: 10px;
+        color: var(--accent2);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+      .feature p {
+        font-size: 9px;
+        line-height: 1.65;
+        color: var(--muted);
+      }
+      .foot {
+        border-top: 1px solid var(--border);
+        padding: 24px 18px;
+        text-align: center;
+        font-size: 7px;
+        color: var(--muted);
+        line-height: 1.7;
+      }
+      .foot a {
+        color: var(--accent2);
+        text-decoration: none;
+      }
+      .foot a:hover {
+        text-decoration: underline;
+      }
+      .joke {
+        font-size: 7px;
+        color: var(--muted);
+        max-width: 40rem;
+        margin-top: 16px;
+        line-height: 1.65;
+      }
+      .arch-link {
+        margin-top: 14px;
+        font-size: 8px;
+      }
+      .arch-link a {
+        color: var(--accent2);
+        text-decoration: none;
+      }
+      .arch-link a:hover {
+        text-decoration: underline;
+      }
+      [hidden] {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="header">
+      <div class="header-inner">
+        <a class="logo" href="https://krwg.github.io/BLIP/">BLIP</a>
+        <div class="header-actions">
+          <div class="lang" role="group" aria-label="Language">
+            <button type="button" id="lang-ru" aria-pressed="true">RU</button>
+            <button type="button" id="lang-en" aria-pressed="false">EN</button>
+          </div>
+          <nav>
+            <a class="nav-link" data-i18n="navGh" href="https://github.com/krwg/BLIP">GitHub</a>
+            <a class="nav-link" data-i18n="navIssues" href="https://github.com/krwg/BLIP/issues">Issues</a>
+          </nav>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-badge" data-i18n="badge">Open source · LAN · GPLv3</div>
+        <h1 class="hero-title" data-i18n="title">Ты в сети. Ты сигнал.</h1>
+        <p class="hero-sub" data-i18n="sub">
+          Десктоп-мессенджер для локальной сети: чат и звонки без облака и без серверов. UDP + TCP discovery, WebRTC.
+          Electron + Vite, BLIP ID 1–64.
+        </p>
+
+        <div class="code-box">
+          <code class="code-text" id="clone-line">git clone https://github.com/krwg/BLIP.git</code>
+          <button
+            type="button"
+            class="copy-btn"
+            id="copy-btn"
+            data-i18n-copy="copy"
+            data-i18n-copied="copied"
+            aria-label="Copy"
+          >
+            Copy
+          </button>
+        </div>
+
+        <div class="cta-row">
+          <a class="btn btn-primary" href="https://github.com/krwg/BLIP">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+              <path
+                d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"
+              />
+            </svg>
+            <span data-i18n="star">Star on GitHub</span>
+          </a>
+          <a class="btn btn-secondary" href="https://github.com/krwg/BLIP/releases"
+            ><span data-i18n="releases">Releases</span></a
+          >
+        </div>
+
+        <p class="joke" data-i18n="joke">
+          Эта страница — статическая витрина для GitHub Pages. Само приложение собирается в Electron; для разработки см.
+          CONTRIBUTING в репозитории.
+        </p>
+        <p class="arch-link">
+          <a href="https://github.com/krwg/BLIP/blob/main/docs/ARCHITECTURE.md" data-i18n="arch">Архитектура · Architecture</a>
+        </p>
+      </section>
+
+      <section class="features">
+        <article class="feature">
+          <h3 data-i18n="f1h">P2P LAN</h3>
+          <p data-i18n="f1p">Нет аккаунтов в облаке: узнаём соседей по UDP broadcast и mDNS, сообщения по TCP между пирами.</p>
+        </article>
+        <article class="feature">
+          <h3 data-i18n="f2h">Звонки</h3>
+          <p data-i18n="f2p">WebRTC: голос/видео в отдельном окне, сигналинг по тому же TCP, что и чат.</p>
+        </article>
+        <article class="feature">
+          <h3 data-i18n="f3h">Стек</h3>
+          <p data-i18n="f3p">Electron 35, Vite 6, vanilla JS. Windows — основная цель сборки NSIS/portable.</p>
+        </article>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <p>
+        <span data-i18n="foot1">Код:</span>
+        <a href="https://github.com/krwg/BLIP">github.com/krwg/BLIP</a>
+        <span data-i18n="foot2"> · </span>
+        <a href="https://github.com/krwg">krwg</a>
+      </p>
+    </footer>
+
+    <script>
+      (function () {
+        var STR = {
+          ru: {
+            badge: 'Open source · LAN · GPLv3',
+            title: 'Ты в сети. Ты сигнал.',
+            sub:
+              'Десктоп-мессенджер для локальной сети: чат и звонки без облака и без серверов. UDP + TCP discovery, WebRTC. Electron + Vite, BLIP ID 1–64.',
+            star: 'Star на GitHub',
+            releases: 'Релизы',
+            joke:
+              'Эта страница — статическая витрина для GitHub Pages. Само приложение собирается в Electron; для разработки см. CONTRIBUTING в репозитории.',
+            arch: 'Архитектура →',
+            f1h: 'P2P LAN',
+            f1p: 'Нет аккаунтов в облаке: узнаём соседей по UDP broadcast и mDNS, сообщения по TCP между пирами.',
+            f2h: 'Звонки',
+            f2p: 'WebRTC: голос/видео в отдельном окне, сигналинг по тому же TCP, что и чат.',
+            f3h: 'Стек',
+            f3p: 'Electron 35, Vite 6, vanilla JS. Windows — основная цель сборки NSIS/portable.',
+            foot1: 'Код:',
+            foot2: ' · из docs/index.html · ',
+            copy: 'Копир.',
+            copied: 'Готово',
+            navGh: 'GitHub',
+            navIssues: 'Issues',
+          },
+          en: {
+            badge: 'Open source · LAN · GPLv3',
+            title: "You're on the grid. You're the signal.",
+            sub:
+              'Desktop LAN messenger: chat and calls with no cloud and no central servers. UDP + TCP discovery, WebRTC. Electron + Vite, BLIP IDs 1–64.',
+            star: 'Star on GitHub',
+            releases: 'Releases',
+            joke:
+              'This page is a static GitHub Pages showcase. The app is built with Electron; see CONTRIBUTING in the repo for dev setup.',
+            arch: 'Architecture →',
+            f1h: 'P2P LAN',
+            f1p: 'No cloud accounts: discover peers via UDP broadcast + mDNS; messages over TCP peer-to-peer.',
+            f2h: 'Calls',
+            f2p: 'WebRTC voice/video in a dedicated window; signaling shares the same TCP channel as chat.',
+            f3h: 'Stack',
+            f3p: 'Electron 35, Vite 6, vanilla JS. Windows is the primary NSIS/portable build target.',
+            foot1: 'Code:',
+            foot2: ' · from docs/index.html · ',
+            copy: 'Copy',
+            copied: 'Copied',
+            navGh: 'GitHub',
+            navIssues: 'Issues',
+          },
+        };
+
+        var LANG_KEY = 'blip_pages_lang';
+
+        function getLang() {
+          try {
+            var v = localStorage.getItem(LANG_KEY);
+            return v === 'en' ? 'en' : 'ru';
+          } catch (e) {
+            return 'ru';
+          }
+        }
+
+        function setLang(lang) {
+          var next = lang === 'en' ? 'en' : 'ru';
+          try {
+            localStorage.setItem(LANG_KEY, next);
+          } catch (e) {}
+          document.documentElement.lang = next === 'en' ? 'en' : 'ru';
+          apply(next);
+        }
+
+        function apply(lang) {
+          var pack = STR[lang];
+          document.querySelectorAll('[data-i18n]').forEach(function (el) {
+            var k = el.getAttribute('data-i18n');
+            if (pack[k] !== undefined && pack[k] !== '') el.textContent = pack[k];
+          });
+          var btnRu = document.getElementById('lang-ru');
+          var btnEn = document.getElementById('lang-en');
+          if (btnRu) btnRu.setAttribute('aria-pressed', lang === 'ru' ? 'true' : 'false');
+          if (btnEn) btnEn.setAttribute('aria-pressed', lang === 'en' ? 'true' : 'false');
+          var copyBtn = document.getElementById('copy-btn');
+          if (copyBtn && !copyBtn.classList.contains('copied')) copyBtn.textContent = pack.copy;
+          if (copyBtn) {
+            copyBtn.setAttribute('data-i18n-copy', pack.copy);
+            copyBtn.setAttribute('data-i18n-copied', pack.copied);
+          }
+        }
+
+        var ruBtn = document.getElementById('lang-ru');
+        if (ruBtn) ruBtn.addEventListener('click', function () {
+          setLang('ru');
+        });
+        var enBtn = document.getElementById('lang-en');
+        if (enBtn) enBtn.addEventListener('click', function () {
+          setLang('en');
+        });
+
+        apply(getLang());
+
+        var btn = document.getElementById('copy-btn');
+        var line = document.getElementById('clone-line');
+        if (!btn || !line) return;
+        btn.addEventListener('click', function () {
+          var text = line.innerText;
+          var langNow = getLang();
+          var copied = STR[langNow].copied;
+          navigator.clipboard.writeText(text).then(function () {
+            btn.textContent = copied;
+            btn.classList.add('copied');
+            setTimeout(function () {
+              btn.textContent = STR[getLang()].copy;
+              btn.classList.remove('copied');
+            }, 2000);
+          });
+        });
+      })();
+    </script>
+  </body>
+</html>

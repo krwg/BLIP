@@ -15,10 +15,11 @@ Release **version numbers** track [`app-metadata.json`](app-metadata.json) (sync
 - `.github/workflows/ci.yml` — `npm ci` + `npm run build` on push/PR to `main`/`master`.
 - Issue / PR templates, Dependabot (npm + GitHub Actions), `.nvmrc`, `engines.node` in `package.json`.
 - Tracked backlog files under `issues/` (removed from `.gitignore`).
+- Static **`docs/index.html`** landing for GitHub Pages (`https://krwg.github.io/BLIP/`).
 
 ### Changed
 
-- README: Community section + Node **20+** align with toolchain.
+- README: Community section + Node **20+**, navigation link to Pages, Contribution doc includes Pages setup.
 
 ## [0.1.4] — Obsidian
 

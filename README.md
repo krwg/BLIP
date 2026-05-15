@@ -34,6 +34,7 @@
 | Design tokens | [Design](#en-design) | [Дизайн](#ru-design) |
 | License | [License](#en-license) | [Лицензия](#ru-license) |
 | Community | [Community](#en-community) | [Сообщество](#ru-community) |
+| Landing | [krwg.github.io/BLIP](https://krwg.github.io/BLIP/) | [Сайт Pages](https://krwg.github.io/BLIP/) |
 
 ---
 
@@ -260,7 +261,8 @@ blip/
 | [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | Community standards |
 | [SECURITY.md](SECURITY.md) | Reporting vulnerabilities |
 | [CHANGELOG.md](CHANGELOG.md) | Release history |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Technical map of the app |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Technical map |
+| [Landing site (Pages)](https://krwg.github.io/BLIP/) | Static showcase (`docs/index.html`) |
 
 <h3 id="en-license">License</h3>
 
@@ -466,6 +468,7 @@ blip/
 | [SECURITY.md](SECURITY.md) | Как сообщить об уязвимости |
 | [CHANGELOG.md](CHANGELOG.md) | История версий |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Архитектура кода |
+| [Landing (Pages)](https://krwg.github.io/BLIP/) | Статический сайт-витрина (`docs/index.html`) |
 
 <h3 id="ru-license">Лицензия</h3>
 

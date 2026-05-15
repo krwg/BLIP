@@ -8,6 +8,16 @@ Thanks for helping improve BLIP. This project is **GPL-3.0** — your contributi
 - **npm** (ships with Node).
 - **Windows** is the primary target today; other platforms may work but are not fully validated in CI.
 
+## GitHub Pages
+
+The static landing page lives in **`docs/index.html`**. To publish:
+
+1. Repo **Settings** → **Pages** → **Build and deployment** → source: **Deploy from a branch**.
+2. Branch: **`main`**, folder: **`/docs`**, Save.
+3. Site URL: `https://krwg.github.io/BLIP/` (after the first successful deploy).
+
+Update the hardcoded clone URL in `docs/index.html` only if the repo moves.
+
 ## Quick setup
 
 ```bash
