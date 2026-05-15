@@ -1,18 +1,17 @@
 import net from 'net';
-
-export const TCP_PORT = 42070;
+import { DEFAULT_TCP_PORT } from './ports.js';
 
 const pendingConnections = new Map();
 
-export function connectToPeer(ip, blipId) {
+export function connectToPeer(ip, blipId, tcpPort = DEFAULT_TCP_PORT) {
   return new Promise((resolve, reject) => {
-    const key = `${ip}:${blipId}`;
+    const key = `${ip}:${blipId}:${tcpPort}`;
     if (pendingConnections.has(key)) {
       resolve(pendingConnections.get(key));
       return;
     }
 
-    const socket = net.createConnection({ host: ip, port: TCP_PORT }, () => {
+    const socket = net.createConnection({ host: ip, port: tcpPort }, () => {
       pendingConnections.set(key, socket);
       resolve(socket);
     });
@@ -44,9 +43,9 @@ export function sendOnSocket(socket, payload) {
   });
 }
 
-export function pingPeer(ip) {
+export function pingPeer(ip, tcpPort = DEFAULT_TCP_PORT) {
   return new Promise((resolve) => {
-    const socket = net.createConnection({ host: ip, port: TCP_PORT }, () => {
+    const socket = net.createConnection({ host: ip, port: tcpPort }, () => {
       const payload = JSON.stringify({ type: 'ping' }) + '\n';
       socket.write(payload, () => {
         socket.destroy();

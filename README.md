@@ -20,6 +20,7 @@
 | Section | English | Русский |
 |---------|---------|---------|
 | Language | [**English**](#english) | [**Русский**](#russian) |
+| Testing (one PC) | [Testing](#en-testing) | [Тестирование](#ru-testing) |
 | Overview | [Overview](#en-overview) | [Обзор](#ru-overview) |
 | Features | [Features](#en-features) | [Возможности](#ru-features) |
 | Architecture | [Architecture](#en-architecture) | [Архитектура](#ru-architecture) |
@@ -36,6 +37,18 @@
 ---
 
 <h2 id="english">English</h2>
+
+<h3 id="en-testing">Testing on one PC</h3>
+
+| Approach | Works for chat/calls? |
+|----------|---------------------|
+| **Two BLIP windows on the same PC** | **No** — both try to bind UDP `42069` and TCP `42070`; the second copy usually fails or cannot discover the first. |
+| **VM** (VirtualBox / Hyper-V) with bridged network | **Yes** — guest gets its own IP; install or run BLIP in the VM. |
+| **Second device** on the same Wi‑Fi (laptop, old PC) | **Yes** — recommended. |
+| **Hamachi / Radmin VPN** between two machines | **Yes** — same as LAN. |
+| **Phone** | No mobile app yet — desktop only. |
+
+Quick VM flow: host runs BLIP (ID **1**), VM runs BLIP (ID **2**), same subnet via bridged adapter, allow firewall for ports **42069–42070**.
 
 <h3 id="en-overview">Overview</h3>
 
@@ -148,8 +161,8 @@ Icons: root `icon.svg` → `npm run build:icons` → `build/icon.ico`.
 
 | Command | Output |
 |---------|--------|
-| `npm run electron:build` | **`BLIP-Setup-0.1.0.exe`** — full NSIS installer |
-| `npm run electron:build:portable` | **`BLIP-0.1.0-Portable.exe`** — single-file portable |
+| `npm run electron:build` | **`BLIP-Setup-0.1.4.exe`** — full NSIS installer |
+| `npm run electron:build:portable` | **`BLIP-0.1.4-Portable.exe`** — single-file portable |
 | `npm run electron:build:all` | Both artifacts |
 | `npm run electron:build:dir` | `dist-electron/win-unpacked/BLIP.exe` (debug folder) |
 
@@ -250,6 +263,18 @@ The **Minecraft** font is licensed separately under [MIT](https://github.com/bs-
 
 *Ты в сети. Ты сигнал.*
 
+<h3 id="ru-testing">Тестирование на одном ПК</h3>
+
+| Способ | Чат / звонки? |
+|--------|----------------|
+| **Два окна BLIP на одном ПК** | **Нет** — порты `42069` (UDP) и `42070` (TCP) заняты; второй экземпляр не поднимется или не увидит первого. |
+| **Виртуальная машина** (VirtualBox / Hyper-V, сеть bridged) | **Да** — у гостя свой IP; BLIP в VM + на хосте. |
+| **Второе устройство** в той же Wi‑Fi | **Да** — лучший вариант. |
+| **Hamachi / Radmin VPN** на двух машинах | **Да** — как LAN. |
+| **Телефон** | Мобильного клиента пока нет. |
+
+Кратко: хост BLIP ID **1**, в VM BLIP ID **2**, одна подсеть, firewall открыт для **42069–42070**.
+
 <h3 id="ru-overview">Обзор</h3>
 
 | | |
@@ -331,8 +356,8 @@ npx electron .
 
 | Команда | Результат |
 |---------|-----------|
-| `npm run electron:build` | **`BLIP-Setup-0.1.0.exe`** — установщик NSIS |
-| `npm run electron:build:portable` | **`BLIP-0.1.0-Portable.exe`** — portable |
+| `npm run electron:build` | **`BLIP-Setup-0.1.4.exe`** — установщик NSIS |
+| `npm run electron:build:portable` | **`BLIP-0.1.4-Portable.exe`** — portable |
 | `npm run electron:build:all` | Оба файла |
 | `npm run electron:build:dir` | `dist-electron/win-unpacked/BLIP.exe` |
 

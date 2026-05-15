@@ -2,7 +2,40 @@ import { t } from './i18n.js';
 import { sounds } from './audio.js';
 import { createAvatarElement } from './avatar.js';
 
+const STORAGE_KEY = 'blip_chat_v1';
+const MAX_PER_PEER = 500;
+
 const messagesByPeer = new Map();
+
+function loadFromStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const o = JSON.parse(raw);
+    for (const [k, arr] of Object.entries(o)) {
+      const id = Number(k);
+      if (Number.isFinite(id) && Array.isArray(arr)) {
+        messagesByPeer.set(id, arr.slice(-MAX_PER_PEER));
+      }
+    }
+  } catch (e) {
+    console.warn('[BLIP chat] load history', e);
+  }
+}
+
+function persist() {
+  try {
+    const o = {};
+    for (const [k, msgs] of messagesByPeer) {
+      o[k] = msgs.slice(-MAX_PER_PEER);
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(o));
+  } catch (e) {
+    console.warn('[BLIP chat] persist', e);
+  }
+}
+
+loadFromStorage();
 
 export function getMessages(peerId) {
   if (!messagesByPeer.has(peerId)) messagesByPeer.set(peerId, []);
@@ -12,7 +45,13 @@ export function getMessages(peerId) {
 export function addMessage(peerId, msg) {
   const list = getMessages(peerId);
   list.push(msg);
+  persist();
   return list;
+}
+
+export function clearPeerMessages(peerId) {
+  messagesByPeer.delete(peerId);
+  persist();
 }
 
 export function createChatView(peerId, config, onSend, onBack) {
@@ -44,6 +83,22 @@ export function createChatView(peerId, config, onSend, onBack) {
   meta.appendChild(idLabel);
   header.appendChild(avatar);
   header.appendChild(meta);
+
+  const headSpacer = document.createElement('div');
+  headSpacer.style.flex = '1';
+  header.appendChild(headSpacer);
+
+  const clearBtn = document.createElement('button');
+  clearBtn.type = 'button';
+  clearBtn.className = 'btn btn-lang chat-clear-btn';
+  clearBtn.dataset.i18n = 'chat.clear';
+  clearBtn.textContent = t('chat.clear');
+  clearBtn.addEventListener('click', () => {
+    if (!confirm(t('chat.clear_confirm'))) return;
+    clearPeerMessages(peerId);
+    renderMessages();
+  });
+  header.appendChild(clearBtn);
 
   const messagesEl = document.createElement('div');
   messagesEl.className = 'chat-messages glass';
@@ -85,8 +140,9 @@ export function createChatView(peerId, config, onSend, onBack) {
     sounds.messageSent();
     const result = await onSend?.(peerId, text);
     if (!result?.ok) {
-      const last = getMessages(peerId).pop();
-      if (last === msg) getMessages(peerId).pop();
+      const list = getMessages(peerId);
+      const last = list.pop();
+      if (last === msg) persist();
       renderMessages();
     }
   }
@@ -108,12 +164,26 @@ export function createChatView(peerId, config, onSend, onBack) {
 
   function renderMessages() {
     const msgs = getMessages(peerId);
+
+    const hasFocus = document.activeElement === input;
+    const cursorPos = hasFocus ? input.selectionStart : null;
+
+    const scrollPos = messagesEl.scrollTop;
+    const nearBottom =
+      messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight < 80;
+
     messagesEl.innerHTML = '';
     if (msgs.length === 0) {
       const p = document.createElement('p');
       p.className = 'chat-empty';
       p.textContent = t('chat.empty');
       messagesEl.appendChild(p);
+      if (hasFocus) {
+        requestAnimationFrame(() => {
+          input.focus();
+          if (cursorPos !== null) input.setSelectionRange(cursorPos, cursorPos);
+        });
+      }
       return;
     }
     msgs.forEach((m) => {
@@ -125,7 +195,19 @@ export function createChatView(peerId, config, onSend, onBack) {
       block.appendChild(text);
       messagesEl.appendChild(block);
     });
-    messagesEl.scrollTop = messagesEl.scrollHeight;
+
+    if (hasFocus) {
+      requestAnimationFrame(() => {
+        input.focus();
+        if (cursorPos !== null) input.setSelectionRange(cursorPos, cursorPos);
+      });
+    }
+
+    if (nearBottom || !hasFocus) {
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    } else {
+      messagesEl.scrollTop = scrollPos;
+    }
   }
 
   function flashNew() {
@@ -133,6 +215,8 @@ export function createChatView(peerId, config, onSend, onBack) {
     void messagesEl.offsetWidth;
     messagesEl.classList.add('flash');
   }
+
+  renderMessages();
 
   return {
     el: wrap,

@@ -3,6 +3,8 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('blip', {
   getConfig: () => ipcRenderer.invoke('get-config'),
   saveConfig: (config) => ipcRenderer.invoke('save-config', config),
+  getAppMetadata: () => ipcRenderer.invoke('get-app-metadata'),
+  openExternal: (url) => ipcRenderer.invoke('open-external', url),
   getPeers: () => ipcRenderer.invoke('get-peers'),
   sendTcpMessage: (payload) => ipcRenderer.invoke('send-tcp-message', payload),
   initiateCall: (payload) => ipcRenderer.invoke('initiate-call', payload),
@@ -12,6 +14,8 @@ contextBridge.exposeInMainWorld('blip', {
   callHangup: (payload) => ipcRenderer.invoke('call-hangup', payload),
   pingPeer: (blipId) => ipcRenderer.invoke('ping-peer', blipId),
   checkIdConflict: (blipId) => ipcRenderer.invoke('check-id-conflict', blipId),
+  openCallOutgoing: (payload) => ipcRenderer.invoke('open-call-outgoing', payload),
+  closeCallWindow: () => ipcRenderer.invoke('close-call-window'),
   onPeersUpdated: (cb) => {
     const handler = (_, peers) => cb(peers);
     ipcRenderer.on('peers-updated', handler);
@@ -26,6 +30,11 @@ contextBridge.exposeInMainWorld('blip', {
     const handler = (_, data) => cb(data);
     ipcRenderer.on('incoming-call', handler);
     return () => ipcRenderer.removeListener('incoming-call', handler);
+  },
+  onCallOutgoing: (cb) => {
+    const handler = (_, data) => cb(data);
+    ipcRenderer.on('call-outgoing', handler);
+    return () => ipcRenderer.removeListener('call-outgoing', handler);
   },
   onCallAnswer: (cb) => {
     const handler = (_, data) => cb(data);
@@ -50,4 +59,6 @@ contextBridge.exposeInMainWorld('blip', {
   windowMinimize: () => ipcRenderer.send('window-minimize'),
   windowMaximize: () => ipcRenderer.send('window-maximize'),
   windowClose: () => ipcRenderer.send('window-close'),
+  callWindowMinimize: () => ipcRenderer.send('call-window-minimize'),
+  callWindowClose: () => ipcRenderer.send('call-window-close'),
 });

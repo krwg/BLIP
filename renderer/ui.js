@@ -1,7 +1,7 @@
 import { t, setLang, getLang, applyLangChange, onLangChange } from './i18n.js';
 import { createIdGrid } from './grid.js';
 import { createChatView, getMessages, addMessage } from './chat.js';
-import { createCallUI, showSignalLost } from './call.js';
+import { showSignalLost } from './call.js';
 import { createAvatarElement } from './avatar.js';
 import { sounds } from './audio.js';
 
@@ -16,9 +16,38 @@ let state = {
 
 let rootEl = null;
 let mainContent = null;
-let callUI = null;
 let gridComponent = null;
 let api = null;
+
+async function openCallOutgoing(peerId, video = false) {
+  if (!window.blip?.openCallOutgoing) return;
+  try {
+    await window.blip.openCallOutgoing({ peerId, video });
+  } catch (e) {
+    console.error('[BLIP] openCallOutgoing', e);
+  }
+}
+
+function showMessageToast(peerId, preview) {
+  const el = document.createElement('div');
+  el.className = 'app-toast glass';
+  el.innerHTML = `<strong>${t('toast.new_message')} · #${peerId}</strong>
+    <p class="toast-preview">${escapeHtml(preview || '')}</p>
+    <button type="button" class="btn btn-accent toast-open">${t('toast.open_chat')}</button>`;
+  el.querySelector('.toast-open')?.addEventListener('click', () => {
+    el.remove();
+    openChat(peerId);
+  });
+  document.body.appendChild(el);
+  setTimeout(() => el.classList.add('toast-out'), 8200);
+  setTimeout(() => el.remove(), 9000);
+}
+
+function escapeHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
 
 function applyI18n(root = document) {
   root.querySelectorAll('[data-i18n]').forEach((el) => {
@@ -154,7 +183,7 @@ function renderDialView() {
       showSignalLost(wrap);
       return;
     }
-    callUI?.startOutgoing(id, false);
+    openCallOutgoing(id, false);
   });
 
   actions.appendChild(msgBtn);
@@ -248,7 +277,7 @@ function showPeerContextMenu(e, peer) {
   callItem.textContent = t('dial.call');
   callItem.addEventListener('click', () => {
     menu.remove();
-    if (peer.online) callUI?.startOutgoing(peer.blipId, false);
+    if (peer.online) openCallOutgoing(peer.blipId, false);
   });
 
   menu.appendChild(msgItem);
@@ -320,12 +349,45 @@ function renderSettingsView() {
     await api.saveConfig({ displayName: name });
   });
 
+  const aboutTitle = document.createElement('h3');
+  aboutTitle.className = 'section-subtitle';
+  aboutTitle.dataset.i18n = 'settings.about_title';
+  aboutTitle.textContent = t('settings.about_title');
+
+  const aboutLine = document.createElement('p');
+  aboutLine.className = 'settings-about-line';
+
+  const aboutVersion = document.createElement('p');
+  aboutVersion.className = 'settings-about-version';
+
+  const githubBtn = document.createElement('button');
+  githubBtn.type = 'button';
+  githubBtn.className = 'btn btn-lang';
+  githubBtn.dataset.i18n = 'settings.github';
+  githubBtn.textContent = t('settings.github');
+
+  window.blip.getAppMetadata?.().then((meta) => {
+    const name = meta?.displayName || 'BLIP';
+    const code = meta?.codename ? ` · ${meta.codename}` : '';
+    aboutLine.textContent = `${name}${code}`;
+    aboutVersion.textContent = `v${meta?.version ?? '—'}`;
+    if (meta?.githubUrl) {
+      githubBtn.addEventListener('click', () => window.blip.openExternal?.(meta.githubUrl));
+    } else {
+      githubBtn.disabled = true;
+    }
+  }).catch(() => {});
+
   wrap.appendChild(title);
   wrap.appendChild(nameLabel);
   wrap.appendChild(nameInput);
   wrap.appendChild(idRow);
   wrap.appendChild(langLabel);
   wrap.appendChild(langRow);
+  wrap.appendChild(aboutTitle);
+  wrap.appendChild(aboutLine);
+  wrap.appendChild(aboutVersion);
+  wrap.appendChild(githubBtn);
   return wrap;
 }
 
@@ -562,8 +624,7 @@ export function initUI(config, blipApi) {
   const titleBar = createTitleBar();
   rootEl.appendChild(titleBar);
 
-  callUI = createCallUI(config, blipApi);
-  rootEl.appendChild(callUI.el);
+  /* Calls use a separate BrowserWindow — see main/index.js + call-window.html */
 
   onLangChange(() => {
     applyI18n(rootEl);
@@ -594,23 +655,47 @@ export function updatePeers({ peers, occupiedIds }) {
     gridComponent.updateOccupied(occupiedIds.filter((id) => id !== state.config.blipId));
   }
 
-  if ((state.view === 'peers' || state.view === 'chat') && mainContent) {
-    renderView(state.view);
+  /* Never full re-render during active conversation (fixes scroll jump + input focus loss) */
+  if (state.view === 'chat' && state.activePeer && mainContent) {
+    return;
+  }
+
+  if (state.view === 'peers' && mainContent) {
+    renderView('peers');
+  }
+  if (state.view === 'chat' && !state.activePeer && mainContent) {
+    renderView('chat');
   }
 }
 
 export function handleTcpMessage(msg) {
   const peerId = msg.from === state.config.blipId ? msg.to : msg.from;
+
   ensureChatView(peerId);
   state.chatViews.get(peerId)?.handleIncoming(msg);
 
-  if (state.view !== 'chat' || state.activePeer !== peerId) {
-    state.view = 'chat';
-    state.activePeer = peerId;
-    if (mainContent?.isConnected) renderView('chat');
+  if (state.view === 'chat' && state.activePeer === peerId) {
+    return;
   }
+
+  const preview = typeof msg.text === 'string' ? msg.text.slice(0, 120) : '';
+  showMessageToast(peerId, preview);
+
+  const typingOther =
+    state.view === 'chat' &&
+    state.activePeer &&
+    state.activePeer !== peerId &&
+    document.activeElement?.closest?.('.chat-input-row');
+
+  if (typingOther) {
+    return;
+  }
+
+  state.view = 'chat';
+  state.activePeer = peerId;
+  if (mainContent?.isConnected) renderView('chat');
 }
 
 export function getCallUI() {
-  return callUI;
+  return null;
 }

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' http://localhost:5173; style-src 'self' 'unsafe-inline' http://localhost:5173; media-src 'self' blob:; connect-src 'self' ws: http://localhost:5173 ws://localhost:5173;" />
+  <title>BLIP — Call</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <style>
+  #call-shell { display: flex; flex-direction: column; height: 100%; }
+  #call-root {
+    flex: 1;
+    min-height: 0;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  #call-root .call-overlay {
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: 2;
+  }
+    .call-window-titlebar {
+      height: 36px;
+      display: flex;
+      align-items: center;
+      padding: 0 8px;
+      border-bottom: 2px solid #00ffc8;
+      background: #0a0a0a;
+      -webkit-app-region: drag;
+      font-size: 11px;
+      text-transform: uppercase;
+      color: #00ffc8;
+      letter-spacing: 2px;
+    }
+    .call-window-titlebar button {
+      -webkit-app-region: no-drag;
+      margin-left: auto;
+    }
+  </style>
+</head>
+<body>
+  <div id="call-shell">
+    <div class="call-window-titlebar">
+      <span id="call-win-title">BLIP CALL</span>
+      <button type="button" class="win-btn" id="call-win-close" aria-label="Close">×</button>
+    </div>
+    <div id="call-root"></div>
+  </div>
+  <script type="module" src="./call-window-main.js"></script>
+</body>
+</html>

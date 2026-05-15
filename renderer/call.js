@@ -52,7 +52,7 @@ function formatDuration(ms) {
   return `${pad(m)}:${pad(s % 60)}`;
 }
 
-export function createCallUI(config, api) {
+export function createCallUI(config, api, options = {}) {
   const overlay = document.createElement('div');
   overlay.className = 'call-overlay hidden';
 
@@ -166,6 +166,7 @@ export function createCallUI(config, api) {
   function hide() {
     overlay.classList.add('hidden');
     cleanup();
+    options.onClosed?.();
   }
 
   function cleanup() {
@@ -307,6 +308,9 @@ export function createCallUI(config, api) {
       console.error('[call] outgoing:', err);
       hide();
     }
+    
+    // Очищаем входящий оффер при исходящем звонке
+    incomingOffer = null;
   }
 
   async function acceptIncoming() {
@@ -345,11 +349,19 @@ export function createCallUI(config, api) {
       console.error('[call] accept:', err);
       hide();
     }
+    
+    // Очищаем входящий оффер после принятия звонка
+    incomingOffer = null;
   }
 
   async function handleIncoming(data) {
     const from = Number(data.from);
     if (!from) return;
+
+    // Если уже есть активный звонок, игнорируем новый входящий
+    if (pc || (incomingOffer && activeCall?.pending)) {
+      return;
+    }
 
     peerId = from;
     withVideo = data.video ?? false;
@@ -383,13 +395,21 @@ export function createCallUI(config, api) {
   });
 
   async function handleAnswer(data) {
-    if (!isForCurrentPeer(data) || !pc) return;
+    if (!pc) {
+      console.warn('[BLIP call] handleAnswer: no peer connection', data);
+      return;
+    }
+    const aid = Number(data?.from);
+    if (aid && peerId && aid !== Number(peerId)) {
+      console.warn('[BLIP call] answer ignored (wrong peer)', { aid, peerId, data });
+      return;
+    }
     try {
       await setRemoteDescription(data.sdp);
       setConnectedStatus();
       startTimer();
     } catch (err) {
-      console.error('[call] answer:', err);
+      console.error('[BLIP call] answer', err);
     }
   }
 
@@ -424,11 +444,13 @@ export function createCallUI(config, api) {
     deafenBtn.classList.toggle('active', deafened);
   });
 
-  endBtn.addEventListener('click', async () => {
+  async function hangupCall() {
     if (peerId) await api.callHangup({ to: peerId });
     sounds.callEnd();
     hide();
-  });
+  }
+
+  endBtn.addEventListener('click', () => hangupCall());
 
   return {
     el: overlay,
@@ -438,9 +460,11 @@ export function createCallUI(config, api) {
     handleCandidate,
     handleRejected,
     handleEnded,
+    hangupCall,
     hide,
     end: hide,
-    isActive: () => !!pc || !!incomingOffer,
+    isActive: () => !!pc || !!(incomingOffer && activeCall?.pending),
+    getPeerId: () => peerId,
   };
 }
 

@@ -9,6 +9,7 @@ files:
   - preload.cjs
   - dist/**/*
   - package.json
+  - app-metadata.json
 extraResources:
   - from: build/icon.png
     to: icons/icon.png

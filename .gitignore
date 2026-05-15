@@ -1,10 +1,4 @@
-node_modules/
-dist/
-dist-electron/
-build/icon.ico
-build/icon.png
-build/tray-16.png
-build/icon.svg
-*.log
-.DS_Store
-Thumbs.db
+node_modules
+dist-electron
+dist
+issues

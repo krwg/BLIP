@@ -1,5 +1,5 @@
 import { setLang } from './i18n.js';
-import { initUI, updatePeers, handleTcpMessage, getCallUI } from './ui.js';
+import { initUI, updatePeers, handleTcpMessage } from './ui.js';
 
 const api = {
   saveConfig: (data) => window.blip.saveConfig(data),
@@ -53,13 +53,7 @@ async function boot() {
   window.blip.onPeersUpdated((data) => updatePeers(data));
   window.blip.onTcpMessage((msg) => handleTcpMessage(msg));
 
-  const callUI = getCallUI();
-
-  window.blip.onIncomingCall((data) => callUI.handleIncoming(data));
-  window.blip.onCallAnswer((data) => callUI.handleAnswer(data));
-  window.blip.onCallCandidate((data) => callUI.handleCandidate(data));
-  window.blip.onCallRejected((data) => callUI.handleRejected(data));
-  window.blip.onCallEnded((data) => callUI.handleEnded(data));
+  /* Calls run in separate BrowserWindow (call-window.html) — see main process */
 }
 
 boot().catch((err) => {

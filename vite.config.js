@@ -8,7 +8,10 @@ export default defineConfig({
     outDir: '../dist',
     emptyOutDir: true,
     rollupOptions: {
-      input: resolve(__dirname, 'renderer/index.html'),
+      input: {
+        main: resolve(__dirname, 'renderer/index.html'),
+        call: resolve(__dirname, 'renderer/call-window.html'),
+      },
     },
   },
   server: {

@@ -1,9 +1,9 @@
 import net from 'net';
-import { TCP_PORT } from './tcp-client.js';
+import { DEFAULT_TCP_PORT } from './ports.js';
 
 const connections = new Map();
 
-export function createTcpServer(handlers) {
+export function createTcpServer(handlers, tcpPort = DEFAULT_TCP_PORT) {
   const server = net.createServer((socket) => {
     let buffer = '';
     const remoteIp = socket.remoteAddress?.replace('::ffff:', '') || '';
@@ -33,11 +33,7 @@ export function createTcpServer(handlers) {
     socket.on('error', () => socket.destroy());
   });
 
-  server.listen(TCP_PORT, '0.0.0.0', () => {
-    console.log(`[TCP] listening on ${TCP_PORT}`);
-  });
-
-  return {
+  const api = {
     server,
     registerConnection(blipId, socket) {
       connections.set(blipId, socket);
@@ -60,5 +56,28 @@ export function createTcpServer(handlers) {
         }
       }
     },
+    close() {
+      for (const socket of connections.values()) {
+        if (!socket.destroyed) socket.destroy();
+      }
+      connections.clear();
+      return new Promise((resolve) => {
+        server.close(() => resolve());
+      });
+    },
   };
+
+  return new Promise((resolve, reject) => {
+    const onEarlyError = (err) => {
+      server.off('error', onEarlyError);
+      reject(err);
+    };
+    server.once('error', onEarlyError);
+    server.listen(tcpPort, '0.0.0.0', () => {
+      server.off('error', onEarlyError);
+      server.on('error', (err) => console.error('[TCP server]', err.message));
+      console.log(`[TCP] listening on ${tcpPort}`);
+      resolve(api);
+    });
+  });
 }
