@@ -9,6 +9,8 @@ const DEFAULT_CONFIG = {
   language: 'en',
   udpPort: 42069,
   tcpPort: 42070,
+  themeId: 'dark-signal',
+  animatedBgId: 'none',
 };
 
 let configPath = null;

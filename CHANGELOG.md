@@ -16,6 +16,7 @@ Release **version numbers** track [`app-metadata.json`](app-metadata.json) (sync
 - Issue / PR templates, Dependabot (npm + GitHub Actions), `.nvmrc`, `engines.node` in `package.json`.
 - Tracked backlog files under `issues/` (removed from `.gitignore`).
 - Static **`docs/index.html`** landing for GitHub Pages (`https://krwg.github.io/BLIP/`).
+- **Themes**: 5 light + 5 dark color presets; **10 animated backgrounds** (+ none); persisted in `blip-config.json`; respects reduced-motion.
 
 ### Changed
 
