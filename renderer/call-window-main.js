@@ -3,6 +3,9 @@
  */
 import { setLang } from './i18n.js';
 import { createCallUI } from './call.js';
+import { applyAppearance, listenReducedMotion } from './appearance.js';
+
+let callAppearanceRm = null;
 
 const api = {
   saveConfig: (data) => window.blip.saveConfig(data),
@@ -40,6 +43,9 @@ async function boot() {
 
   const config = await window.blip.getConfig();
   setLang(config.language || localStorage.getItem('blip_lang') || 'en');
+  applyAppearance(config);
+  callAppearanceRm?.();
+  callAppearanceRm = listenReducedMotion(() => {});
 
   const root = document.getElementById('call-root');
   let callUI = null;

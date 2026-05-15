@@ -4,6 +4,16 @@ import { createChatView, getMessages, addMessage } from './chat.js';
 import { showSignalLost } from './call.js';
 import { createAvatarElement } from './avatar.js';
 import { sounds } from './audio.js';
+import {
+  THEME_GROUPS,
+  BG_META,
+  applyAppearance,
+  listenReducedMotion,
+  labelTheme,
+  labelBg,
+  normalizeThemeId,
+  normalizeBgId,
+} from './appearance.js';
 
 let state = {
   config: null,
@@ -18,6 +28,7 @@ let rootEl = null;
 let mainContent = null;
 let gridComponent = null;
 let api = null;
+let appearanceListenerDispose = null;
 
 async function openCallOutgoing(peerId, video = false) {
   if (!window.blip?.openCallOutgoing) return;
@@ -290,6 +301,94 @@ function showPeerContextMenu(e, peer) {
   }, 0);
 }
 
+function buildAppearanceSection() {
+  const block = document.createElement('div');
+  block.className = 'settings-appearance-wrap';
+  const lang = getLang() === 'ru' ? 'ru' : 'en';
+  const curTheme = normalizeThemeId(state.config.themeId);
+  const curBg = normalizeBgId(state.config.animatedBgId);
+
+  const h = document.createElement('h3');
+  h.className = 'section-subtitle';
+  h.dataset.i18n = 'settings.appearance';
+  h.textContent = t('settings.appearance');
+  block.appendChild(h);
+
+  const lightLbl = document.createElement('span');
+  lightLbl.className = 'settings-sub-label';
+  lightLbl.dataset.i18n = 'settings.theme_light';
+  lightLbl.textContent = t('settings.theme_light');
+  block.appendChild(lightLbl);
+
+  const rowLight = document.createElement('div');
+  rowLight.className = 'settings-appearance-grid';
+  for (const id of THEME_GROUPS.light) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = `btn btn-lang settings-swatch${curTheme === id ? ' selected' : ''}`;
+    btn.textContent = labelTheme(id, lang);
+    btn.addEventListener('click', async () => {
+      state.config = await api.saveConfig({ themeId: id });
+      applyAppearance(state.config);
+      renderView('settings');
+    });
+    rowLight.appendChild(btn);
+  }
+  block.appendChild(rowLight);
+
+  const darkLbl = document.createElement('span');
+  darkLbl.className = 'settings-sub-label';
+  darkLbl.dataset.i18n = 'settings.theme_dark';
+  darkLbl.textContent = t('settings.theme_dark');
+  block.appendChild(darkLbl);
+
+  const rowDark = document.createElement('div');
+  rowDark.className = 'settings-appearance-grid';
+  for (const id of THEME_GROUPS.dark) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = `btn btn-lang settings-swatch${curTheme === id ? ' selected' : ''}`;
+    btn.textContent = labelTheme(id, lang);
+    btn.addEventListener('click', async () => {
+      state.config = await api.saveConfig({ themeId: id });
+      applyAppearance(state.config);
+      renderView('settings');
+    });
+    rowDark.appendChild(btn);
+  }
+  block.appendChild(rowDark);
+
+  const bgLbl = document.createElement('span');
+  bgLbl.className = 'settings-sub-label';
+  bgLbl.dataset.i18n = 'settings.bg_title';
+  bgLbl.textContent = t('settings.bg_title');
+  block.appendChild(bgLbl);
+
+  const rowBg = document.createElement('div');
+  rowBg.className = 'settings-appearance-grid settings-bg-grid';
+  for (const { id } of BG_META) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = `btn btn-lang settings-swatch${curBg === id ? ' selected' : ''}`;
+    btn.textContent = labelBg(id, lang);
+    btn.addEventListener('click', async () => {
+      state.config = await api.saveConfig({ animatedBgId: id });
+      applyAppearance(state.config);
+      renderView('settings');
+    });
+    rowBg.appendChild(btn);
+  }
+  block.appendChild(rowBg);
+
+  const motion = document.createElement('p');
+  motion.className = 'settings-motion-hint';
+  motion.dataset.i18n = 'settings.motion_hint';
+  motion.textContent = t('settings.motion_hint');
+  block.appendChild(motion);
+
+  return block;
+}
+
 function renderSettingsView() {
   const wrap = document.createElement('div');
   wrap.className = 'view settings-view';
@@ -384,6 +483,7 @@ function renderSettingsView() {
   wrap.appendChild(idRow);
   wrap.appendChild(langLabel);
   wrap.appendChild(langRow);
+  wrap.appendChild(buildAppearanceSection());
   wrap.appendChild(aboutTitle);
   wrap.appendChild(aboutLine);
   wrap.appendChild(aboutVersion);
@@ -613,6 +713,9 @@ export function initUI(config, blipApi) {
   api = blipApi;
   state.config = config;
   setLang(config.language || localStorage.getItem('blip_lang') || 'en');
+  applyAppearance(state.config);
+  appearanceListenerDispose?.();
+  appearanceListenerDispose = listenReducedMotion(() => {});
 
   rootEl = document.getElementById('app');
   if (!rootEl) {
