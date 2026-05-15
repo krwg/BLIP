@@ -69,6 +69,26 @@ export function createChatView(peerId, config, onSend, onBack) {
   sendBtn.dataset.i18n = 'chat.send';
   sendBtn.textContent = t('chat.send');
 
+  // Track if user is actively typing
+  let isTyping = false;
+  let typingTimeout = null;
+
+  input.addEventListener('focus', () => {
+    isTyping = true;
+  });
+
+  input.addEventListener('blur', () => {
+    isTyping = false;
+  });
+
+  input.addEventListener('input', () => {
+    isTyping = true;
+    if (typingTimeout) clearTimeout(typingTimeout);
+    typingTimeout = setTimeout(() => {
+      isTyping = false;
+    }, 2000);
+  });
+
   async function send() {
     const text = input.value.trim();
     if (!text) return;
@@ -80,14 +100,14 @@ export function createChatView(peerId, config, onSend, onBack) {
       outgoing: true,
     };
     addMessage(peerId, msg);
-    renderMessages();
+    renderMessages(false); // Don't force scroll when sending
     input.value = '';
     sounds.messageSent();
     const result = await onSend?.(peerId, text);
     if (!result?.ok) {
       const last = getMessages(peerId).pop();
       if (last === msg) getMessages(peerId).pop();
-      renderMessages();
+      renderMessages(false);
     }
   }
 
@@ -106,16 +126,23 @@ export function createChatView(peerId, config, onSend, onBack) {
   wrap.appendChild(messagesEl);
   wrap.appendChild(inputRow);
 
-  function renderMessages() {
+  function renderMessages(forceScroll = true) {
     const msgs = getMessages(peerId);
     
-    // Сохраняем фокус, если он в поле ввода
+    // Сохраняем фокус и позицию курсора
     const hasFocus = document.activeElement === input;
     const cursorPos = hasFocus ? input.selectionStart : null;
+    const inputValue = hasFocus ? input.value : null;
     
     // Сохраняем позицию прокрутки
     const scrollPos = messagesEl.scrollTop;
     const wasAtBottom = messagesEl.scrollHeight - messagesEl.scrollTop - messagesEl.clientHeight < 50;
+    
+    // Не перерисовываем, если ничего не изменилось и пользователь печатает
+    const currentCount = messagesEl.querySelectorAll('.chat-block').length;
+    if (currentCount === msgs.length && isTyping && !forceScroll) {
+      return;
+    }
     
     messagesEl.innerHTML = '';
     if (msgs.length === 0) {
@@ -123,8 +150,19 @@ export function createChatView(peerId, config, onSend, onBack) {
       p.className = 'chat-empty';
       p.textContent = t('chat.empty');
       messagesEl.appendChild(p);
+      // Восстанавливаем фокус после очистки
+      if (hasFocus) {
+        requestAnimationFrame(() => {
+          input.focus();
+          if (cursorPos !== null && inputValue !== null) {
+            input.value = inputValue;
+            input.setSelectionRange(cursorPos, cursorPos);
+          }
+        });
+      }
       return;
     }
+    
     msgs.forEach((m) => {
       const block = document.createElement('div');
       block.className = `chat-block ${m.outgoing ? 'outgoing' : 'incoming'}`;
@@ -137,15 +175,20 @@ export function createChatView(peerId, config, onSend, onBack) {
     
     // Восстанавливаем фокус и позицию курсора
     if (hasFocus) {
-      input.focus();
-      if (cursorPos !== null) {
-        input.setSelectionRange(cursorPos, cursorPos);
-      }
+      requestAnimationFrame(() => {
+        input.focus();
+        if (cursorPos !== null && inputValue !== null) {
+          input.value = inputValue;
+          input.setSelectionRange(cursorPos, cursorPos);
+        }
+      });
     }
     
-    // Прокручиваем вниз, если были внизу или новое сообщение входящее
-    if (wasAtBottom || !hasFocus) {
-      messagesEl.scrollTop = messagesEl.scrollHeight;
+    // Прокручиваем вниз только если были внизу или новое сообщение входящее
+    if (wasAtBottom || !hasFocus || forceScroll) {
+      requestAnimationFrame(() => {
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+      });
     } else {
       messagesEl.scrollTop = scrollPos;
     }
@@ -166,7 +209,7 @@ export function createChatView(peerId, config, onSend, onBack) {
     },
     handleIncoming(msg) {
       addMessage(peerId, { ...msg, outgoing: false });
-      renderMessages();
+      renderMessages(true);
       flashNew();
       sounds.messageReceived();
     },

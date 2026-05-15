@@ -564,6 +564,50 @@ body {
   border: 2px solid #00ffc8;
 }
 
+/* Dual avatar view for active calls */
+.call-dual-avatars {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  margin: 16px 0;
+  position: relative;
+}
+
+.call-dual-avatars::before {
+  content: '📞';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 24px;
+  opacity: 0.5;
+}
+
+.call-avatar-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.call-avatar-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  color: #333333;
+  letter-spacing: 1px;
+}
+
+.call-avatar-slot .avatar-canvas {
+  width: 96px !important;
+  height: 96px !important;
+  border: 2px solid #00ffc8;
+}
+
+.call-avatar-slot.remote .avatar-canvas {
+  border-color: #ff3366;
+}
+
 .call-status {
   text-transform: uppercase;
   font-size: 16px;

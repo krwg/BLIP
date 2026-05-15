@@ -62,6 +62,33 @@ export function createCallUI(config, api) {
   const statusEl = document.createElement('div');
   statusEl.className = 'call-status';
 
+  // Dual avatar container for voice calls
+  const dualAvatars = document.createElement('div');
+  dualAvatars.className = 'call-dual-avatars hidden';
+  
+  const localAvatarWrap = document.createElement('div');
+  localAvatarWrap.className = 'call-avatar-slot';
+  const localLabel = document.createElement('span');
+  localLabel.className = 'call-avatar-label';
+  localLabel.dataset.i18n = 'call.you';
+  localLabel.textContent = 'You';
+  const localAvatarContainer = document.createElement('div');
+  localAvatarWrap.appendChild(localAvatarContainer);
+  localAvatarWrap.appendChild(localLabel);
+  
+  const remoteAvatarWrap = document.createElement('div');
+  remoteAvatarWrap.className = 'call-avatar-slot remote';
+  const remoteLabel = document.createElement('span');
+  remoteLabel.className = 'call-avatar-label';
+  remoteLabel.dataset.i18n = 'call.peer';
+  remoteLabel.textContent = 'Peer';
+  const remoteAvatarContainer = document.createElement('div');
+  remoteAvatarWrap.appendChild(remoteAvatarContainer);
+  remoteAvatarWrap.appendChild(remoteLabel);
+  
+  dualAvatars.appendChild(localAvatarWrap);
+  dualAvatars.appendChild(remoteAvatarWrap);
+
   const videoWrap = document.createElement('div');
   videoWrap.className = 'call-video-wrap hidden';
   const localVideo = document.createElement('video');
@@ -137,6 +164,7 @@ export function createCallUI(config, api) {
   controls.appendChild(endBtn);
 
   inner.appendChild(statusEl);
+  inner.appendChild(dualAvatars);
   inner.appendChild(videoWrap);
   inner.appendChild(voiceWrap);
   inner.appendChild(timerEl);
@@ -275,10 +303,17 @@ export function createCallUI(config, api) {
     show();
     statusEl.dataset.i18n = 'call.outgoing';
     statusEl.textContent = t('call.outgoing');
+    
+    // Show dual avatars for voice calls, video element for video calls
+    dualAvatars.classList.toggle('hidden', video);
     videoWrap.classList.toggle('hidden', !video);
-    voiceWrap.classList.toggle('hidden', video);
-    avatarSlot.innerHTML = '';
-    avatarSlot.appendChild(createAvatarElement(targetId, 6));
+    voiceWrap.classList.add('hidden');
+    
+    // Setup dual avatar view
+    localAvatarContainer.innerHTML = '';
+    localAvatarContainer.appendChild(createAvatarElement(config.blipId, 4));
+    remoteAvatarContainer.innerHTML = '';
+    remoteAvatarContainer.appendChild(createAvatarElement(targetId, 4));
 
     try {
       localStream = await getMedia(video);
@@ -313,6 +348,7 @@ export function createCallUI(config, api) {
   }
 
   async function acceptIncoming() {
+    console.log('[call] Accepting incoming call from peer:', peerId);
     clearInterval(pulseTimer);
     inner.style.borderColor = '';
     acceptBtn.classList.add('hidden');
@@ -322,7 +358,10 @@ export function createCallUI(config, api) {
     deafenBtn.classList.remove('hidden');
 
     const offer = incomingOffer;
-    if (!offer) return;
+    if (!offer) {
+      console.error('[call] No incoming offer to accept');
+      return;
+    }
 
     try {
       localStream = await getMedia(withVideo);
@@ -340,10 +379,20 @@ export function createCallUI(config, api) {
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
 
-      bindActiveCall(peerId);
+      // Mark call as active BEFORE sending answer
+      activeCall = {
+        peerId,
+        pc,
+        pending: false,
+        onCandidate: (candidate) => {
+          api.callCandidate({ to: peerId, candidate });
+        },
+      };
 
       const result = await api.callAccept({ to: peerId, sdp: pc.localDescription });
       if (!result?.ok) throw new Error(result?.error || 'Accept failed');
+      
+      console.log('[call] Call accepted successfully, waiting for connection');
     } catch (err) {
       console.error('[call] accept:', err);
       hide();
@@ -357,8 +406,11 @@ export function createCallUI(config, api) {
     const from = Number(data.from);
     if (!from) return;
 
+    console.log('[call] Incoming call from:', from, 'activeCall:', activeCall, 'pc:', !!pc, 'incomingOffer:', !!incomingOffer);
+
     // Если уже есть активный звонок, игнорируем новый входящий
-    if (pc || (incomingOffer && activeCall?.pending)) {
+    if (pc || activeCall?.pc) {
+      console.log('[call] Rejecting incoming call - already in active call');
       return;
     }
 
@@ -377,12 +429,20 @@ export function createCallUI(config, api) {
     endBtn.classList.add('hidden');
     muteBtn.classList.add('hidden');
     deafenBtn.classList.add('hidden');
+    
+    // Show dual avatars for voice calls
+    dualAvatars.classList.toggle('hidden', withVideo);
     videoWrap.classList.toggle('hidden', !withVideo);
-    voiceWrap.classList.toggle('hidden', withVideo);
-    avatarSlot.innerHTML = '';
-    avatarSlot.appendChild(createAvatarElement(peerId, 6));
+    voiceWrap.classList.add('hidden');
+    
+    // Setup dual avatar view for incoming call
+    localAvatarContainer.innerHTML = '';
+    localAvatarContainer.appendChild(createAvatarElement(config.blipId, 4));
+    remoteAvatarContainer.innerHTML = '';
+    remoteAvatarContainer.appendChild(createAvatarElement(peerId, 4));
 
     activeCall = { peerId, pending: true };
+    console.log('[call] Showing incoming call UI');
   }
 
   acceptBtn.addEventListener('click', () => acceptIncoming());
@@ -395,16 +455,16 @@ export function createCallUI(config, api) {
 
   async function handleAnswer(data) {
     if (!isForCurrentPeer(data) || !pc) return;
+    console.log('[call] Received answer from peer:', data.from);
     try {
       await setRemoteDescription(data.sdp);
       setConnectedStatus();
       startTimer();
       
       // У звонящего сбрасываем статус "набор" после принятия звонка
-      if (activeCall && activeCall.peerId === Number(data.from)) {
-        statusEl.dataset.i18n = 'call.connected';
-        statusEl.textContent = t('call.connected');
-      }
+      statusEl.dataset.i18n = 'call.connected';
+      statusEl.textContent = t('call.connected');
+      console.log('[call] Call connected, timer started');
     } catch (err) {
       console.error('[call] answer:', err);
     }
@@ -457,7 +517,11 @@ export function createCallUI(config, api) {
     handleEnded,
     hide,
     end: hide,
-    isActive: () => !!pc || !!(incomingOffer && activeCall?.pending),
+    isActive: () => {
+      const active = !!(pc && pc.connectionState !== 'closed') || !!(incomingOffer && activeCall?.pending);
+      console.log('[call] isActive check:', { hasPc: !!pc, connectionState: pc?.connectionState, hasIncomingOffer: !!incomingOffer, pending: activeCall?.pending, result: active });
+      return active;
+    },
   };
 }
 

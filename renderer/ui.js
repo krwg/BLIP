@@ -608,10 +608,14 @@ export function handleTcpMessage(msg) {
   ensureChatView(peerId);
   state.chatViews.get(peerId)?.handleIncoming(msg);
 
-  // Не переключаем на чат, если активен звонок
+  // НЕ переключаем на чат, если активен звонок
   const callUI = getCallUI();
-  if (callUI?.isActive()) return;
+  if (callUI?.isActive()) {
+    console.log('[ui] Skipping chat switch - call is active');
+    return;
+  }
 
+  // Проверяем, что мы уже не в этом чате
   if (state.view !== 'chat' || state.activePeer !== peerId) {
     state.view = 'chat';
     state.activePeer = peerId;
