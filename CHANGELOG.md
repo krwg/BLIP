@@ -9,12 +9,23 @@ Release **version numbers** track [`app-metadata.json`](app-metadata.json) (sync
 
 ## [Unreleased]
 
+## [0.1.6]
+
+### Added
+
+- **Desktop notifications** for incoming chat messages (OS toast; click opens the chat). Toggle in **Settings → Notifications**. On Windows, `AppUserModelId` is set for correct toast branding.
+
+### Changed
+
+- **Settings**: **Language** and **Notifications** are separate sidebar sections; **Profile** keeps display name, avatar, and BLIP ID only.
+- App version **0.1.6** (`app-metadata.json` / `package.json`).
+
 ## [0.1.5] — Relay
 
 ### Added
 
 - **Auto-updates** from [GitHub Releases](https://github.com/krwg/BLIP/releases) via `electron-updater` (packaged Windows builds); background check after startup; **Updates** section with manual check, progress, and **Restart and install** when a build is downloaded.
-- **Settings layout**: section list on the **left** (like a second sidebar), **content on the right**; until a section is chosen, the right pane shows **Settings** and a short line to pick a section (Profile, Appearance, System & tray, Updates, About).
+- **Settings layout**: section list on the **left** (like a second sidebar), **content on the right**; until a section is chosen, the right pane shows **Settings** and a short line to pick a section (Profile, Language, Notifications, Appearance, System & tray, Updates, About).
 - `electron-builder` **publish** config for `krwg/BLIP` (for CI/release uploads).
 - **Themes**, **animated backgrounds**, **local profile avatars**, and **Windows tray / close-to-tray** (already on `main`; summarized here for the 0.1.5 release line).
 

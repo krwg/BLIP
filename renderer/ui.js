@@ -63,6 +63,20 @@ function showMessageToast(peerId, preview) {
   document.body.appendChild(el);
   setTimeout(() => el.classList.add('toast-out'), 8200);
   setTimeout(() => el.remove(), 9000);
+  tryShowDesktopMessageNotification(peerId, preview);
+}
+
+function tryShowDesktopMessageNotification(peerId, preview) {
+  if (state.config?.desktopNotifications === false) return;
+  if (!window.blip?.showMessageNotification) return;
+  const peer = state.peers.find((p) => p.blipId === peerId);
+  const label = peer?.displayName || `BLIP-${peerId}`;
+  const title = `${t('toast.new_message')} · ${label}`;
+  void window.blip.showMessageNotification({
+    peerId,
+    title,
+    body: typeof preview === 'string' ? preview : '',
+  });
 }
 
 function escapeHtml(s) {
@@ -533,7 +547,7 @@ function buildAppearanceSection() {
 }
 
 function getSettingsSectionIds() {
-  const ids = ['profile', 'appearance', 'system', 'updates', 'about'];
+  const ids = ['profile', 'language', 'notifications', 'appearance', 'system', 'updates', 'about'];
   if (typeof window !== 'undefined' && window.blip?.platform !== 'win32') {
     return ids.filter((id) => id !== 'system');
   }
@@ -574,6 +588,29 @@ function buildSettingsProfilePanel() {
   idRow.appendChild(idLabel);
   idRow.appendChild(changeIdBtn);
 
+  nameInput.addEventListener('change', async () => {
+    const name = nameInput.value.trim() || 'Anonymous';
+    state.config.displayName = name;
+    await api.saveConfig({ displayName: name });
+  });
+
+  frag.appendChild(nameLabel);
+  frag.appendChild(nameInput);
+  frag.appendChild(buildAvatarSettingsSection());
+  frag.appendChild(idRow);
+  return frag;
+}
+
+function buildSettingsLanguagePanel() {
+  const frag = document.createElement('div');
+  frag.className = 'settings-panel';
+
+  const h = document.createElement('h2');
+  h.className = 'settings-panel-title';
+  h.dataset.i18n = 'settings.section_language';
+  h.textContent = t('settings.section_language');
+  frag.appendChild(h);
+
   const langLabel = document.createElement('label');
   langLabel.dataset.i18n = 'settings.language';
   langLabel.textContent = t('settings.language');
@@ -589,23 +626,46 @@ function buildSettingsProfilePanel() {
       state.config.language = lang;
       await api.saveConfig({ language: lang });
       applyLangChange();
+      state.settingsSection = 'language';
       renderView('settings');
     });
     langRow.appendChild(btn);
   });
 
-  nameInput.addEventListener('change', async () => {
-    const name = nameInput.value.trim() || 'Anonymous';
-    state.config.displayName = name;
-    await api.saveConfig({ displayName: name });
-  });
-
-  frag.appendChild(nameLabel);
-  frag.appendChild(nameInput);
-  frag.appendChild(buildAvatarSettingsSection());
-  frag.appendChild(idRow);
   frag.appendChild(langLabel);
   frag.appendChild(langRow);
+  return frag;
+}
+
+function buildSettingsNotificationsPanel() {
+  const frag = document.createElement('div');
+  frag.className = 'settings-panel';
+
+  const h = document.createElement('h2');
+  h.className = 'settings-panel-title';
+  h.dataset.i18n = 'settings.section_notifications';
+  h.textContent = t('settings.section_notifications');
+  frag.appendChild(h);
+
+  const label = document.createElement('label');
+  label.className = 'settings-tray-toggle-row';
+
+  const cb = document.createElement('input');
+  cb.type = 'checkbox';
+  cb.checked = state.config.desktopNotifications !== false;
+
+  const span = document.createElement('span');
+  span.dataset.i18n = 'settings.notifications_enable';
+  span.textContent = t('settings.notifications_enable');
+
+  label.appendChild(cb);
+  label.appendChild(span);
+
+  cb.addEventListener('change', async () => {
+    state.config = await api.saveConfig({ desktopNotifications: cb.checked });
+  });
+
+  frag.appendChild(label);
   return frag;
 }
 
@@ -815,6 +875,10 @@ function renderSettingsMainPanel() {
   switch (state.settingsSection) {
     case 'profile':
       return buildSettingsProfilePanel();
+    case 'language':
+      return buildSettingsLanguagePanel();
+    case 'notifications':
+      return buildSettingsNotificationsPanel();
     case 'appearance':
       return buildAppearancePanelWithTitle();
     case 'system':
@@ -1115,6 +1179,14 @@ export function initUI(config, blipApi) {
       applyI18n(mainContent);
     }
   });
+
+  if (typeof window.blip.onNotificationOpenChat === 'function') {
+    window.blip.onNotificationOpenChat((peerId) => {
+      const id = Number(peerId);
+      if (!Number.isFinite(id)) return;
+      openChat(id);
+    });
+  }
 
   if (typeof window.blip.onUpdateStatus === 'function') {
     window.blip.onUpdateStatus((payload) => {

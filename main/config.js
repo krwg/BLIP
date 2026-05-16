@@ -13,6 +13,8 @@ const DEFAULT_CONFIG = {
   animatedBgId: 'none',
   /** When true, the main window close button hides to tray instead of exiting (Windows default on). */
   closeToTray: process.platform === 'win32',
+  /** OS toast when a new chat message arrives (main window). */
+  desktopNotifications: true,
 };
 
 let configPath = null;

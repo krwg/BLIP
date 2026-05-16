@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld('blip', {
   closeCallWindow: () => ipcRenderer.invoke('close-call-window'),
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
   quitAndInstall: () => ipcRenderer.invoke('quit-and-install'),
+  showMessageNotification: (payload) => ipcRenderer.invoke('show-message-notification', payload),
   onUpdateStatus: (cb) => {
     const handler = (_, data) => cb(data);
     ipcRenderer.on('update-status', handler);
@@ -33,6 +34,11 @@ contextBridge.exposeInMainWorld('blip', {
     const handler = (_, msg) => cb(msg);
     ipcRenderer.on('tcp-message', handler);
     return () => ipcRenderer.removeListener('tcp-message', handler);
+  },
+  onNotificationOpenChat: (cb) => {
+    const handler = (_, peerId) => cb(peerId);
+    ipcRenderer.on('notification-open-chat', handler);
+    return () => ipcRenderer.removeListener('notification-open-chat', handler);
   },
   onIncomingCall: (cb) => {
     const handler = (_, data) => cb(data);

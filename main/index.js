@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, nativeImage, shell } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, nativeImage, shell, Notification } from 'electron';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { existsSync, readFileSync } from 'fs';
@@ -479,6 +479,32 @@ function setupIpc() {
     return { ok: true };
   });
 
+  ipcMain.handle('show-message-notification', (_, payload) => {
+    if (!Notification.isSupported()) return { ok: false, reason: 'unsupported' };
+    const peerId = Number(payload?.peerId);
+    const title =
+      typeof payload?.title === 'string' ? payload.title.trim().slice(0, 128) : 'BLIP';
+    let body = typeof payload?.body === 'string' ? payload.body.replace(/\s+/g, ' ').trim() : '';
+    body = body.slice(0, 256);
+    if (!body) body = ' ';
+    try {
+      const n = new Notification({ title: title || 'BLIP', body, silent: false });
+      if (Number.isFinite(peerId)) {
+        n.on('click', () => {
+          if (mainWindow && !mainWindow.isDestroyed()) {
+            mainWindow.show();
+            mainWindow.focus();
+            mainWindow.webContents.send('notification-open-chat', peerId);
+          }
+        });
+      }
+      n.show();
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: e?.message || String(e) };
+    }
+  });
+
   ipcMain.handle('open-external', async (_, url) => {
     if (typeof url !== 'string' || !/^https?:\/\//i.test(url)) return { ok: false };
     await shell.openExternal(url);
@@ -534,6 +560,10 @@ function showFatalPortDialog(err) {
 }
 
 app.whenReady().then(async () => {
+  if (process.platform === 'win32') {
+    app.setAppUserModelId('com.blip.messenger');
+  }
+
   initConfigPath();
   config = loadConfig();
 

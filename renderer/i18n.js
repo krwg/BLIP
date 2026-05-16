@@ -43,6 +43,7 @@ const locales = {
     'settings.theme_dark': 'Dark themes',
     'settings.bg_title': 'Animated background',
     'settings.motion_hint': 'Background motion pauses when the OS requests reduced motion.',
+    'settings.notifications_enable': 'Desktop alert for new messages',
     'settings.tray_title': 'System tray',
     'settings.close_to_tray': 'Keep running in tray when I close the window',
     'settings.close_to_tray_hint':
@@ -57,6 +58,8 @@ const locales = {
     'settings.avatar_error_decode': 'Could not read this image. Try another file.',
     'settings.avatar_error_output': 'Image is still too large after processing. Try a smaller picture.',
     'settings.section_profile': 'Profile',
+    'settings.section_language': 'Language',
+    'settings.section_notifications': 'Notifications',
     'settings.section_appearance': 'Appearance',
     'settings.section_system': 'System & tray',
     'settings.section_updates': 'Updates',
@@ -134,6 +137,7 @@ const locales = {
     'settings.theme_dark': 'Тёмные темы',
     'settings.bg_title': 'Анимированный фон',
     'settings.motion_hint': 'Анимация фона отключается, если в системе включено «уменьшить движение».',
+    'settings.notifications_enable': 'Системное уведомление о новом сообщении',
     'settings.tray_title': 'Трей',
     'settings.close_to_tray': 'Оставаться в трее при закрытии окна',
     'settings.close_to_tray_hint':
@@ -148,6 +152,8 @@ const locales = {
     'settings.avatar_error_decode': 'Не удалось прочитать изображение. Попробуй другой файл.',
     'settings.avatar_error_output': 'После обработки изображение всё ещё слишком большое.',
     'settings.section_profile': 'Профиль',
+    'settings.section_language': 'Язык',
+    'settings.section_notifications': 'Уведомления',
     'settings.section_appearance': 'Внешний вид',
     'settings.section_system': 'Система и трей',
     'settings.section_updates': 'Обновления',
