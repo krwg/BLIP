@@ -9,6 +9,25 @@ Release **version numbers** track [`app-metadata.json`](app-metadata.json) (sync
 
 ## [Unreleased]
 
+## [0.4.0] — Mesh
+
+Rich LAN messaging: receipts, reactions, images, favorites, and presence — still no cloud.
+
+### Added
+
+- **Read receipts**: **✓** delivered and **✓✓** read on your outgoing messages (TCP `receipt`).
+- **Message reactions**: quick **+** / emoji chips on messages (TCP `reaction`).
+- **LAN image send**: **📎** in chat — resized JPEG over TCP (up to ~4 MB source).
+- **Clickable links** in chat (http/https open in the system browser).
+- **Emoji picker** next to the message input.
+- **Favorite peers**: star in context menu; favorites sort first on **Peers** and **Chat** hub.
+- **Presence**: **Online / Away / Busy** in **Settings → Profile** (broadcast on UDP; **DND** shows as busy).
+
+### Changed
+
+- Chat messages carry stable **IDs** for receipts and reactions.
+- Peer list status dot supports **away** (yellow) and **busy** (red).
+
 ## [0.3.5] — Mesh
 
 Mesh tightens the LAN experience: system shortcuts, live peer latency, Discord-style chat presence, and a proper screen-share pipeline.

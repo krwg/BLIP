@@ -1,9 +1,14 @@
 import { t } from './i18n.js';
 import { sounds } from './audio.js';
 import { createAvatarElement } from './avatar.js';
+import { appendLinkifiedText } from './linkify.js';
+import { attachEmojiPicker } from './emoji-picker.js';
+import { encodeChatImageAttachment } from './chat-attachments.js';
+import { createMessageId } from './message-id.js';
 
 const STORAGE_KEY = 'blip_chat_v1';
 const MAX_PER_PEER = 500;
+const REACTION_EMOJIS = ['👍', '❤️', '😂', '🔥', '👀'];
 
 const messagesByPeer = new Map();
 
@@ -57,6 +62,40 @@ export function addMessage(peerId, msg) {
   return list;
 }
 
+export function findMessage(peerId, messageId) {
+  if (!messageId) return null;
+  return getMessages(peerId).find((m) => m.id === messageId) || null;
+}
+
+export function applyReceiptToMessage(peerId, messageId, receipt) {
+  const m = findMessage(peerId, messageId);
+  if (!m || !m.outgoing) return false;
+  if (receipt === 'read') {
+    m.delivered = true;
+    m.read = true;
+  } else if (receipt === 'delivered') {
+    m.delivered = true;
+  } else {
+    return false;
+  }
+  persist();
+  return true;
+}
+
+export function toggleReactionOnMessage(peerId, messageId, emoji, fromPeerId) {
+  const m = findMessage(peerId, messageId);
+  if (!m || !emoji) return false;
+  if (!m.reactions) m.reactions = {};
+  const list = m.reactions[emoji] || [];
+  const idx = list.indexOf(fromPeerId);
+  if (idx >= 0) list.splice(idx, 1);
+  else list.push(fromPeerId);
+  if (list.length) m.reactions[emoji] = list;
+  else delete m.reactions[emoji];
+  persist();
+  return true;
+}
+
 export function clearPeerMessages(peerId) {
   messagesByPeer.delete(peerId);
   persist();
@@ -68,7 +107,8 @@ export function exportPeerChat(peerId, displayName) {
   const lines = msgs.map((m) => {
     const who = m.outgoing ? 'You' : label;
     const time = new Date(m.timestamp || Date.now()).toLocaleString();
-    return `[${time}] ${who}: ${m.text}`;
+    const body = m.attachment?.kind === 'image' ? `[image] ${m.text || ''}`.trim() : m.text;
+    return `[${time}] ${who}: ${body}`;
   });
   const body = lines.length ? `${lines.join('\n')}\n` : '';
   const blob = new Blob([body], { type: 'text/plain;charset=utf-8' });
@@ -80,7 +120,18 @@ export function exportPeerChat(peerId, displayName) {
   URL.revokeObjectURL(url);
 }
 
-export function createChatView(peerId, config, onSend, onBack, onTyping) {
+function openExternalUrl(url) {
+  if (window.blip?.openExternal) void window.blip.openExternal(url);
+}
+
+function receiptLabel(m) {
+  if (!m.outgoing) return '';
+  if (m.read) return '✓✓';
+  if (m.delivered) return '✓';
+  return '';
+}
+
+export function createChatView(peerId, config, onSend, onBack, onTyping, onReceipt, onReaction) {
   const wrap = document.createElement('div');
   wrap.className = 'chat-view';
 
@@ -212,12 +263,6 @@ export function createChatView(peerId, config, onSend, onBack, onTyping) {
   const messagesEl = document.createElement('div');
   messagesEl.className = 'chat-messages glass';
 
-  const empty = document.createElement('p');
-  empty.className = 'chat-empty';
-  empty.dataset.i18n = 'chat.empty';
-  empty.textContent = t('chat.empty');
-  messagesEl.appendChild(empty);
-
   const typingBar = document.createElement('div');
   typingBar.className = 'chat-typing hidden';
   const typingDots = document.createElement('span');
@@ -231,12 +276,35 @@ export function createChatView(peerId, config, onSend, onBack, onTyping) {
 
   const inputRow = document.createElement('div');
   inputRow.className = 'chat-input-row';
+
+  const attachInput = document.createElement('input');
+  attachInput.type = 'file';
+  attachInput.accept = 'image/*';
+  attachInput.className = 'chat-attach-input';
+  attachInput.hidden = true;
+
+  const attachBtn = document.createElement('button');
+  attachBtn.type = 'button';
+  attachBtn.className = 'btn btn-lang chat-tool-btn chat-attach-btn';
+  attachBtn.title = t('chat.attach_image');
+  attachBtn.dataset.i18n = 'chat.attach_btn';
+  attachBtn.textContent = t('chat.attach_btn');
+  attachBtn.addEventListener('click', () => attachInput.click());
+
+  const emojiBtn = document.createElement('button');
+  emojiBtn.type = 'button';
+  emojiBtn.className = 'btn btn-lang chat-tool-btn chat-emoji-btn';
+  emojiBtn.title = t('chat.emoji');
+  emojiBtn.dataset.i18n = 'chat.emoji_btn';
+  emojiBtn.textContent = t('chat.emoji_btn');
+
   const input = document.createElement('input');
   input.type = 'text';
-  input.className = 'input';
+  input.className = 'input chat-text-input';
   input.maxLength = 2000;
   input.placeholder = t('chat.input_placeholder');
   input.dataset.i18nPlaceholder = 'chat.input_placeholder';
+  attachEmojiPicker(emojiBtn, input);
 
   const sendBtn = document.createElement('button');
   sendBtn.type = 'button';
@@ -297,29 +365,49 @@ export function createChatView(peerId, config, onSend, onBack, onTyping) {
     }, 4500);
   }
 
+  async function sendPayload(payload) {
+    const msg = {
+      id: payload.id || createMessageId(),
+      from: config.blipId,
+      to: peerId,
+      text: payload.text || '',
+      timestamp: payload.timestamp || Date.now(),
+      outgoing: true,
+      attachment: payload.attachment,
+    };
+    addMessage(peerId, msg);
+    renderMessages();
+    sounds.messageSent();
+    const result = await onSend?.(peerId, msg);
+    if (!result?.ok) {
+      const list = getMessages(peerId);
+      const last = list.pop();
+      if (last?.id === msg.id) persist();
+      renderMessages();
+    }
+    return result;
+  }
+
   async function send() {
     stopTypingSignal();
     const text = input.value.trim();
     if (!text) return;
-    const msg = {
-      from: config.blipId,
-      to: peerId,
-      text,
-      timestamp: Date.now(),
-      outgoing: true,
-    };
-    addMessage(peerId, msg);
-    renderMessages();
     input.value = '';
-    sounds.messageSent();
-    const result = await onSend?.(peerId, text);
-    if (!result?.ok) {
-      const list = getMessages(peerId);
-      const last = list.pop();
-      if (last === msg) persist();
-      renderMessages();
-    }
+    await sendPayload({ text });
   }
+
+  attachInput.addEventListener('change', async () => {
+    const file = attachInput.files?.[0];
+    attachInput.value = '';
+    if (!file) return;
+    try {
+      const attachment = await encodeChatImageAttachment(file);
+      await sendPayload({ text: t('chat.image_sent'), attachment });
+    } catch (err) {
+      const key = err?.message === 'file_too_big' ? 'chat.attach_too_big' : 'chat.attach_failed';
+      alert(t(key));
+    }
+  });
 
   sendBtn.addEventListener('click', send);
   input.addEventListener('input', onInputTyping);
@@ -331,18 +419,58 @@ export function createChatView(peerId, config, onSend, onBack, onTyping) {
     }
   });
 
+  inputRow.appendChild(attachBtn);
+  inputRow.appendChild(emojiBtn);
   inputRow.appendChild(input);
   inputRow.appendChild(sendBtn);
+  inputRow.appendChild(attachInput);
 
   wrap.appendChild(header);
   wrap.appendChild(messagesEl);
   wrap.appendChild(typingBar);
   wrap.appendChild(inputRow);
 
+  function buildReactionRow(m) {
+    const row = document.createElement('div');
+    row.className = 'chat-reactions';
+    const selfId = config?.blipId;
+
+    const chips = Object.entries(m.reactions || {}).filter(([, ids]) => ids?.length);
+    chips.forEach(([emoji, ids]) => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'chat-reaction-chip';
+      if (ids.includes(selfId)) chip.classList.add('chat-reaction-chip--mine');
+      chip.textContent = `${emoji} ${ids.length}`;
+      chip.addEventListener('click', () => {
+        const add = !ids.includes(selfId);
+        toggleReactionOnMessage(peerId, m.id, emoji, selfId);
+        void onReaction?.(peerId, { messageId: m.id, emoji, add });
+        renderMessages();
+      });
+      row.appendChild(chip);
+    });
+
+    const addBtn = document.createElement('button');
+    addBtn.type = 'button';
+    addBtn.className = 'chat-reaction-add';
+    addBtn.title = t('chat.react');
+    addBtn.textContent = '+';
+    addBtn.addEventListener('click', () => {
+      const emoji = REACTION_EMOJIS[0];
+      toggleReactionOnMessage(peerId, m.id, emoji, selfId);
+      void onReaction?.(peerId, { messageId: m.id, emoji, add: true });
+      renderMessages();
+    });
+    row.appendChild(addBtn);
+    return row;
+  }
+
   function renderMessages() {
     const msgs = getMessages(peerId).filter((m) => {
       if (!searchQuery) return true;
-      return String(m.text || '').toLowerCase().includes(searchQuery);
+      const hay = `${m.text || ''} ${m.attachment?.name || ''}`.toLowerCase();
+      return hay.includes(searchQuery);
     });
 
     const hasFocus = document.activeElement === input;
@@ -366,20 +494,49 @@ export function createChatView(peerId, config, onSend, onBack, onTyping) {
       }
       return;
     }
+
     msgs.forEach((m) => {
       const block = document.createElement('div');
       block.className = `chat-block ${m.outgoing ? 'outgoing' : 'incoming'}`;
-      const text = document.createElement('span');
-      text.className = 'chat-text';
-      text.textContent = m.text;
-      block.appendChild(text);
+      block.dataset.messageId = m.id || '';
+
+      if (m.attachment?.kind === 'image' && m.attachment.dataUrl) {
+        const img = document.createElement('img');
+        img.className = 'chat-image';
+        img.src = m.attachment.dataUrl;
+        img.alt = m.attachment.name || 'image';
+        img.loading = 'lazy';
+        block.appendChild(img);
+      }
+
+      if (m.text) {
+        const text = document.createElement('span');
+        text.className = 'chat-text';
+        appendLinkifiedText(text, m.text, openExternalUrl);
+        block.appendChild(text);
+      }
+
+      const metaRow = document.createElement('div');
+      metaRow.className = 'chat-meta-row';
       if (m.timestamp) {
         const time = document.createElement('span');
         time.className = 'chat-time';
         time.textContent = formatChatTime(m.timestamp);
         time.title = new Date(m.timestamp).toLocaleString();
-        block.appendChild(time);
+        metaRow.appendChild(time);
       }
+      const rcpt = receiptLabel(m);
+      if (rcpt) {
+        const r = document.createElement('span');
+        r.className = 'chat-receipt';
+        r.textContent = rcpt;
+        r.title = m.read ? t('chat.read') : m.delivered ? t('chat.delivered') : '';
+        metaRow.appendChild(r);
+      }
+      block.appendChild(metaRow);
+
+      if (m.id) block.appendChild(buildReactionRow(m));
+
       messagesEl.appendChild(block);
     });
 
@@ -417,10 +574,52 @@ export function createChatView(peerId, config, onSend, onBack, onTyping) {
     },
     handleIncoming(msg) {
       setTyping(false);
-      addMessage(peerId, { ...msg, outgoing: false });
+      const incoming = {
+        id: msg.id || createMessageId(),
+        from: msg.from,
+        to: msg.to,
+        text: msg.text,
+        timestamp: msg.timestamp || Date.now(),
+        outgoing: false,
+        attachment: msg.attachment,
+        reactions: msg.reactions,
+      };
+      addMessage(peerId, incoming);
       renderMessages();
       flashNew();
       sounds.messageReceived();
+      if (incoming.id) {
+        void onReceipt?.(peerId, { messageId: incoming.id, receipt: 'delivered' });
+      }
+    },
+    handleReceipt(msg) {
+      if (applyReceiptToMessage(peerId, msg.messageId, msg.receipt)) renderMessages();
+    },
+    handleReaction(msg) {
+      const from = Number(msg.from);
+      if (!Number.isFinite(from)) return;
+      const add = msg.add !== false;
+      if (add) toggleReactionOnMessage(peerId, msg.messageId, msg.emoji, from);
+      else {
+        const m = findMessage(peerId, msg.messageId);
+        if (m?.reactions?.[msg.emoji]) {
+          const list = m.reactions[msg.emoji];
+          const idx = list.indexOf(from);
+          if (idx >= 0) list.splice(idx, 1);
+          if (!list.length) delete m.reactions[msg.emoji];
+          persist();
+        }
+      }
+      renderMessages();
+    },
+    markRead() {
+      const selfId = config?.blipId;
+      for (const m of getMessages(peerId)) {
+        if (!m.outgoing && m.id && !m._readAcked) {
+          m._readAcked = true;
+          void onReceipt?.(peerId, { messageId: m.id, receipt: 'read' });
+        }
+      }
     },
     setTyping,
   };

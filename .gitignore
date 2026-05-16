@@ -1,3 +1,6 @@
 node_modules
 dist-electron
 dist
+
+# Local roadmap / ideas (not shipped)
+IDEAS.local.md

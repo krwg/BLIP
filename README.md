@@ -69,7 +69,9 @@ Quick VM flow: host runs BLIP (ID **1**), VM runs BLIP (ID **2**), same subnet v
 |---------|-------------|
 | **BLIP ID** | Pick a number on the 8×8 grid; conflicts resolved via TCP ping |
 | **Discovery** | UDP `42069` + mDNS fallback |
-| **Chat** | TCP messages, search/export, timestamps, Mesh Labels, typing indicator, unread badges |
+| **Chat** | TCP messages, receipts (✓/✓✓), reactions, LAN images, linkify, emoji picker, search/export, typing, unread |
+| **Favorites** | Star peers locally; sorted first on Peers and Chat |
+| **Presence** | Online / Away / Busy in Profile (UDP announce) |
 | **Calls** | Separate call window; WebRTC voice/video (LAN, no STUN/TURN) |
 | **Screen share** | 720p+ capture, theater layout, fullscreen (**F**), no wallpaper over video |
 | **Mesh Pulse** | Live LAN heartbeat — auto ping every minute, latency under each peer |
@@ -171,8 +173,8 @@ Icons: root `icon.svg` → `npm run build:icons` → `build/icon.ico`.
 
 | Command | Output |
 |---------|--------|
-| `npm run electron:build` | **`BLIP-Setup-0.3.5.exe`** — full NSIS installer (version from `app-metadata.json`) |
-| `npm run electron:build:portable` | **`BLIP-0.3.5-Portable.exe`** — single-file portable |
+| `npm run electron:build` | **`BLIP-Setup-0.4.0.exe`** — full NSIS installer (version from `app-metadata.json`) |
+| `npm run electron:build:portable` | **`BLIP-0.4.0-Portable.exe`** — single-file portable |
 | `npm run electron:build:all` | Both artifacts |
 | `npm run electron:build:dir` | `dist-electron/win-unpacked/BLIP.exe` (debug folder) |
 
@@ -327,7 +329,9 @@ The **Minecraft** font is licensed separately under [MIT](https://github.com/bs-
 |---------|----------|
 | **BLIP ID** | Выбор номера на сетке 8×8, конфликты через TCP ping |
 | **Discovery** | UDP `42069` + mDNS fallback |
-| **Чат** | Сообщения TCP, поиск/экспорт, время, Mesh Labels, «печатает…», непрочитанное |
+| **Чат** | TCP: доставка/прочтение (✓/✓✓), реакции, фото по LAN, ссылки, эмодзи, поиск/экспорт, «печатает…», непрочитанное |
+| **Избранное** | Звёздочка в меню абонента; сортировка вверху на Peers и в Chat |
+| **Статус** | В сети / Отошёл / Занят в профиле (UDP announce) |
 | **Звонки** | Отдельное окно; WebRTC голос/видео (LAN, без STUN/TURN) |
 | **Демонстрация экрана** | Захват 720p+, режим theater, полный экран (**F**), без фона поверх видео |
 | **Mesh Pulse** | Живой пульс LAN: автопинг раз в минуту, задержка под каждым абонентом |
@@ -399,8 +403,8 @@ npx electron .
 
 | Команда | Результат |
 |---------|-----------|
-| `npm run electron:build` | **`BLIP-Setup-0.3.5.exe`** — установщик NSIS (версия из `app-metadata.json`) |
-| `npm run electron:build:portable` | **`BLIP-0.3.5-Portable.exe`** — portable |
+| `npm run electron:build` | **`BLIP-Setup-0.4.0.exe`** — установщик NSIS (версия из `app-metadata.json`) |
+| `npm run electron:build:portable` | **`BLIP-0.4.0-Portable.exe`** — portable |
 | `npm run electron:build:all` | Оба файла |
 | `npm run electron:build:dir` | `dist-electron/win-unpacked/BLIP.exe` |
 

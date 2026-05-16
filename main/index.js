@@ -289,9 +289,9 @@ function handleTcpPayload(msg, fromBlipId) {
     case 'ping':
       return;
     case 'message':
-      sendToRenderer('tcp-message', msg);
-      break;
     case 'typing':
+    case 'receipt':
+    case 'reaction':
       sendToRenderer('tcp-message', msg);
       break;
     case 'call-offer': {
@@ -480,9 +480,18 @@ function setupIpc() {
       };
       if (type === 'typing') {
         packet.active = !!payload.active;
+      } else if (type === 'receipt') {
+        packet.messageId = payload.messageId;
+        packet.receipt = payload.receipt;
+      } else if (type === 'reaction') {
+        packet.messageId = payload.messageId;
+        packet.emoji = payload.emoji;
+        packet.add = payload.add !== false;
       } else {
-        packet.text = payload.text;
-        packet.timestamp = Date.now();
+        packet.text = payload.text ?? '';
+        packet.timestamp = payload.timestamp ?? Date.now();
+        if (payload.id) packet.id = payload.id;
+        if (payload.attachment) packet.attachment = payload.attachment;
       }
       await sendOnSocket(socket, packet);
       return { ok: true };

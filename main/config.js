@@ -26,6 +26,8 @@ const DEFAULT_CONFIG = {
   audioOutputDeviceId: '',
   /** Register Alt+1–4, Ctrl+,, Ctrl+Shift+D, Ctrl+Shift+End at OS level (works when tray-hidden). */
   globalShortcutsEnabled: true,
+  /** LAN presence in UDP announce: online | away | busy */
+  presenceStatus: 'online',
 };
 
 let configPath = null;

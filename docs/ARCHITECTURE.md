@@ -34,7 +34,7 @@ connection as chat messages; media is peer-to-peer in the renderer.
 
 | Mechanism | Default port | Purpose |
 |-----------|---------------|---------|
-| UDP broadcast (+ optional multi-port fan-out) | 42069 (config/env) | `announce` payloads: `blipId`, display name, IPs, advertised TCP/UDP. |
+| UDP broadcast (+ optional multi-port fan-out) | 42069 (config/env) | `announce` payloads: `blipId`, display name, `presence`, IPs, advertised TCP/UDP. |
 | TCP | 42070 (config/env) | Framed `\n`-delimited JSON (see below). |
 | mDNS | — | Auxiliary discovery (`_blip._udp.local` TXT records). |
 
@@ -44,7 +44,9 @@ Environment overrides: `BLIP_UDP_PORT`, `BLIP_TCP_PORT`. Separate user data dirs
 
 | `type` | Direction | Purpose |
 |--------|-----------|---------|
-| `message` | Peer ↔ peer | Chat text + timestamp |
+| `message` | Peer ↔ peer | Chat text + `id` + timestamp; optional `attachment` (LAN image JPEG data URL) |
+| `receipt` | Peer ↔ peer | `{ messageId, receipt: 'delivered' \| 'read' }` |
+| `reaction` | Peer ↔ peer | `{ messageId, emoji, add: true \| false }` |
 | `typing` | Peer ↔ peer | `{ active: true \| false }` while composing |
 | `ping` / `pong` | Peer ↔ peer | Reachability probe (Mesh Pulse + manual ping) |
 | `call-offer` / `call-answer` / `call-candidate` / `call-reject` / `call-hangup` | Peer ↔ peer | WebRTC signalling |
@@ -55,8 +57,9 @@ Environment overrides: `BLIP_UDP_PORT`, `BLIP_TCP_PORT`. Separate user data dirs
 
 | Data | Location |
 |------|-----------|
-| User config (`blipId`, name, language, audio devices, `globalShortcutsEnabled`, …) | Electron `userData` → `blip-config.json`. |
+| User config (`blipId`, name, language, `presenceStatus`, audio devices, `globalShortcutsEnabled`, …) | Electron `userData` → `blip-config.json`. |
 | Chat history | Renderer `localStorage` key `blip_chat_v1`. |
+| Favorite peer IDs | Renderer `localStorage` key `blip_favorites_v1`. |
 | Release metadata | `app-metadata.json` (version, codename, repo URL). |
 
 ## Security posture (today)
@@ -86,6 +89,15 @@ While the app is running with a BLIP ID, the renderer pings every **online, non-
 - TCP `typing` packets (`active: true/false`) while the user types in an open chat (`chat.js` debounce).
 - Typing line in chat UI and under peer name on **Peers**.
 - Unread message counts per peer; red badge on **Chat** nav and hub rows until the conversation is opened.
+
+## Mesh messages (0.4.0)
+
+- Each chat message has a stable `id` (`renderer/message-id.js`).
+- Incoming messages trigger `receipt: delivered`; opening the thread sends `receipt: read` for peer messages.
+- Reactions stored on the message object in `localStorage` and synced via TCP `reaction`.
+- Images resized in `renderer/chat-attachments.js` before embedding in `message.attachment`.
+- URLs in text are linkified in the renderer; `openExternal` opens http(s) only.
+- Favorite peers (`renderer/peer-favorites.js`) are local-only sort hints.
 
 ## Future seams
 

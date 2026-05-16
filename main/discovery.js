@@ -104,10 +104,13 @@ export class Discovery {
 
   buildAnnounce() {
     const { udpPort, tcpPort } = resolvePorts(this.config);
+    let presence = this.config.presenceStatus || 'online';
+    if (this.config.doNotDisturb) presence = 'busy';
     return {
       type: 'announce',
       blipId: this.config.blipId,
       displayName: this.config.displayName,
+      presence,
       ip: getLocalIp(),
       udpPort,
       tcpPort,
@@ -147,9 +150,12 @@ export class Discovery {
     const peerUdp = Number(data.udpPort) || udpPort;
 
     const existing = this.peers.get(data.blipId);
+    const presence =
+      data.presence === 'away' || data.presence === 'busy' ? data.presence : 'online';
     const peer = {
       blipId: data.blipId,
       displayName: data.displayName || `BLIP-${data.blipId}`,
+      presence,
       ip: announceIp || data.ip,
       tcpPort: peerTcp,
       udpPort: peerUdp,
@@ -161,12 +167,14 @@ export class Discovery {
       !existing ||
       existing.ip !== peer.ip ||
       existing.displayName !== peer.displayName ||
+      existing.presence !== peer.presence ||
       existing.tcpPort !== peer.tcpPort
     ) {
       this.peers.set(data.blipId, peer);
     } else {
       existing.lastSeen = Date.now();
       existing.online = true;
+      existing.presence = presence;
       existing.tcpPort = peerTcp;
       existing.udpPort = peerUdp;
     }

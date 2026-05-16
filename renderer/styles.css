@@ -579,6 +579,141 @@ select.blip-select:focus {
   background: var(--blip-muted);
 }
 
+.status-dot.away {
+  background: #e6b800;
+  border-color: #e6b800;
+}
+
+.status-dot.busy {
+  background: #ff4466;
+  border-color: #ff4466;
+}
+
+.peer-row--favorite {
+  box-shadow: inset 3px 0 0 var(--blip-accent);
+}
+
+.peer-fav-star {
+  color: var(--blip-accent);
+  margin-right: 4px;
+}
+
+.presence-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.chat-text-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.chat-link {
+  color: var(--blip-accent);
+  text-decoration: underline;
+  word-break: break-all;
+}
+
+.chat-link:hover {
+  filter: brightness(1.15);
+}
+
+.chat-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  opacity: 0.75;
+  font-size: 0.72rem;
+}
+
+.chat-receipt {
+  color: var(--blip-accent);
+  letter-spacing: -1px;
+}
+
+.chat-image {
+  display: block;
+  max-width: min(100%, 420px);
+  max-height: 280px;
+  object-fit: contain;
+  margin-bottom: 6px;
+  border: 2px solid var(--blip-border);
+}
+
+.chat-reactions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.chat-reaction-chip,
+.chat-reaction-add {
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border: 2px solid var(--blip-border);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--blip-text);
+  cursor: pointer;
+}
+
+.chat-reaction-chip--mine {
+  border-color: var(--blip-accent);
+}
+
+.chat-reaction-add {
+  opacity: 0.6;
+}
+
+.chat-tool-btn {
+  flex-shrink: 0;
+  min-width: 40px;
+  padding: 8px 6px;
+  font-family: var(--blip-font, 'Minecraft', monospace);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  line-height: 1;
+}
+
+.chat-attach-btn {
+  color: var(--blip-accent);
+}
+
+.chat-emoji-btn {
+  opacity: 0.92;
+}
+
+.chat-attach-input {
+  display: none;
+}
+
+.emoji-picker {
+  padding: 8px;
+  max-width: 280px;
+}
+
+.emoji-picker-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.emoji-picker-btn {
+  border: none;
+  background: transparent;
+  font-size: 1.1rem;
+  padding: 4px;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.emoji-picker-btn:hover {
+  background: rgba(0, 255, 200, 0.15);
+}
+
 /* Chat */
 .chat-view {
   display: flex;
