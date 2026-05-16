@@ -297,6 +297,14 @@ function handleTcpPayload(msg, fromBlipId) {
     case 'typing':
     case 'receipt':
     case 'reaction':
+    case 'group-invite':
+    case 'group-invite-ack':
+    case 'group-msg':
+    case 'group-host':
+    case 'group-sync':
+    case 'group-call-start':
+    case 'group-call-signal':
+    case 'group-call-end':
       sendToRenderer('tcp-message', msg);
       break;
     case 'call-offer': {
@@ -483,20 +491,21 @@ function setupIpc() {
         from: config.blipId,
         to: payload.to,
       };
-      if (type === 'typing') {
-        packet.active = !!payload.active;
-      } else if (type === 'receipt') {
-        packet.messageId = payload.messageId;
-        packet.receipt = payload.receipt;
-      } else if (type === 'reaction') {
-        packet.messageId = payload.messageId;
-        packet.emoji = payload.emoji;
-        packet.add = payload.add !== false;
-      } else {
-        packet.text = payload.text ?? '';
+      const skip = new Set(['to', 'type']);
+      for (const [key, val] of Object.entries(payload)) {
+        if (skip.has(key) || val === undefined) continue;
+        packet[key] = val;
+      }
+      packet.from = config.blipId;
+      packet.to = payload.to;
+      packet.type = type;
+
+      if (type === 'message' && packet.text === undefined) {
+        packet.text = '';
         packet.timestamp = payload.timestamp ?? Date.now();
-        if (payload.id) packet.id = payload.id;
-        if (payload.attachment) packet.attachment = payload.attachment;
+      }
+      if (type === 'typing' && packet.active === undefined) {
+        packet.active = !!payload.active;
       }
       await sendOnSocket(socket, packet);
       return { ok: true };

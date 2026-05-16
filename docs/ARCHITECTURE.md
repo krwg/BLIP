@@ -80,6 +80,34 @@ See [SECURITY.md](../SECURITY.md) for reporting expectations.
 
 Screen share targets **1280×720 minimum** capture, up to 1080p ideal, with `object-fit: contain` in theater layout. Camera calls use 720p ideal; pixel grid applies to camera preview only.
 
+## UI sounds (`renderer/audio.js`)
+
+All UI audio is synthesized in the renderer via **Web Audio** (no asset files).
+
+| Pack | Config key | Role |
+|------|------------|------|
+| **SIGNAL** / **PULSE** | `uiSoundPack` | FX: messages, notify, peer on/off, group, ping, errors |
+| **MESH** / **GRID** | `uiMelodyPack` | Call melodies: incoming ring loop, outgoing dial loop, connect chime, hangup sweep |
+
+| Sound | Trigger |
+|--------|---------|
+| Incoming ring | Looping arpeggio while a call is ringing (`incomingCall` / `stopIncomingRing`) |
+| Outgoing dial | Loop until the peer answers (`outgoingCall` / `stopOutgoingRing`) |
+| Connected | Ascending chime when the call links |
+| End | Descending sweep on hangup / reject |
+| Messages | Short blips on send/receive |
+| Notify | Toast for new messages (respects DND) |
+| Peer online/offline | Sweep + blip on discovery |
+| Group / group-call | Invite motifs |
+| Mesh ping | Manual ping success |
+
+Config: `uiSoundsEnabled`, `uiSoundsVolume`, `uiSoundPack`, `uiMelodyPack`. **Settings → Sound** — pack toggles + preview grid (`sounds.preview()` resumes `AudioContext` on user click).
+
+## Group mesh (0.4.5)
+
+- **Group chat**: host relays `group-msg` to all members; `group-invite` / `group-host` for membership and host failover.
+- **Group call**: mesh WebRTC voice; `group-call-signal` relayed through host (`renderer/group-call.js`).
+
 ## Mesh Pulse
 
 While the app is running with a BLIP ID, the renderer pings every **online, non-blocked** peer once per minute (`runMeshPulseRound` in `ui.js`). Latency is shown on the **Peers** screen under each nickname (`peer-pulse` line). Manual ping remains in the peer context menu.

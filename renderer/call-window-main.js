@@ -43,6 +43,8 @@ function applyCallWindowChrome(cfg) {
   setSoundPrefs({
     enabled: cfg.uiSoundsEnabled !== false && cfg.doNotDisturb !== true,
     volume: typeof cfg.uiSoundsVolume === 'number' ? cfg.uiSoundsVolume : 1,
+    soundPack: cfg.uiSoundPack,
+    melodyPack: cfg.uiMelodyPack,
   });
   applyCallWindowAppearance(cfg);
   applyI18n(document);
@@ -60,6 +62,8 @@ async function boot() {
   setSoundPrefs({
     enabled: config.uiSoundsEnabled !== false && config.doNotDisturb !== true,
     volume: typeof config.uiSoundsVolume === 'number' ? config.uiSoundsVolume : 1,
+    soundPack: config.uiSoundPack,
+    melodyPack: config.uiMelodyPack,
   });
   applyCallWindowChrome(config);
   callAppearanceRm?.();

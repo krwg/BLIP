@@ -20,6 +20,10 @@ const DEFAULT_CONFIG = {
   doNotDisturb: false,
   uiSoundsEnabled: true,
   uiSoundsVolume: 1,
+  /** FX pack: signal | pulse */
+  uiSoundPack: 'signal',
+  /** Call melodies: mesh | grid */
+  uiMelodyPack: 'mesh',
   /** `deviceId` from enumerateDevices; empty = system default mic. */
   audioInputDeviceId: '',
   /** `deviceId` for remote audio (`HTMLMediaElement.setSinkId`). */

@@ -2,6 +2,17 @@ import { t, setLang, getLang, applyLangChange, onLangChange, applyI18n } from '.
 import { createIdGrid } from './grid.js';
 import { createChatView, getMessages, applyReceiptToMessage } from './chat.js';
 import { isFavorite, toggleFavorite, comparePeersFavoriteFirst } from './peer-favorites.js';
+import { getGroup, getAllGroups, groupDisplayName, getGroupMessages } from './groups.js';
+import { openGroupCreateDialog } from './group-create-dialog.js';
+import { createGroupChatView } from './group-chat.js';
+import {
+  createGroupFromUi,
+  handleGroupTcpMessage,
+  migrateGroupsHost,
+  sendGroupChatMessage,
+  joinGroupCall,
+} from './groups-wire.js';
+import { logPeerEvent, getNetworkLogEntries, clearNetworkLog } from './network-log.js';
 import { showSignalLost } from './call.js';
 import {
   createAvatarElement,
@@ -11,7 +22,13 @@ import {
   setCustomAvatarDataUrl,
   regenerateAvatar,
 } from './avatar.js';
-import { sounds, setSoundPrefs } from './audio.js';
+import {
+  sounds,
+  setSoundPrefs,
+  PREVIEW_KEYS,
+  SOUND_PACK_IDS,
+  MELODY_PACK_IDS,
+} from './audio.js';
 import { formatPeerDisplayName } from './peer-labels.js';
 import { openMeshLabelDialog } from './mesh-label-dialog.js';
 import { showAppToast } from './toasts.js';
@@ -41,10 +58,15 @@ let state = {
   occupiedIds: [],
   view: 'grid',
   activePeer: null,
+  activeGroup: null,
   chatViews: new Map(),
+  groupChatViews: new Map(),
   /** `null` = no subsection selected (placeholder in content column). */
   settingsSection: null,
 };
+
+/** @type {Map<string, number>} */
+const unreadByGroup = new Map();
 
 /** Last payload from main `update-status` (auto-updater). */
 let lastUpdateStatus = null;
@@ -78,6 +100,8 @@ async function openCallOutgoing(peerId, video = false) {
 function showMessageToast(peerId, preview) {
   const peer = state.peers.find((p) => p.blipId === peerId);
   const label = formatPeerDisplayName(peer, peerId);
+  if (!state.config?.doNotDisturb) sounds.notify();
+
   showAppToast({
     title: `${t('toast.new_message')} · ${label}`,
     body: preview || '',
@@ -134,6 +158,36 @@ function peerPresenceClass(peer) {
   if (peer.presence === 'away') return 'away';
   if (peer.presence === 'busy') return 'busy';
   return 'online';
+}
+
+function ensureGroupChatView(groupId) {
+  if (!state.groupChatViews.has(groupId)) {
+    const group = getGroup(groupId);
+    if (!group) return null;
+    const view = createGroupChatView(
+      group,
+      state.config,
+      (gid, msg) => sendGroupChatMessage(api, state.config, gid, msg),
+      () => {
+        state.activeGroup = null;
+        renderView('chat');
+      },
+      (gid) => joinGroupCall(gid, api)
+    );
+    state.groupChatViews.set(groupId, view);
+  }
+  return state.groupChatViews.get(groupId);
+}
+
+function openGroupChat(groupId) {
+  if (!getGroup(groupId)) return;
+  state.activeGroup = groupId;
+  state.activePeer = null;
+  state.view = 'chat';
+  unreadByGroup.delete(groupId);
+  ensureGroupChatView(groupId);
+  if (mainContent?.isConnected) renderView('chat');
+  else render();
 }
 
 function ensureChatView(peerId) {
@@ -516,6 +570,22 @@ function showPeerContextMenu(e, peer) {
     showAppToast({ title: t('peers.copy_id_done'), durationMs: 2500 });
   });
 
+  const groupItem = document.createElement('button');
+  groupItem.type = 'button';
+  groupItem.textContent = t('group.create_menu');
+  bindItem(groupItem, () => {
+    void (async () => {
+      const result = await openGroupCreateDialog({
+        selfId: state.config.blipId,
+        peers: state.peers,
+        seedPeerId: peer.blipId,
+      });
+      if (!result) return;
+      const g = await createGroupFromUi(api, state.config, result.memberIds, result.name);
+      openGroupChat(g.id);
+    })();
+  });
+
   const favItem = document.createElement('button');
   favItem.type = 'button';
   favItem.textContent = isFavorite(peer.blipId) ? t('peers.unfavorite') : t('peers.favorite');
@@ -551,6 +621,7 @@ function showPeerContextMenu(e, peer) {
   menu.appendChild(labelItem);
   menu.appendChild(pingItem);
   menu.appendChild(copyIdItem);
+  menu.appendChild(groupItem);
   menu.appendChild(favItem);
   menu.appendChild(blockItem);
   document.body.appendChild(menu);
@@ -795,6 +866,8 @@ function applySoundPrefsFromConfig(cfg = state.config) {
   setSoundPrefs({
     enabled: cfg?.uiSoundsEnabled !== false && cfg?.doNotDisturb !== true,
     volume: typeof cfg?.uiSoundsVolume === 'number' ? cfg.uiSoundsVolume : 1,
+    soundPack: cfg?.uiSoundPack,
+    melodyPack: cfg?.uiMelodyPack,
   });
 }
 
@@ -1328,9 +1401,11 @@ function buildSettingsSoundPanel() {
 
   volRange.addEventListener('input', () => {
     volVal.textContent = `${volRange.value}%`;
-    applySoundPrefs({
+    setSoundPrefs({
       enabled: enableCb.checked,
       volume: Number(volRange.value) / 100,
+      soundPack: state.config.uiSoundPack,
+      melodyPack: state.config.uiMelodyPack,
     });
   });
   volRange.addEventListener('change', () => {
@@ -1351,9 +1426,110 @@ function buildSettingsSoundPanel() {
 
   volRow.appendChild(volRange);
   volRow.appendChild(volVal);
+
+  const soundPackLabel = document.createElement('label');
+  soundPackLabel.dataset.i18n = 'settings.sound_pack';
+  soundPackLabel.textContent = t('settings.sound_pack');
+  const soundPackRow = document.createElement('div');
+  soundPackRow.className = 'presence-row settings-sound-pack-row';
+  const currentSoundPack = SOUND_PACK_IDS.includes(state.config.uiSoundPack)
+    ? state.config.uiSoundPack
+    : 'signal';
+  [
+    { id: 'signal', key: 'settings.sound_pack_signal' },
+    { id: 'pulse', key: 'settings.sound_pack_pulse' },
+  ].forEach(({ id, key }) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = `btn btn-lang ${currentSoundPack === id ? 'selected' : ''}`;
+    btn.dataset.i18n = key;
+    btn.textContent = t(key);
+    btn.addEventListener('click', async () => {
+      state.config = await api.saveConfig({ uiSoundPack: id });
+      applySoundPrefsFromConfig(state.config);
+      soundPackRow.querySelectorAll('.btn').forEach((b) => b.classList.remove('selected'));
+      btn.classList.add('selected');
+    });
+    soundPackRow.appendChild(btn);
+  });
+
+  const melodyPackLabel = document.createElement('label');
+  melodyPackLabel.dataset.i18n = 'settings.melody_pack';
+  melodyPackLabel.textContent = t('settings.melody_pack');
+  const melodyPackRow = document.createElement('div');
+  melodyPackRow.className = 'presence-row settings-sound-pack-row';
+  const currentMelodyPack = MELODY_PACK_IDS.includes(state.config.uiMelodyPack)
+    ? state.config.uiMelodyPack
+    : 'mesh';
+  [
+    { id: 'mesh', key: 'settings.melody_pack_mesh' },
+    { id: 'grid', key: 'settings.melody_pack_grid' },
+  ].forEach(({ id, key }) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = `btn btn-lang ${currentMelodyPack === id ? 'selected' : ''}`;
+    btn.dataset.i18n = key;
+    btn.textContent = t(key);
+    btn.addEventListener('click', async () => {
+      state.config = await api.saveConfig({ uiMelodyPack: id });
+      applySoundPrefsFromConfig(state.config);
+      melodyPackRow.querySelectorAll('.btn').forEach((b) => b.classList.remove('selected'));
+      btn.classList.add('selected');
+    });
+    melodyPackRow.appendChild(btn);
+  });
+
+  const previewTitle = document.createElement('h3');
+  previewTitle.className = 'section-subtitle';
+  previewTitle.dataset.i18n = 'settings.sound_preview';
+  previewTitle.textContent = t('settings.sound_preview');
+
+  const previewGrid = document.createElement('div');
+  previewGrid.className = 'settings-sound-preview-grid';
+
+  const previewLabels = {
+    messageReceived: 'settings.sound_prev_message',
+    messageSent: 'settings.sound_prev_sent',
+    notify: 'settings.sound_prev_notify',
+    incomingCall: 'settings.sound_prev_incoming',
+    outgoingCall: 'settings.sound_prev_outgoing',
+    callConnected: 'settings.sound_prev_connected',
+    callEnd: 'settings.sound_prev_end',
+    peerOnline: 'settings.sound_prev_online',
+    groupInvite: 'settings.sound_prev_group',
+    groupCallInvite: 'settings.sound_prev_group_call',
+    meshPing: 'settings.sound_prev_ping',
+  };
+
+  PREVIEW_KEYS.forEach((key) => {
+    const labelKey = previewLabels[key];
+    if (!labelKey) return;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn-lang settings-sound-preview-btn';
+    btn.dataset.i18n = labelKey;
+    btn.textContent = t(labelKey);
+    btn.addEventListener('click', async () => {
+      setSoundPrefs({
+        enabled: true,
+        volume: Number(volRange.value) / 100,
+        soundPack: state.config.uiSoundPack,
+        melodyPack: state.config.uiMelodyPack,
+      });
+      await sounds.preview(key);
+    });
+    previewGrid.appendChild(btn);
+  });
+
   frag.appendChild(enableLabel);
   frag.appendChild(volLabel);
   frag.appendChild(volRow);
+  frag.appendChild(soundPackLabel);
+  frag.appendChild(soundPackRow);
+  frag.appendChild(melodyPackLabel);
+  frag.appendChild(melodyPackRow);
+  frag.appendChild(previewTitle);
+  frag.appendChild(previewGrid);
   return frag;
 }
 
@@ -1673,6 +1849,47 @@ function buildSettingsNetworkPanel() {
     envHint.dataset.i18n = 'settings.network_env_hint';
     envHint.textContent = t('settings.network_env_hint');
     bodyHost.appendChild(envHint);
+
+    const logTitle = document.createElement('h3');
+    logTitle.className = 'section-subtitle';
+    logTitle.dataset.i18n = 'settings.network_log';
+    logTitle.textContent = t('settings.network_log');
+    bodyHost.appendChild(logTitle);
+
+    const logList = document.createElement('div');
+    logList.className = 'network-log-list';
+
+    function renderLog() {
+      logList.innerHTML = '';
+      const entries = getNetworkLogEntries();
+      if (!entries.length) {
+        const empty = document.createElement('p');
+        empty.className = 'hint';
+        empty.textContent = t('settings.network_log_empty');
+        logList.appendChild(empty);
+        return;
+      }
+      entries.slice(0, 24).forEach((e) => {
+        const row = document.createElement('div');
+        row.className = 'network-log-row';
+        const time = new Date(e.ts).toLocaleTimeString();
+        row.textContent = `${time} · #${e.peerId} · ${e.event}`;
+        logList.appendChild(row);
+      });
+    }
+
+    const clearLogBtn = document.createElement('button');
+    clearLogBtn.type = 'button';
+    clearLogBtn.className = 'btn btn-lang';
+    clearLogBtn.textContent = t('settings.network_log_clear');
+    clearLogBtn.addEventListener('click', () => {
+      clearNetworkLog();
+      renderLog();
+    });
+
+    bodyHost.appendChild(clearLogBtn);
+    bodyHost.appendChild(logList);
+    renderLog();
   }
 
   async function loadDiagnostics() {
@@ -2317,6 +2534,7 @@ async function runPeerPing(peer) {
   const result = await window.blip.pingPeer(peer.blipId);
   if (result?.ok && result.ms != null) {
     peerLatencyMs.set(peer.blipId, result.ms);
+    if (!state.config?.doNotDisturb) sounds.meshPing();
     showAppToast({
       title: t('peers.ping_ok'),
       body: t('peers.ping_ok_body').replace('{ms}', String(result.ms)),
@@ -2350,6 +2568,7 @@ async function openChat(peerId) {
   }
 
   state.activePeer = id;
+  state.activeGroup = null;
   state.view = 'chat';
   clearUnread(id);
   const chat = ensureChatView(id);
@@ -2372,6 +2591,44 @@ function renderChatHubView() {
 
   const list = document.createElement('div');
   list.className = 'chat-hub-list';
+
+  getAllGroups().forEach((group) => {
+    const item = document.createElement('button');
+    item.type = 'button';
+    item.className = 'chat-hub-row glass chat-hub-row--group online';
+    const info = document.createElement('div');
+    info.className = 'chat-hub-info';
+    const name = document.createElement('span');
+    name.className = 'peer-name';
+    name.textContent = groupDisplayName(group);
+    const sub = document.createElement('span');
+    sub.className = 'peer-id';
+    sub.textContent = t('group.hub_sub').replace('{n}', String(group.members.length));
+    info.appendChild(name);
+    info.appendChild(sub);
+    const msgs = getGroupMessages(group.id);
+    const last = msgs[msgs.length - 1];
+    if (last) {
+      const preview = document.createElement('span');
+      preview.className = 'chat-hub-preview';
+      preview.textContent = (last.text || '').slice(0, 48);
+      info.appendChild(preview);
+    }
+    const badge = document.createElement('span');
+    badge.className = 'chat-hub-group-tag';
+    badge.textContent = 'GRP';
+    item.appendChild(badge);
+    item.appendChild(info);
+    const unread = unreadByGroup.get(group.id) || 0;
+    if (unread > 0) {
+      const ub = document.createElement('span');
+      ub.className = 'chat-hub-unread';
+      ub.textContent = unread > 99 ? '99+' : String(unread);
+      item.appendChild(ub);
+    }
+    item.addEventListener('click', () => openGroupChat(group.id));
+    list.appendChild(item);
+  });
 
   const peerIds = new Set();
   state.peers.forEach((p) => peerIds.add(p.blipId));
@@ -2400,13 +2657,13 @@ function renderChatHubView() {
       return a.blipId - b.blipId;
     });
 
-  if (rows.length === 0) {
+  if (rows.length === 0 && getAllGroups().length === 0) {
     const empty = document.createElement('p');
     empty.className = 'hint';
     empty.dataset.i18n = 'chat.pick_peer';
     empty.textContent = t('chat.pick_peer');
     list.appendChild(empty);
-  } else {
+  } else if (rows.length > 0) {
     rows.forEach((row) => {
       const item = document.createElement('button');
       item.type = 'button';
@@ -2477,7 +2734,11 @@ function renderView(viewName) {
       view = renderSettingsView();
       break;
     case 'chat': {
-      if (state.activePeer) {
+      if (state.activeGroup) {
+        const gchat = ensureGroupChatView(state.activeGroup);
+        gchat?.renderMessages?.();
+        view = gchat?.el ?? renderChatHubView();
+      } else if (state.activePeer) {
         const chat = ensureChatView(state.activePeer);
         chat.markRead?.();
         chat.renderMessages();
@@ -2514,8 +2775,9 @@ function render() {
   layout.className = 'app-layout';
 
   const nav = createNav((view) => {
-    if (view === 'chat' && state.view === 'chat' && state.activePeer) {
+    if (view === 'chat' && state.view === 'chat') {
       state.activePeer = null;
+      state.activeGroup = null;
     }
     if (view === 'settings') {
       state.settingsSection = null;
@@ -2553,6 +2815,7 @@ export function initUI(config, blipApi) {
   }
   rootEl.innerHTML = '';
   mainContent = null;
+  window.__blipShowToast = showAppToast;
 
   const titleBar = createTitleBar();
   rootEl.appendChild(titleBar);
@@ -2611,6 +2874,10 @@ export function initUI(config, blipApi) {
     if (state.view === 'chat' && !state.activePeer) renderView('chat');
   });
 
+  window.addEventListener('blip-groups-changed', () => {
+    if (state.view === 'chat' && !state.activePeer && !state.activeGroup) renderView('chat');
+  });
+
   window.addEventListener('blip-avatar-changed', () => {
     if (!mainContent?.isConnected) return;
     if (state.view === 'peers') renderView('peers');
@@ -2625,12 +2892,17 @@ export function initUI(config, blipApi) {
 
 export function updatePeers({ peers, occupiedIds }) {
   const prevOnline = new Set(state.peers.filter((p) => p.online).map((p) => p.blipId));
+  const nextOnline = new Set(peers.filter((p) => p.online).map((p) => p.blipId));
   state.peers = peers;
   state.occupiedIds = occupiedIds;
 
   peers.forEach((p) => {
-    if (p.online && !prevOnline.has(p.blipId) && !state.config?.doNotDisturb) {
-      sounds.peerOnline();
+    if (p.online && !prevOnline.has(p.blipId)) {
+      logPeerEvent(p.blipId, 'online');
+      if (!state.config?.doNotDisturb) sounds.peerOnline();
+    } else if (!p.online && prevOnline.has(p.blipId)) {
+      logPeerEvent(p.blipId, 'offline');
+      if (!state.config?.doNotDisturb) sounds.peerOffline();
     }
     const chat = state.chatViews.get(p.blipId);
     if (chat) chat.setPeerName(formatPeerDisplayName(p));
@@ -2640,8 +2912,10 @@ export function updatePeers({ peers, occupiedIds }) {
     gridComponent.updateOccupied(occupiedIds.filter((id) => id !== state.config.blipId));
   }
 
+  migrateGroupsHost(getAllGroups(), nextOnline, api, state.config);
+
   /* Never full re-render during active conversation (fixes scroll jump + input focus loss) */
-  if (state.view === 'chat' && state.activePeer && mainContent) {
+  if (state.view === 'chat' && (state.activePeer || state.activeGroup) && mainContent) {
     return;
   }
 
@@ -2672,6 +2946,23 @@ function handleTypingTcp(msg) {
 }
 
 export function handleTcpMessage(msg) {
+  if (msg.type?.startsWith?.('group-')) {
+    void handleGroupTcpMessage(msg, {
+      api,
+      config: state.config,
+      getGroupChatView: (id) => state.groupChatViews.get(id),
+      openGroupChat,
+      bumpGroupUnread: (groupId) => {
+        if (state.view === 'chat' && state.activeGroup === groupId) return;
+        unreadByGroup.set(groupId, (unreadByGroup.get(groupId) || 0) + 1);
+        if (state.view === 'chat' && !state.activePeer && !state.activeGroup) {
+          renderView('chat');
+        }
+      },
+    });
+    return;
+  }
+
   if (msg.type === 'typing') {
     handleTypingTcp(msg);
     return;

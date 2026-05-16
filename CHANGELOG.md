@@ -9,6 +9,26 @@ Release **version numbers** track [`app-metadata.json`](app-metadata.json) (sync
 
 ## [Unreleased]
 
+## [0.4.5] — Mesh
+
+### Added
+
+- **Group chats (mesh hub)** — right-click a peer → **Create group**; host relays messages to all members. Host migrates to the next online BLIP ID if the current host leaves.
+- **Group voice calls** — **GRP CALL** in group chat; mesh audio with signaling relayed through the host (LAN).
+- **Mesh activity log** — **Settings → Network** shows recent peer online/offline events (local).
+- **UI sound pack** — chiptune-style Web Audio synth: looping **incoming ring** and **outgoing dial**, connect chime, message/notify/group/ping cues; preview grid in **Settings → Sound**.
+- **Sound themes** — two FX packs (**SIGNAL** / **PULSE**) and two call melody packs (**MESH** / **GRID**); pick in **Settings → Sound** (`uiSoundPack`, `uiMelodyPack`).
+
+### Changed
+
+- Call, chat, toast, and peer events use the unified **mesh signal** motif (square-wave arpeggios, no sample files).
+
+### Fixed
+
+- **Sound preview** (“Прослушать”) — resumes `AudioContext` on click and plays even when UI sounds are disabled.
+
+- **Screen share** — capture uses Electron `chromeMediaSourceId` after the picker (reliable stream to WebRTC); fallback to `getDisplayMedia` handler. Voice-only calls show video when sharing.
+
 ## [0.4.1] — Mesh
 
 ### Added

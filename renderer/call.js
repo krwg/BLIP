@@ -9,6 +9,7 @@ import {
   trackLooksLikeScreen,
 } from './call-media.js';
 import { openScreenPickerDialog } from './screen-picker-dialog.js';
+import { captureDisplayStream } from './display-capture.js';
 
 const ICE_SERVERS = [];
 
@@ -289,6 +290,8 @@ export function createCallUI(config, api, options = {}) {
   }
 
   function cleanup() {
+    sounds.stopIncomingRing();
+    sounds.stopOutgoingRing();
     if (document.fullscreenElement) {
       void document.exitFullscreen().catch(() => {});
     }
@@ -475,10 +478,7 @@ export function createCallUI(config, api, options = {}) {
       const sourceId = await openScreenPickerDialog();
       if (!sourceId) return;
 
-      const prepared = await window.blip?.prepareDisplayCapture?.(sourceId);
-      if (!prepared?.ok) return;
-
-      const stream = await navigator.mediaDevices.getDisplayMedia(SCREEN_CAPTURE_CONSTRAINTS);
+      const stream = await captureDisplayStream(sourceId);
       const screenTrack = stream.getVideoTracks()[0];
       if (!screenTrack) throw new Error('No screen track');
 
@@ -498,6 +498,11 @@ export function createCallUI(config, api, options = {}) {
         savedCameraTrack = sender.track;
       }
 
+      if (!withVideo) {
+        videoWrap.classList.remove('hidden');
+        voiceWrap.classList.add('hidden');
+      }
+
       await applyOutgoingVideoTrack(screenTrack, { screenShare: true });
 
       screenTrack.onended = () => {
@@ -511,6 +516,13 @@ export function createCallUI(config, api, options = {}) {
       }
       sharingScreen = false;
       setShareButton(false);
+      if (window.__blipShowToast) {
+        window.__blipShowToast({
+          title: t('call.share_failed'),
+          variant: 'danger',
+          durationMs: 5000,
+        });
+      }
     }
   }
 
@@ -656,6 +668,7 @@ export function createCallUI(config, api, options = {}) {
     videoWrap.classList.toggle('hidden', !video);
     voiceWrap.classList.toggle('hidden', !video);
     mountCallAvatar(targetId);
+    sounds.outgoingCall();
 
     try {
       localStream = await getMedia(video);
@@ -759,6 +772,7 @@ export function createCallUI(config, api, options = {}) {
       if (!result?.ok) throw new Error(result?.error || 'Accept failed');
 
       incomingOffer = null;
+      sounds.callConnected();
       statusEl.dataset.i18n = 'call.connected';
       showInCallControls();
     } catch (err) {
@@ -837,6 +851,7 @@ export function createCallUI(config, api, options = {}) {
     }
     try {
       await setRemoteDescription(answer);
+      sounds.callConnected();
       setConnectedStatus();
       startTimer();
       showInCallControls();
