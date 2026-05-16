@@ -7,7 +7,6 @@ import {
   getGroupsFor,
   groupDisplayName,
   getGroupMessages,
-  amHost,
   isGroupMember,
 } from './groups.js';
 import { openGroupCreateDialog } from './group-create-dialog.js';
@@ -19,7 +18,6 @@ import {
   sendGroupChatMessage,
   joinGroupCall,
   leaveGroup,
-  dissolveGroup,
   getOngoingGroupCall,
 } from './groups-wire.js';
 import { logPeerEvent, getNetworkLogEntries, clearNetworkLog } from './network-log.js';
@@ -658,48 +656,9 @@ function showGroupContextMenu(e, group) {
     }
   });
 
-  const disbandItem = document.createElement('button');
-  disbandItem.type = 'button';
-  disbandItem.textContent = t('group.menu_disband');
-  if (amHost(group, state.config.blipId)) {
-    bindItem(disbandItem, async () => {
-      const ok = await openConfirmDialog({
-        title: t('group.disband_confirm_title'),
-        body: t('group.disband_confirm_body').replace('{name}', groupDisplayName(group)),
-        confirmLabel: t('group.menu_disband'),
-      });
-      if (!ok) return;
-      try {
-        const res = await dissolveGroup(api, state.config, group.id);
-        if (!res?.ok) {
-          showAppToast({
-            title: t('group.disband_failed'),
-            body: t(`group.err_${res?.error || 'unknown'}`),
-            variant: 'danger',
-            durationMs: 5000,
-          });
-          return;
-        }
-        closeGroupChatUi(group.id);
-        if (state.view === 'chat') renderView('chat');
-      } catch (err) {
-        console.error('[group] disband:', err);
-        showAppToast({
-          title: t('group.disband_failed'),
-          body: err?.message || String(err),
-          variant: 'danger',
-          durationMs: 5000,
-        });
-      }
-    });
-  } else {
-    disbandItem.disabled = true;
-  }
-
   menu.appendChild(openItem);
   menu.appendChild(callItem);
   menu.appendChild(leaveItem);
-  menu.appendChild(disbandItem);
   document.body.appendChild(menu);
   setTimeout(() => document.addEventListener('click', () => menu.remove(), { once: true }), 0);
 }
@@ -3047,8 +3006,13 @@ function render() {
 }
 
 export function initUI(config, blipApi) {
-  api = blipApi;
   state.config = config;
+  api = {
+    ...blipApi,
+    get config() {
+      return state.config;
+    },
+  };
   initPeerTrust(config, blipApi);
   setLang(config.language || localStorage.getItem('blip_lang') || 'en');
   applySoundPrefsFromConfig(config);

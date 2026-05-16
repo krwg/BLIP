@@ -230,6 +230,7 @@ export async function sendGroupChatMessage(api, config, groupId, msg) {
 
 export async function handleGroupTcpMessage(msg, ctx) {
   const { api, config, getGroupChatView, bumpGroupUnread } = ctx;
+  const callApi = { ...api, config };
   const myId = Number(config.blipId);
   const type = msg.type;
   const tcpPeer = wireFrom(msg);
@@ -365,17 +366,17 @@ export async function handleGroupTcpMessage(msg, ctx) {
   }
 
   if (type === 'group-call-signal') {
-    await handleGroupCallSignal(msg, api);
+    await handleGroupCallSignal(msg, callApi);
     return true;
   }
 
   if (type === 'group-call-state') {
-    await handleGroupCallState(msg, api);
+    await handleGroupCallState(msg, callApi);
     return true;
   }
 
   if (type === 'group-call-start') {
-    await handleGroupCallStart(msg, api);
+    await handleGroupCallStart(msg, callApi);
     return true;
   }
 
