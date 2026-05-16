@@ -15,6 +15,9 @@ contextBridge.exposeInMainWorld('blip', {
   callReject: (payload) => ipcRenderer.invoke('call-reject', payload),
   callCandidate: (payload) => ipcRenderer.invoke('call-candidate', payload),
   callHangup: (payload) => ipcRenderer.invoke('call-hangup', payload),
+  callState: (payload) => ipcRenderer.invoke('call-state', payload),
+  callRenegotiate: (payload) => ipcRenderer.invoke('call-renegotiate', payload),
+  callRenegotiateAnswer: (payload) => ipcRenderer.invoke('call-renegotiate-answer', payload),
   pingPeer: (blipId) => ipcRenderer.invoke('ping-peer', blipId),
   checkIdConflict: (blipId) => ipcRenderer.invoke('check-id-conflict', blipId),
   openCallOutgoing: (payload) => ipcRenderer.invoke('open-call-outgoing', payload),
@@ -71,6 +74,21 @@ contextBridge.exposeInMainWorld('blip', {
     const handler = (_, data) => cb(data);
     ipcRenderer.on('call-ended', handler);
     return () => ipcRenderer.removeListener('call-ended', handler);
+  },
+  onCallState: (cb) => {
+    const handler = (_, data) => cb(data);
+    ipcRenderer.on('call-state', handler);
+    return () => ipcRenderer.removeListener('call-state', handler);
+  },
+  onCallRenegotiate: (cb) => {
+    const handler = (_, data) => cb(data);
+    ipcRenderer.on('call-renegotiate', handler);
+    return () => ipcRenderer.removeListener('call-renegotiate', handler);
+  },
+  onCallRenegotiateAnswer: (cb) => {
+    const handler = (_, data) => cb(data);
+    ipcRenderer.on('call-renegotiate-answer', handler);
+    return () => ipcRenderer.removeListener('call-renegotiate-answer', handler);
   },
   windowMinimize: () => ipcRenderer.send('window-minimize'),
   windowMaximize: () => ipcRenderer.send('window-maximize'),

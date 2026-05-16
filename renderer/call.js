@@ -116,6 +116,19 @@ export function createCallUI(config, api, options = {}) {
   voiceWrap.appendChild(avatarSlot);
   voiceWrap.appendChild(waveform);
 
+  const peerStatus = document.createElement('div');
+  peerStatus.className = 'call-peer-status hidden';
+  const remoteMicBadge = document.createElement('span');
+  remoteMicBadge.className = 'call-peer-badge call-peer-badge--mic hidden';
+  remoteMicBadge.dataset.i18n = 'call.remote_muted';
+  remoteMicBadge.textContent = t('call.remote_muted');
+  const remoteDeafBadge = document.createElement('span');
+  remoteDeafBadge.className = 'call-peer-badge call-peer-badge--deaf hidden';
+  remoteDeafBadge.dataset.i18n = 'call.remote_deaf';
+  remoteDeafBadge.textContent = t('call.remote_deaf');
+  peerStatus.appendChild(remoteMicBadge);
+  peerStatus.appendChild(remoteDeafBadge);
+
   const timerEl = document.createElement('div');
   timerEl.className = 'call-timer';
   timerEl.textContent = '00:00';
@@ -134,6 +147,12 @@ export function createCallUI(config, api, options = {}) {
   deafenBtn.className = 'btn btn-accent';
   deafenBtn.dataset.i18n = 'call.deafen';
   deafenBtn.textContent = t('call.deafen');
+
+  const shareBtn = document.createElement('button');
+  shareBtn.type = 'button';
+  shareBtn.className = 'btn btn-accent hidden';
+  shareBtn.dataset.i18n = 'call.share';
+  shareBtn.textContent = t('call.share');
 
   const endBtn = document.createElement('button');
   endBtn.type = 'button';
@@ -155,6 +174,7 @@ export function createCallUI(config, api, options = {}) {
 
   controls.appendChild(muteBtn);
   controls.appendChild(deafenBtn);
+  controls.appendChild(shareBtn);
   controls.appendChild(acceptBtn);
   controls.appendChild(rejectBtn);
   controls.appendChild(endBtn);
@@ -162,6 +182,7 @@ export function createCallUI(config, api, options = {}) {
   inner.appendChild(statusEl);
   inner.appendChild(videoWrap);
   inner.appendChild(voiceWrap);
+  inner.appendChild(peerStatus);
   inner.appendChild(timerEl);
   inner.appendChild(controls);
   overlay.appendChild(inner);
@@ -172,6 +193,12 @@ export function createCallUI(config, api, options = {}) {
   let withVideo = false;
   let muted = false;
   let deafened = false;
+  let sharingScreen = false;
+  let screenStream = null;
+  let savedCameraTrack = null;
+  let remoteMuted = false;
+  let remoteDeafened = false;
+  let renegotiateAnswerResolve = null;
   let timerInterval = null;
   let callStart = null;
   let pulseTimer = null;
@@ -200,6 +227,13 @@ export function createCallUI(config, api, options = {}) {
     pendingCandidates = [];
     pendingOffer = null;
     incomingOffer = null;
+    if (screenStream) {
+      screenStream.getTracks().forEach((tr) => tr.stop());
+      screenStream = null;
+    }
+    sharingScreen = false;
+    savedCameraTrack = null;
+    renegotiateAnswerResolve = null;
     if (localStream) {
       localStream.getTracks().forEach((tr) => tr.stop());
       localStream = null;
@@ -217,6 +251,182 @@ export function createCallUI(config, api, options = {}) {
     endBtn.classList.remove('hidden');
     muteBtn.classList.remove('hidden');
     deafenBtn.classList.remove('hidden');
+    shareBtn.classList.add('hidden');
+    sharingScreen = false;
+    screenStream = null;
+    savedCameraTrack = null;
+    remoteMuted = false;
+    remoteDeafened = false;
+    renegotiateAnswerResolve = null;
+    setShareButton(false);
+    peerStatus.classList.add('hidden');
+    remoteMicBadge.classList.add('hidden');
+    remoteDeafBadge.classList.add('hidden');
+  }
+
+  function updateRemoteBadges() {
+    const active = !!pc && !incomingOffer;
+    peerStatus.classList.toggle('hidden', !active);
+    remoteMicBadge.classList.toggle('hidden', !remoteMuted);
+    remoteDeafBadge.classList.toggle('hidden', !remoteDeafened);
+  }
+
+  function applyRemoteState(state) {
+    remoteMuted = !!state?.muted;
+    remoteDeafened = !!state?.deafened;
+    updateRemoteBadges();
+  }
+
+  function broadcastCallState() {
+    if (!peerId || !pc || !api.callState) return;
+    api
+      .callState({
+        to: peerId,
+        muted,
+        deafened,
+        screenSharing: sharingScreen,
+      })
+      .catch(() => {});
+  }
+
+  function setShareButton(active) {
+    shareBtn.classList.toggle('active', active);
+    shareBtn.dataset.i18n = active ? 'call.share_stop' : 'call.share';
+    shareBtn.textContent = t(active ? 'call.share_stop' : 'call.share');
+  }
+
+  function showInCallControls() {
+    shareBtn.classList.remove('hidden');
+    updateRemoteBadges();
+    broadcastCallState();
+  }
+
+  async function waitRenegotiateAnswer() {
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        renegotiateAnswerResolve = null;
+        reject(new Error('Renegotiation timeout'));
+      }, 15000);
+      renegotiateAnswerResolve = () => {
+        clearTimeout(timer);
+        renegotiateAnswerResolve = null;
+        resolve();
+      };
+    });
+  }
+
+  async function renegotiateAsOffer() {
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+    const offerWire = toSdpWire(pc.localDescription);
+    if (!offerWire) throw new Error('Invalid local SDP');
+    const wait = waitRenegotiateAnswer();
+    const result = await api.callRenegotiate({ to: peerId, sdp: offerWire });
+    if (!result?.ok) throw new Error(result?.error || 'Renegotiation failed');
+    await wait;
+  }
+
+  function getVideoSender() {
+    return pc?.getSenders().find((s) => s.track?.kind === 'video') ?? null;
+  }
+
+  async function applyOutgoingVideoTrack(track) {
+    const sender = getVideoSender();
+    if (sender) {
+      await sender.replaceTrack(track);
+      return;
+    }
+    if (!track) return;
+    const stream = new MediaStream([track]);
+    pc.addTrack(track, stream);
+    await renegotiateAsOffer();
+  }
+
+  async function removeOutgoingVideo() {
+    const sender = getVideoSender();
+    if (!sender) return;
+    if (typeof pc.removeTrack === 'function') {
+      pc.removeTrack(sender);
+    } else {
+      await sender.replaceTrack(null);
+    }
+    await renegotiateAsOffer();
+  }
+
+  async function stopScreenShare() {
+    if (!sharingScreen) return;
+    sharingScreen = false;
+    setShareButton(false);
+
+    if (screenStream) {
+      screenStream.getTracks().forEach((tr) => tr.stop());
+      screenStream = null;
+    }
+
+    const restore = savedCameraTrack;
+    savedCameraTrack = null;
+
+    try {
+      if (withVideo && restore) {
+        await applyOutgoingVideoTrack(restore);
+        localVideo.srcObject = new MediaStream([restore]);
+      } else if (!withVideo) {
+        await removeOutgoingVideo();
+        videoWrap.classList.add('hidden');
+        voiceWrap.classList.remove('hidden');
+        localVideo.srcObject = null;
+      } else {
+        localVideo.srcObject = null;
+      }
+    } catch (err) {
+      console.warn('[call] stop share:', err.message);
+    }
+
+    broadcastCallState();
+  }
+
+  async function toggleScreenShare() {
+    if (shareBtn.classList.contains('hidden') || !pc) return;
+    if (sharingScreen) {
+      await stopScreenShare();
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: { cursor: 'always' },
+        audio: false,
+      });
+      const screenTrack = stream.getVideoTracks()[0];
+      if (!screenTrack) throw new Error('No screen track');
+
+      screenStream = stream;
+      sharingScreen = true;
+      setShareButton(true);
+
+      videoWrap.classList.remove('hidden');
+      voiceWrap.classList.add('hidden');
+      localVideo.srcObject = stream;
+
+      const sender = getVideoSender();
+      if (sender?.track?.kind === 'video' && !savedCameraTrack) {
+        savedCameraTrack = sender.track;
+      }
+
+      await applyOutgoingVideoTrack(screenTrack);
+
+      screenTrack.onended = () => {
+        void stopScreenShare();
+      };
+
+      broadcastCallState();
+    } catch (err) {
+      if (err?.name !== 'NotAllowedError') {
+        console.error('[call] screen share:', err);
+      }
+      sharingScreen = false;
+      setShareButton(false);
+    }
   }
 
   function isForCurrentPeer(data) {
@@ -250,6 +460,11 @@ export function createCallUI(config, api, options = {}) {
     void applyRemoteAudioSink();
     setConnectedStatus();
     startTimer();
+    showInCallControls();
+    if (stream.getVideoTracks().length > 0) {
+      videoWrap.classList.remove('hidden');
+      voiceWrap.classList.add('hidden');
+    }
   }
 
   async function getMedia(video) {
@@ -434,6 +649,7 @@ export function createCallUI(config, api, options = {}) {
 
       incomingOffer = null;
       statusEl.dataset.i18n = 'call.connected';
+      showInCallControls();
     } catch (err) {
       console.error('[BLIP call] accept:', err);
       rollbackAcceptAttempt();
@@ -477,6 +693,7 @@ export function createCallUI(config, api, options = {}) {
     endBtn.classList.add('hidden');
     muteBtn.classList.add('hidden');
     deafenBtn.classList.add('hidden');
+    shareBtn.classList.add('hidden');
     videoWrap.classList.toggle('hidden', !withVideo);
     voiceWrap.classList.toggle('hidden', withVideo);
     mountCallAvatar(peerId);
@@ -511,8 +728,44 @@ export function createCallUI(config, api, options = {}) {
       await setRemoteDescription(answer);
       setConnectedStatus();
       startTimer();
+      showInCallControls();
     } catch (err) {
       console.error('[BLIP call] answer', err);
+    }
+  }
+
+  async function handleCallState(data) {
+    if (!isForCurrentPeer(data)) return;
+    applyRemoteState(data);
+  }
+
+  async function handleRenegotiateOffer(data) {
+    if (!pc || !isForCurrentPeer(data)) return;
+    const offer = normalizeSdp(data.sdp);
+    if (!offer) return;
+    try {
+      await setRemoteDescription(offer);
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      const answerWire = toSdpWire(pc.localDescription);
+      if (!answerWire) throw new Error('Invalid local SDP');
+      await api.callRenegotiateAnswer({ to: peerId, sdp: answerWire });
+      showInCallControls();
+    } catch (err) {
+      console.error('[BLIP call] renegotiate offer:', err);
+    }
+  }
+
+  async function handleRenegotiateAnswer(data) {
+    if (!pc || !isForCurrentPeer(data)) return;
+    const answer = normalizeSdp(data.sdp);
+    if (!answer) return;
+    try {
+      await setRemoteDescription(answer);
+      renegotiateAnswerResolve?.();
+    } catch (err) {
+      console.error('[BLIP call] renegotiate answer:', err);
+      renegotiateAnswerResolve = null;
     }
   }
 
@@ -540,6 +793,7 @@ export function createCallUI(config, api, options = {}) {
       tr.enabled = !muted;
     });
     muteBtn.classList.toggle('active', muted);
+    broadcastCallState();
   }
 
   function toggleDeafen() {
@@ -547,6 +801,7 @@ export function createCallUI(config, api, options = {}) {
     deafened = !deafened;
     remoteVideo.muted = deafened;
     deafenBtn.classList.toggle('active', deafened);
+    broadcastCallState();
   }
 
   function isIncomingRinging() {
@@ -555,6 +810,9 @@ export function createCallUI(config, api, options = {}) {
 
   muteBtn.addEventListener('click', () => toggleMute());
   deafenBtn.addEventListener('click', () => toggleDeafen());
+  shareBtn.addEventListener('click', () => {
+    void toggleScreenShare();
+  });
 
   async function hangupCall() {
     if (peerId) await api.callHangup({ to: peerId });
@@ -572,15 +830,20 @@ export function createCallUI(config, api, options = {}) {
     handleCandidate,
     handleRejected,
     handleEnded,
+    handleCallState,
+    handleRenegotiateOffer,
+    handleRenegotiateAnswer,
     hangupCall,
     acceptIncoming,
     toggleMute,
     toggleDeafen,
+    toggleScreenShare,
     isIncomingRinging,
     hide,
     end: hide,
     refreshI18n() {
       applyI18n(overlay);
+      updateRemoteBadges();
     },
     isActive: () => !!pc || !!(incomingOffer && activeCall?.pending),
     getPeerId: () => peerId,

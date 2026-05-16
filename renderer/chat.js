@@ -37,6 +37,14 @@ function persist() {
 
 loadFromStorage();
 
+function formatChatTime(ts) {
+  try {
+    return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  } catch {
+    return '';
+  }
+}
+
 export function getMessages(peerId) {
   if (!messagesByPeer.has(peerId)) messagesByPeer.set(peerId, []);
   return messagesByPeer.get(peerId);
@@ -297,6 +305,13 @@ export function createChatView(peerId, config, onSend, onBack) {
       text.className = 'chat-text';
       text.textContent = m.text;
       block.appendChild(text);
+      if (m.timestamp) {
+        const time = document.createElement('span');
+        time.className = 'chat-time';
+        time.textContent = formatChatTime(m.timestamp);
+        time.title = new Date(m.timestamp).toLocaleString();
+        block.appendChild(time);
+      }
       messagesEl.appendChild(block);
     });
 

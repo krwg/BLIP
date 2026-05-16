@@ -43,20 +43,23 @@ export function sendOnSocket(socket, payload) {
   });
 }
 
+/** @returns {Promise<{ ok: boolean, ms: number | null }>} */
 export function pingPeer(ip, tcpPort = DEFAULT_TCP_PORT) {
   return new Promise((resolve) => {
+    const started = Date.now();
     const socket = net.createConnection({ host: ip, port: tcpPort }, () => {
+      const ms = Date.now() - started;
       const payload = JSON.stringify({ type: 'ping' }) + '\n';
       socket.write(payload, () => {
         socket.destroy();
-        resolve(true);
+        resolve({ ok: true, ms });
       });
     });
     socket.setTimeout(2000);
     socket.on('timeout', () => {
       socket.destroy();
-      resolve(false);
+      resolve({ ok: false, ms: null });
     });
-    socket.on('error', () => resolve(false));
+    socket.on('error', () => resolve({ ok: false, ms: null }));
   });
 }

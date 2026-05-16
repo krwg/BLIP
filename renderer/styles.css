@@ -83,6 +83,13 @@ body {
   flex: 1;
 }
 
+.settings-about-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
 .win-btn {
   -webkit-app-region: no-drag;
   width: 32px;
@@ -744,6 +751,16 @@ select.blip-select:focus {
 
 .chat-text {
   user-select: text;
+  display: block;
+}
+
+.chat-time {
+  display: block;
+  margin-top: 4px;
+  font-size: 9px;
+  color: var(--blip-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .chat-input-row {
@@ -892,6 +909,39 @@ select.blip-select:focus {
   gap: 8px;
   flex-wrap: wrap;
   justify-content: center;
+}
+
+.call-peer-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  min-height: 22px;
+}
+
+.call-peer-badge {
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border: 1px solid var(--blip-muted);
+  color: var(--blip-muted);
+  background: color-mix(in srgb, var(--blip-bg) 70%, transparent);
+}
+
+.call-peer-badge--mic {
+  border-color: var(--blip-danger);
+  color: var(--blip-danger);
+}
+
+.call-peer-badge--deaf {
+  border-color: var(--blip-accent);
+  color: var(--blip-accent);
+}
+
+.call-controls .btn.active {
+  border-color: var(--blip-danger);
+  color: var(--blip-danger);
 }
 
 .hidden {
@@ -1104,6 +1154,38 @@ select.blip-select:focus {
   line-height: 1.5;
 }
 
+.settings-blocked-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settings-blocked-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+}
+
+.settings-blocked-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.settings-blocked-name {
+  font-size: 13px;
+  color: var(--blip-text);
+}
+
+.settings-blocked-id {
+  font-size: 11px;
+  color: var(--blip-muted);
+  font-family: var(--blip-mono, monospace);
+}
+
 .settings-update-status {
   margin: 0;
   font-size: 12px;
@@ -1212,18 +1294,93 @@ select.blip-select:focus {
   min-width: 68px;
 }
 
-/* In-app toast (new message) */
-.app-toast {
+/* In-app toast stack (bottom-right) */
+.toast-stack {
   position: fixed;
   bottom: 20px;
   right: 20px;
   z-index: 400;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-end;
+  gap: 10px;
+  pointer-events: none;
+  max-width: min(360px, calc(100vw - 24px));
+}
+
+.toast-stack .app-toast {
+  pointer-events: auto;
+}
+
+.app-toast {
+  position: relative;
   max-width: 320px;
   padding: 12px 14px;
   border: 2px solid var(--blip-accent);
   background: var(--blip-toast-bg);
   backdrop-filter: blur(12px);
   font-size: 12px;
+}
+
+.app-toast--danger {
+  border-color: var(--blip-danger);
+}
+
+.app-toast--danger strong {
+  color: var(--blip-danger);
+}
+
+.toast-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.toast-actions .btn {
+  flex: 1;
+  min-width: 120px;
+}
+
+/* Mesh label modal */
+.blip-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  padding: 16px;
+}
+
+.blip-modal {
+  width: 100%;
+  max-width: 400px;
+  padding: 16px 18px;
+  border: 2px solid var(--blip-accent);
+}
+
+.blip-modal-title {
+  margin: 0 0 8px;
+  font-size: 14px;
+  text-transform: uppercase;
+  color: var(--blip-accent);
+}
+
+.blip-modal-hint {
+  margin: 0 0 12px;
+}
+
+.blip-modal-input {
+  max-width: none;
+  margin-bottom: 14px;
+}
+
+.blip-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .app-toast strong {

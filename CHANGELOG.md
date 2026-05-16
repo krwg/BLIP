@@ -9,6 +9,47 @@ Release **version numbers** track [`app-metadata.json`](app-metadata.json) (sync
 
 ## [Unreleased]
 
+## [0.3.0] — Mesh
+
+### Added
+
+- **First-contact trust**: confirm dialog before opening chat with a peer for the first time (local trust list).
+- **Local block**: hide a peer on this device; block from peer context menu; blocked peers cannot message you.
+- **Settings → Privacy**: list blocked BLIP IDs and **Unblock** (local only).
+- **Peer ping** with round-trip **ms** (context menu); latency shown in peer list after ping.
+- **Chat timestamps** on each message (local time).
+- **Screen share** during calls (voice or video); **S** hotkey; works on voice calls via SDP renegotiation.
+- **Remote call status**: peer sees **MIC OFF** / **SOUND OFF** when you mute or deafen.
+- Context menu: **Copy BLIP ID**, **Ping**, **Block** / **Unblock**.
+
+### Fixed
+
+- **Appearance**: theme and animated background names fully localized (EN/RU via i18n).
+
+### Changed
+
+- `ping-peer` IPC returns `{ ok, ms }` instead of a bare boolean.
+
+## [0.2.5] — Pulse
+
+### Added
+
+- **Do Not Disturb**: silence UI sounds and block desktop notifications (including incoming calls); toggle in **Settings → Notifications**.
+- **Update toasts** on startup (bottom-right): check for updates; available / up to date / download / ready to install (dev builds use GitHub releases API).
+- **In-app toast stack** (bottom-right) for messages and updates.
+- **Global shortcuts**: **Alt+1–4** — Dial / Peers / Chat / Settings; **Ctrl+,** — Settings; **Ctrl+F** — focus chat search in an open conversation.
+- **About**: buttons for **Changelog** and **Releases** on GitHub.
+- **Profile**: **Copy BLIP ID** to clipboard.
+
+### Changed
+
+- **Settings → Shortcuts** lists main-window keys in addition to call-window keys.
+
+### Fixed
+
+- **Mesh Labels**: custom dialog instead of `window.prompt` (broken in frameless Electron); context menu clicks no longer cancel the action.
+- Removed **mesh status bar** (per user preference).
+
 ## [0.2.0] — Mesh
 
 ### Added

@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, nativeImage, shell, Notification, session } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, nativeImage, shell, Notification, session, desktopCapturer } from 'electron';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { existsSync, readFileSync } from 'fs';
@@ -274,7 +274,7 @@ function handleTcpPayload(msg, fromBlipId) {
       break;
     case 'call-offer': {
       const callerId = msg.from ?? fromBlipId;
-      if (config?.desktopCallNotifications !== false) {
+      if (config?.desktopCallNotifications !== false && !config?.doNotDisturb) {
         showDesktopNotification({
           kind: 'call',
           peerId: callerId,
@@ -305,6 +305,19 @@ function handleTcpPayload(msg, fromBlipId) {
       break;
     case 'call-hangup':
       void sendToCallWindow('call-ended', { ...msg, from: msg.from ?? fromBlipId }, { focus: false });
+      break;
+    case 'call-state':
+      void sendToCallWindow('call-state', { ...msg, from: msg.from ?? fromBlipId }, { focus: false });
+      break;
+    case 'call-renegotiate':
+      void sendToCallWindow('call-renegotiate', { ...msg, from: msg.from ?? fromBlipId }, { focus: false });
+      break;
+    case 'call-renegotiate-answer':
+      void sendToCallWindow(
+        'call-renegotiate-answer',
+        { ...msg, from: msg.from ?? fromBlipId },
+        { focus: false }
+      );
       break;
     default:
       break;
@@ -515,6 +528,54 @@ function setupIpc() {
     }
   });
 
+  ipcMain.handle('call-state', async (_, payload) => {
+    try {
+      await sendCallPayload(tcpServer, ensurePeerSocket, payload.to, {
+        type: 'call-state',
+        from: config.blipId,
+        to: payload.to,
+        muted: !!payload.muted,
+        deafened: !!payload.deafened,
+        screenSharing: !!payload.screenSharing,
+      });
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
+  });
+
+  ipcMain.handle('call-renegotiate', async (_, payload) => {
+    try {
+      const sdp = serializeSdp(payload.sdp);
+      if (!sdp) return { ok: false, error: 'Invalid local SDP' };
+      await sendCallPayload(tcpServer, ensurePeerSocket, payload.to, {
+        type: 'call-renegotiate',
+        from: config.blipId,
+        to: payload.to,
+        sdp,
+      });
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
+  });
+
+  ipcMain.handle('call-renegotiate-answer', async (_, payload) => {
+    try {
+      const sdp = serializeSdp(payload.sdp);
+      if (!sdp) return { ok: false, error: 'Invalid local SDP' };
+      await sendCallPayload(tcpServer, ensurePeerSocket, payload.to, {
+        type: 'call-renegotiate-answer',
+        from: config.blipId,
+        to: payload.to,
+        sdp,
+      });
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
+  });
+
   ipcMain.handle('ping-peer', async (_, blipId) => {
     const peer = findPeer(blipId);
     if (!peer) return false;
@@ -529,7 +590,7 @@ function setupIpc() {
       conflict.ip,
       conflict.tcpPort || resolvePorts(config).tcpPort
     );
-    return { taken: responds };
+    return { taken: responds.ok };
   });
 
   ipcMain.handle('get-app-metadata', () => ({
@@ -543,7 +604,10 @@ function setupIpc() {
     return { ok: true };
   });
 
-  ipcMain.handle('show-message-notification', (_, payload) => showDesktopNotification(payload));
+  ipcMain.handle('show-message-notification', (_, payload) => {
+    if (config?.doNotDisturb) return { ok: false, reason: 'dnd' };
+    return showDesktopNotification(payload);
+  });
 
   ipcMain.handle('open-external', async (_, url) => {
     if (typeof url !== 'string' || !/^https?:\/\//i.test(url)) return { ok: false };
@@ -612,6 +676,28 @@ function setupMediaPermissions() {
   session.defaultSession.setPermissionCheckHandler((_wc, permission) => {
     return permission === 'media' || permission === 'display-capture';
   });
+
+  session.defaultSession.setDisplayMediaRequestHandler(
+    async (_request, callback) => {
+      try {
+        const sources = await desktopCapturer.getSources({
+          types: ['screen', 'window'],
+          thumbnailSize: { width: 0, height: 0 },
+        });
+        const screen = sources.find((s) => s.id.startsWith('screen:'));
+        const pick = screen ?? sources[0];
+        if (!pick) {
+          callback({});
+          return;
+        }
+        callback({ video: pick });
+      } catch (err) {
+        console.warn('[BLIP] display media:', err.message);
+        callback({});
+      }
+    },
+    { useSystemPicker: true }
+  );
 }
 
 app.whenReady().then(async () => {

@@ -32,11 +32,18 @@ const api = {
       candidate: payload.candidate?.toJSON?.() ?? payload.candidate,
     }),
   callHangup: (payload) => window.blip.callHangup(payload),
+  callState: (payload) => window.blip.callState(payload),
+  callRenegotiate: (payload) => window.blip.callRenegotiate(payload),
+  callRenegotiateAnswer: (payload) => window.blip.callRenegotiateAnswer(payload),
 };
 
 function applyCallWindowChrome(cfg) {
   liveConfig = cfg;
   setLang(cfg.language || localStorage.getItem('blip_lang') || 'en');
+  setSoundPrefs({
+    enabled: cfg.uiSoundsEnabled !== false && cfg.doNotDisturb !== true,
+    volume: typeof cfg.uiSoundsVolume === 'number' ? cfg.uiSoundsVolume : 1,
+  });
   applyAppearance(cfg);
   applyI18n(document);
   callUI?.refreshI18n?.();
@@ -51,7 +58,7 @@ async function boot() {
 
   const config = await window.blip.getConfig();
   setSoundPrefs({
-    enabled: config.uiSoundsEnabled !== false,
+    enabled: config.uiSoundsEnabled !== false && config.doNotDisturb !== true,
     volume: typeof config.uiSoundsVolume === 'number' ? config.uiSoundsVolume : 1,
   });
   applyCallWindowChrome(config);
@@ -101,6 +108,15 @@ async function boot() {
   window.blip.onCallEnded((data) => {
     callUI.handleEnded(data);
   });
+  window.blip.onCallState((data) => {
+    callUI.handleCallState(data);
+  });
+  window.blip.onCallRenegotiate((data) => {
+    callUI.handleRenegotiateOffer(data);
+  });
+  window.blip.onCallRenegotiateAnswer((data) => {
+    callUI.handleRenegotiateAnswer(data);
+  });
 
   document.addEventListener('keydown', (e) => {
     if (e.repeat || e.ctrlKey || e.altKey || e.metaKey) return;
@@ -115,6 +131,11 @@ async function boot() {
     }
     if (key === 'd' || key === 'D') {
       callUI.toggleDeafen();
+      e.preventDefault();
+      return;
+    }
+    if (key === 's' || key === 'S') {
+      callUI.toggleScreenShare();
       e.preventDefault();
       return;
     }

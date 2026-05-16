@@ -16,6 +16,8 @@ const DEFAULT_CONFIG = {
   /** OS toast when a new chat message arrives (main window). */
   desktopNotifications: true,
   desktopCallNotifications: true,
+  /** Suppress OS toasts and UI sounds (messages, calls, peer online). */
+  doNotDisturb: false,
   uiSoundsEnabled: true,
   uiSoundsVolume: 1,
   /** `deviceId` from enumerateDevices; empty = system default mic. */

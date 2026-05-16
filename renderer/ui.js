@@ -11,7 +11,18 @@ import {
   regenerateAvatar,
 } from './avatar.js';
 import { sounds, setSoundPrefs } from './audio.js';
-import { formatPeerDisplayName, getMeshLabel, setMeshLabel, clearMeshLabel } from './peer-labels.js';
+import { formatPeerDisplayName } from './peer-labels.js';
+import { openMeshLabelDialog } from './mesh-label-dialog.js';
+import { showAppToast } from './toasts.js';
+import { openConfirmDialog } from './confirm-dialog.js';
+import {
+  isTrusted,
+  trustPeer,
+  isBlocked,
+  blockPeer,
+  unblockPeer,
+  getBlockedPeerIds,
+} from './peer-trust.js';
 import {
   THEME_GROUPS,
   BG_META,
@@ -42,6 +53,9 @@ let mainContent = null;
 let gridComponent = null;
 let api = null;
 let appearanceListenerDispose = null;
+let lastUpdateToastDismiss = null;
+/** @type {Map<number, number>} */
+const peerLatencyMs = new Map();
 
 async function openCallOutgoing(peerId, video = false) {
   if (!window.blip?.openCallOutgoing) return;
@@ -53,22 +67,24 @@ async function openCallOutgoing(peerId, video = false) {
 }
 
 function showMessageToast(peerId, preview) {
-  const el = document.createElement('div');
-  el.className = 'app-toast glass';
-  el.innerHTML = `<strong>${t('toast.new_message')} · #${peerId}</strong>
-    <p class="toast-preview">${escapeHtml(preview || '')}</p>
-    <button type="button" class="btn btn-accent toast-open">${t('toast.open_chat')}</button>`;
-  el.querySelector('.toast-open')?.addEventListener('click', () => {
-    el.remove();
-    openChat(peerId);
+  const peer = state.peers.find((p) => p.blipId === peerId);
+  const label = formatPeerDisplayName(peer, peerId);
+  showAppToast({
+    title: `${t('toast.new_message')} · ${label}`,
+    body: preview || '',
+    actions: [
+      {
+        label: t('toast.open_chat'),
+        primary: true,
+        onClick: () => openChat(peerId),
+      },
+    ],
   });
-  document.body.appendChild(el);
-  setTimeout(() => el.classList.add('toast-out'), 8200);
-  setTimeout(() => el.remove(), 9000);
   tryShowDesktopMessageNotification(peerId, preview);
 }
 
 function tryShowDesktopMessageNotification(peerId, preview) {
+  if (state.config?.doNotDisturb) return;
   if (state.config?.desktopNotifications === false) return;
   if (!window.blip?.showMessageNotification) return;
   const peer = state.peers.find((p) => p.blipId === peerId);
@@ -250,7 +266,15 @@ function renderPeersView() {
     empty.textContent = t('peers.none');
     list.appendChild(empty);
   } else {
-    state.peers.forEach((peer) => {
+    const visiblePeers = state.peers.filter((p) => !isBlocked(p.blipId));
+    if (visiblePeers.length === 0) {
+      const empty = document.createElement('p');
+      empty.className = 'hint';
+      empty.dataset.i18n = 'peers.all_blocked';
+      empty.textContent = t('peers.all_blocked');
+      list.appendChild(empty);
+    }
+    visiblePeers.forEach((peer) => {
       const row = document.createElement('div');
       row.className = `peer-row glass ${peer.online ? 'online' : 'offline'}`;
 
@@ -262,7 +286,9 @@ function renderPeersView() {
       name.textContent = formatPeerDisplayName(peer);
       const idSpan = document.createElement('span');
       idSpan.className = 'peer-id';
-      idSpan.textContent = `#${peer.blipId}`;
+      const lat = peerLatencyMs.get(peer.blipId);
+      idSpan.textContent =
+        lat != null ? `#${peer.blipId} · ${lat} ms` : `#${peer.blipId}`;
       info.appendChild(name);
       info.appendChild(idSpan);
 
@@ -295,20 +321,21 @@ function renderPeersView() {
   return wrap;
 }
 
-function promptMeshLabel(peer) {
-  const current = getMeshLabel(peer.blipId);
-  const fallback = formatPeerDisplayName(peer);
-  const next = prompt(
-    t('peers.mesh_label_prompt').replace('{id}', String(peer.blipId)),
-    current || fallback
-  );
-  if (next === null) return;
-  if (!next.trim()) clearMeshLabel(peer.blipId);
-  else setMeshLabel(peer.blipId, next);
+async function promptMeshLabel(peer) {
+  const fallback = peer?.displayName || `BLIP-${peer.blipId}`;
+  const saved = await openMeshLabelDialog(peer.blipId, fallback);
+  if (saved === null) return;
+
   const chat = state.chatViews.get(peer.blipId);
   if (chat) chat.setPeerName(formatPeerDisplayName(peer));
   if (state.view === 'peers') renderView('peers');
   if (state.view === 'chat' && !state.activePeer) renderView('chat');
+
+  showAppToast({
+    title: t('peers.mesh_label_saved'),
+    body: saved ? saved : t('peers.mesh_label_removed'),
+    durationMs: 4000,
+  });
 }
 
 function showPeerContextMenu(e, peer) {
@@ -317,33 +344,72 @@ function showPeerContextMenu(e, peer) {
   menu.style.left = `${e.clientX}px`;
   menu.style.top = `${e.clientY}px`;
 
+  function bindItem(btn, handler) {
+    btn.addEventListener('mousedown', (ev) => ev.stopPropagation());
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      menu.remove();
+      handler();
+    });
+  }
+
   const msgItem = document.createElement('button');
   msgItem.type = 'button';
   msgItem.textContent = t('dial.message');
-  msgItem.addEventListener('click', () => {
-    menu.remove();
-    openChat(peer.blipId);
-  });
+  bindItem(msgItem, () => openChat(peer.blipId));
 
   const callItem = document.createElement('button');
   callItem.type = 'button';
   callItem.textContent = t('dial.call');
-  callItem.addEventListener('click', () => {
-    menu.remove();
+  bindItem(callItem, () => {
     if (peer.online) openCallOutgoing(peer.blipId, false);
   });
 
   const labelItem = document.createElement('button');
   labelItem.type = 'button';
   labelItem.textContent = t('peers.mesh_label');
-  labelItem.addEventListener('click', () => {
-    menu.remove();
-    promptMeshLabel(peer);
+  bindItem(labelItem, () => {
+    void promptMeshLabel(peer);
   });
+
+  const pingItem = document.createElement('button');
+  pingItem.type = 'button';
+  pingItem.textContent = t('peers.ping');
+  bindItem(pingItem, () => {
+    void runPeerPing(peer);
+  });
+
+  const copyIdItem = document.createElement('button');
+  copyIdItem.type = 'button';
+  copyIdItem.textContent = t('peers.copy_id');
+  bindItem(copyIdItem, () => {
+    void navigator.clipboard.writeText(String(peer.blipId));
+    showAppToast({ title: t('peers.copy_id_done'), durationMs: 2500 });
+  });
+
+  const blockItem = document.createElement('button');
+  blockItem.type = 'button';
+  blockItem.textContent = isBlocked(peer.blipId) ? t('peers.unblock') : t('peers.block');
+  bindItem(blockItem, () => {
+    if (isBlocked(peer.blipId)) {
+      unblockPeer(peer.blipId);
+      showAppToast({ title: t('peers.unblock_done'), durationMs: 3000 });
+    } else {
+      blockPeer(peer.blipId);
+      showAppToast({ title: t('peers.block_done'), durationMs: 3000 });
+    }
+    if (state.view === 'peers') renderView('peers');
+  });
+
+  menu.addEventListener('mousedown', (ev) => ev.stopPropagation());
+  menu.addEventListener('click', (ev) => ev.stopPropagation());
 
   menu.appendChild(msgItem);
   menu.appendChild(callItem);
   menu.appendChild(labelItem);
+  menu.appendChild(pingItem);
+  menu.appendChild(copyIdItem);
+  menu.appendChild(blockItem);
   document.body.appendChild(menu);
 
   const close = () => menu.remove();
@@ -504,7 +570,6 @@ function buildCloseToTraySection() {
 function buildAppearanceSection() {
   const block = document.createElement('div');
   block.className = 'settings-appearance-wrap';
-  const lang = getLang() === 'ru' ? 'ru' : 'en';
   const curTheme = normalizeThemeId(state.config.themeId);
   const curBg = normalizeBgId(state.config.animatedBgId);
 
@@ -520,7 +585,7 @@ function buildAppearanceSection() {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = `btn btn-lang settings-swatch${curTheme === id ? ' selected' : ''}`;
-    btn.textContent = labelTheme(id, lang);
+    btn.textContent = labelTheme(id);
     btn.addEventListener('click', async () => {
       state.config = await api.saveConfig({ themeId: id });
       applyAppearance(state.config);
@@ -542,7 +607,7 @@ function buildAppearanceSection() {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = `btn btn-lang settings-swatch${curTheme === id ? ' selected' : ''}`;
-    btn.textContent = labelTheme(id, lang);
+    btn.textContent = labelTheme(id);
     btn.addEventListener('click', async () => {
       state.config = await api.saveConfig({ themeId: id });
       applyAppearance(state.config);
@@ -564,7 +629,7 @@ function buildAppearanceSection() {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = `btn btn-lang settings-swatch${curBg === id ? ' selected' : ''}`;
-    btn.textContent = labelBg(id, lang);
+    btn.textContent = labelBg(id);
     btn.addEventListener('click', async () => {
       state.config = await api.saveConfig({ animatedBgId: id });
       applyAppearance(state.config);
@@ -585,8 +650,160 @@ function buildAppearanceSection() {
 
 function applySoundPrefsFromConfig(cfg = state.config) {
   setSoundPrefs({
-    enabled: cfg?.uiSoundsEnabled !== false,
+    enabled: cfg?.uiSoundsEnabled !== false && cfg?.doNotDisturb !== true,
     volume: typeof cfg?.uiSoundsVolume === 'number' ? cfg.uiSoundsVolume : 1,
+  });
+}
+
+function parseSemver(v) {
+  const m = String(v || '')
+    .replace(/^v/i, '')
+    .match(/^(\d+)\.(\d+)\.(\d+)/);
+  if (!m) return null;
+  return [Number(m[1]), Number(m[2]), Number(m[3])];
+}
+
+function isSemverNewer(a, b) {
+  const pa = parseSemver(a);
+  const pb = parseSemver(b);
+  if (!pa || !pb) return false;
+  for (let i = 0; i < 3; i++) {
+    if (pa[i] > pb[i]) return true;
+    if (pa[i] < pb[i]) return false;
+  }
+  return false;
+}
+
+function showUpdateStatusToast(payload) {
+  if (!payload?.state) return;
+  lastUpdateToastDismiss?.();
+  lastUpdateToastDismiss = null;
+
+  const actions = [];
+  let title = '';
+  let body = '';
+  let variant = 'accent';
+  let durationMs = 10000;
+
+  switch (payload.state) {
+    case 'checking':
+      title = t('toast.update_checking');
+      durationMs = 5000;
+      break;
+    case 'available':
+      title = t('toast.update_available');
+      body = t('toast.update_available_body').replace('{v}', payload.version || '—');
+      actions.push({
+        label: t('settings.section_updates'),
+        primary: true,
+        onClick: () => {
+          state.settingsSection = 'updates';
+          renderView('settings');
+        },
+      });
+      break;
+    case 'none':
+      title = t('toast.update_latest');
+      durationMs = 5000;
+      break;
+    case 'progress':
+      title = t('toast.update_progress');
+      body = `${payload.percent ?? 0}%`;
+      durationMs = 0;
+      break;
+    case 'downloaded':
+      title = t('toast.update_ready');
+      body = t('toast.update_ready_body').replace('{v}', payload.version || '—');
+      actions.push({
+        label: t('settings.updates_install'),
+        primary: true,
+        onClick: () => window.blip.quitAndInstall?.(),
+      });
+      durationMs = 0;
+      break;
+    case 'error':
+      title = t('toast.update_error');
+      body = payload.message || '';
+      variant = 'danger';
+      break;
+    default:
+      return;
+  }
+
+  const toast = showAppToast({ title, body, variant, durationMs, actions });
+  lastUpdateToastDismiss = toast?.dismiss ?? null;
+}
+
+async function checkUpdatesViaGithub(currentVersion) {
+  const result = await window.blip.getGithubReleases?.(3);
+  if (!result?.ok || !result.releases?.length) {
+    showUpdateStatusToast({ state: 'error', message: t('settings.updates_releases_error') });
+    return;
+  }
+  const latest = result.releases.find((r) => r.tag && !r.prerelease) || result.releases[0];
+  const tag = latest?.tag?.replace(/^v/i, '') || '';
+  if (isSemverNewer(tag, currentVersion)) {
+    showUpdateStatusToast({ state: 'available', version: tag });
+  } else {
+    showUpdateStatusToast({ state: 'none' });
+  }
+}
+
+async function runStartupUpdateCheck() {
+  if (!window.blip?.getAppMetadata) return;
+  const meta = await window.blip.getAppMetadata();
+  const current = meta?.version || '0.0.0';
+
+  showUpdateStatusToast({ state: 'checking' });
+
+  if (meta?.isPackaged && window.blip.checkForUpdates) {
+    const r = await window.blip.checkForUpdates();
+    if (r?.skipped) {
+      await checkUpdatesViaGithub(current);
+    }
+    return;
+  }
+
+  await checkUpdatesViaGithub(current);
+}
+
+function setupGlobalShortcuts() {
+  document.addEventListener('keydown', (e) => {
+    if (!state.config?.blipId) return;
+    const tag = e.target?.tagName;
+    const typing = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+
+    if (e.altKey && !e.ctrlKey && !e.metaKey && !typing) {
+      const views = { 1: 'dial', 2: 'peers', 3: 'chat', 4: 'settings' };
+      const next = views[e.key];
+      if (next) {
+        e.preventDefault();
+        if (next === 'settings') state.settingsSection = null;
+        if (next === 'chat' && state.view === 'chat' && state.activePeer) {
+          state.activePeer = null;
+        }
+        renderView(next);
+        return;
+      }
+    }
+
+    if (e.ctrlKey && e.key === ',' && !e.altKey && !e.metaKey) {
+      e.preventDefault();
+      state.settingsSection = null;
+      renderView('settings');
+      return;
+    }
+
+    if (e.ctrlKey && (e.key === 'f' || e.key === 'F') && !e.altKey && !e.metaKey) {
+      if (state.view === 'chat' && state.activePeer != null) {
+        const search = mainContent?.querySelector('.chat-search-input');
+        if (search) {
+          e.preventDefault();
+          search.focus();
+          search.select();
+        }
+      }
+    }
   });
 }
 
@@ -595,6 +812,7 @@ function getSettingsSectionIds() {
     'profile',
     'language',
     'notifications',
+    'privacy',
     'sound',
     'shortcuts',
     'call',
@@ -641,7 +859,23 @@ function buildSettingsProfilePanel() {
   changeIdBtn.dataset.i18n = 'settings.change_id';
   changeIdBtn.textContent = t('settings.change_id');
   changeIdBtn.addEventListener('click', () => showGridView(true));
+
+  const copyIdBtn = document.createElement('button');
+  copyIdBtn.type = 'button';
+  copyIdBtn.className = 'btn btn-lang';
+  copyIdBtn.dataset.i18n = 'settings.copy_id';
+  copyIdBtn.textContent = t('settings.copy_id');
+  copyIdBtn.addEventListener('click', async () => {
+    const text = String(state.config.blipId ?? '');
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      /* ignore */
+    }
+  });
+
   idRow.appendChild(idLabel);
+  idRow.appendChild(copyIdBtn);
   idRow.appendChild(changeIdBtn);
 
   nameInput.addEventListener('change', async () => {
@@ -739,8 +973,110 @@ function buildSettingsNotificationsPanel() {
     state.config = await api.saveConfig({ desktopCallNotifications: callCb.checked });
   });
 
+  const dndLabel = document.createElement('label');
+  dndLabel.className = 'settings-tray-toggle-row';
+
+  const dndCb = document.createElement('input');
+  dndCb.type = 'checkbox';
+  dndCb.checked = state.config.doNotDisturb === true;
+
+  const dndSpan = document.createElement('span');
+  dndSpan.dataset.i18n = 'settings.notifications_dnd';
+  dndSpan.textContent = t('settings.notifications_dnd');
+
+  dndLabel.appendChild(dndCb);
+  dndLabel.appendChild(dndSpan);
+
+  dndCb.addEventListener('change', async () => {
+    state.config = await api.saveConfig({ doNotDisturb: dndCb.checked });
+    applySoundPrefsFromConfig(state.config);
+  });
+
+  const dndHint = document.createElement('p');
+  dndHint.className = 'hint';
+  dndHint.dataset.i18n = 'settings.notifications_dnd_hint';
+  dndHint.textContent = t('settings.notifications_dnd_hint');
+
   frag.appendChild(label);
   frag.appendChild(callLabel);
+  frag.appendChild(dndLabel);
+  frag.appendChild(dndHint);
+  return frag;
+}
+
+function buildSettingsPrivacyPanel() {
+  const frag = document.createElement('div');
+  frag.className = 'settings-panel';
+
+  const h = document.createElement('h2');
+  h.className = 'settings-panel-title';
+  h.dataset.i18n = 'settings.section_privacy';
+  h.textContent = t('settings.section_privacy');
+  frag.appendChild(h);
+
+  const hint = document.createElement('p');
+  hint.className = 'hint';
+  hint.dataset.i18n = 'settings.privacy_hint';
+  hint.textContent = t('settings.privacy_hint');
+  frag.appendChild(hint);
+
+  const list = document.createElement('div');
+  list.className = 'settings-blocked-list';
+
+  function renderList() {
+    list.innerHTML = '';
+    const blocked = getBlockedPeerIds();
+    if (blocked.length === 0) {
+      const empty = document.createElement('p');
+      empty.className = 'hint';
+      empty.dataset.i18n = 'settings.privacy_empty';
+      empty.textContent = t('settings.privacy_empty');
+      list.appendChild(empty);
+      return;
+    }
+    for (const id of blocked) {
+      const row = document.createElement('div');
+      row.className = 'settings-blocked-row glass';
+
+      const peer = state.peers.find((p) => p.blipId === id);
+      const meta = document.createElement('div');
+      meta.className = 'settings-blocked-meta';
+
+      const name = document.createElement('span');
+      name.className = 'settings-blocked-name';
+      name.textContent = formatPeerDisplayName(peer, id);
+
+      const idLine = document.createElement('span');
+      idLine.className = 'settings-blocked-id';
+      idLine.textContent = `BLIP #${id}`;
+
+      meta.appendChild(name);
+      meta.appendChild(idLine);
+
+      const unblockBtn = document.createElement('button');
+      unblockBtn.type = 'button';
+      unblockBtn.className = 'btn btn-lang';
+      unblockBtn.dataset.i18n = 'settings.privacy_unblock';
+      unblockBtn.textContent = t('settings.privacy_unblock');
+      unblockBtn.addEventListener('click', () => {
+        unblockPeer(id);
+        showAppToast({
+          title: t('peers.unblock_done'),
+          body: `BLIP #${id}`,
+          durationMs: 3500,
+        });
+        renderList();
+        if (state.view === 'peers') renderView('peers');
+      });
+
+      row.appendChild(meta);
+      row.appendChild(unblockBtn);
+      list.appendChild(row);
+    }
+  }
+
+  renderList();
+  frag.appendChild(list);
   return frag;
 }
 
@@ -1019,30 +1355,44 @@ function buildSettingsShortcutsPanel() {
   h.textContent = t('settings.section_shortcuts');
   frag.appendChild(h);
 
-  const sub = document.createElement('p');
-  sub.className = 'settings-shortcuts-sub';
-  sub.dataset.i18n = 'settings.shortcuts_call_scope';
-  sub.textContent = t('settings.shortcuts_call_scope');
-  frag.appendChild(sub);
+  function addShortcutBlock(scopeKey, rows) {
+    const sub = document.createElement('p');
+    sub.className = 'settings-shortcuts-sub';
+    sub.dataset.i18n = scopeKey;
+    sub.textContent = t(scopeKey);
+    frag.appendChild(sub);
 
-  const list = document.createElement('dl');
-  list.className = 'settings-shortcuts-list';
-  const rows = [
+    const list = document.createElement('dl');
+    list.className = 'settings-shortcuts-list';
+    for (const [key, keys] of rows) {
+      const dt = document.createElement('dt');
+      dt.dataset.i18n = key;
+      dt.textContent = t(key);
+      const dd = document.createElement('dd');
+      dd.textContent = keys;
+      list.appendChild(dt);
+      list.appendChild(dd);
+    }
+    frag.appendChild(list);
+  }
+
+  addShortcutBlock('settings.shortcuts_main_scope', [
+    ['settings.shortcuts_nav_dial', 'Alt+1'],
+    ['settings.shortcuts_nav_peers', 'Alt+2'],
+    ['settings.shortcuts_nav_chat', 'Alt+3'],
+    ['settings.shortcuts_nav_settings', 'Alt+4'],
+    ['settings.shortcuts_open_settings', 'Ctrl+,'],
+    ['settings.shortcuts_chat_search', 'Ctrl+F'],
+  ]);
+
+  addShortcutBlock('settings.shortcuts_call_scope', [
     ['settings.shortcuts_mute', 'M'],
     ['settings.shortcuts_deafen', 'D'],
+    ['settings.shortcuts_share', 'S'],
     ['settings.shortcuts_accept', 'Enter'],
     ['settings.shortcuts_end', 'Esc'],
-  ];
-  for (const [key, keys] of rows) {
-    const dt = document.createElement('dt');
-    dt.dataset.i18n = key;
-    dt.textContent = t(key);
-    const dd = document.createElement('dd');
-    dd.textContent = keys;
-    list.appendChild(dt);
-    list.appendChild(dd);
-  }
-  frag.appendChild(list);
+  ]);
+
   return frag;
 }
 
@@ -1080,9 +1430,34 @@ function buildSettingsAboutPanel() {
     }
   }).catch(() => {});
 
+  const linkRow = document.createElement('div');
+  linkRow.className = 'settings-about-links';
+
+  const changelogBtn = document.createElement('button');
+  changelogBtn.type = 'button';
+  changelogBtn.className = 'btn btn-lang';
+  changelogBtn.dataset.i18n = 'settings.changelog';
+  changelogBtn.textContent = t('settings.changelog');
+  changelogBtn.addEventListener('click', () => {
+    window.blip.openExternal?.('https://github.com/krwg/BLIP/blob/main/CHANGELOG.md');
+  });
+
+  const releasesAboutBtn = document.createElement('button');
+  releasesAboutBtn.type = 'button';
+  releasesAboutBtn.className = 'btn btn-lang';
+  releasesAboutBtn.dataset.i18n = 'settings.updates_releases';
+  releasesAboutBtn.textContent = t('settings.updates_releases');
+  releasesAboutBtn.addEventListener('click', () => {
+    window.blip.openExternal?.('https://github.com/krwg/BLIP/releases');
+  });
+
+  linkRow.appendChild(changelogBtn);
+  linkRow.appendChild(releasesAboutBtn);
+
   frag.appendChild(aboutLine);
   frag.appendChild(aboutVersion);
   frag.appendChild(githubBtn);
+  frag.appendChild(linkRow);
   return frag;
 }
 
@@ -1348,6 +1723,8 @@ function renderSettingsMainPanel() {
       return buildSettingsLanguagePanel();
     case 'notifications':
       return buildSettingsNotificationsPanel();
+    case 'privacy':
+      return buildSettingsPrivacyPanel();
     case 'sound':
       return buildSettingsSoundPanel();
     case 'shortcuts':
@@ -1465,10 +1842,49 @@ function showError(title, hint) {
   setTimeout(() => box.remove(), 4000);
 }
 
-function openChat(peerId) {
-  state.activePeer = peerId;
+async function runPeerPing(peer) {
+  if (!peer?.online || !window.blip?.pingPeer) {
+    showAppToast({ title: t('peers.ping_fail'), variant: 'danger', durationMs: 4000 });
+    return;
+  }
+  const result = await window.blip.pingPeer(peer.blipId);
+  if (result?.ok && result.ms != null) {
+    peerLatencyMs.set(peer.blipId, result.ms);
+    showAppToast({
+      title: t('peers.ping_ok'),
+      body: t('peers.ping_ok_body').replace('{ms}', String(result.ms)),
+      durationMs: 4000,
+    });
+    if (state.view === 'peers') renderView('peers');
+  } else {
+    peerLatencyMs.delete(peer.blipId);
+    showAppToast({ title: t('peers.ping_fail'), variant: 'danger', durationMs: 4000 });
+    if (state.view === 'peers') renderView('peers');
+  }
+}
+
+async function openChat(peerId) {
+  const id = Number(peerId);
+  if (!Number.isFinite(id)) return;
+
+  if (isBlocked(id)) {
+    showAppToast({ title: t('peers.blocked_chat'), durationMs: 5000 });
+    return;
+  }
+
+  if (!isTrusted(id)) {
+    const ok = await openConfirmDialog({
+      title: t('peers.trust_title'),
+      body: t('peers.trust_body').replace('{id}', String(id)),
+      confirmLabel: t('peers.trust_confirm'),
+    });
+    if (!ok) return;
+    trustPeer(id);
+  }
+
+  state.activePeer = id;
   state.view = 'chat';
-  ensureChatView(peerId);
+  ensureChatView(id);
   if (mainContent?.isConnected) {
     renderView('chat');
   } else {
@@ -1493,6 +1909,7 @@ function renderChatHubView() {
   for (const id of state.chatViews.keys()) peerIds.add(id);
 
   const rows = [...peerIds]
+    .filter((id) => !isBlocked(id))
     .map((id) => {
       const peer = state.peers.find((p) => p.blipId === id);
       const msgs = getMessages(id);
@@ -1647,6 +2064,8 @@ export function initUI(config, blipApi) {
   const titleBar = createTitleBar();
   rootEl.appendChild(titleBar);
 
+  setupGlobalShortcuts();
+
   /* Calls use a separate BrowserWindow — see main/index.js + call-window.html */
 
   onLangChange(() => {
@@ -1669,11 +2088,21 @@ export function initUI(config, blipApi) {
   if (typeof window.blip.onUpdateStatus === 'function') {
     window.blip.onUpdateStatus((payload) => {
       lastUpdateStatus = payload;
+      showUpdateStatusToast(payload);
       if (state.view === 'settings' && state.settingsSection === 'updates') {
         renderView('settings');
       }
     });
   }
+
+  setTimeout(() => {
+    void runStartupUpdateCheck();
+  }, 1200);
+
+  window.addEventListener('blip-peer-trust-changed', () => {
+    if (state.view === 'peers') renderView('peers');
+    if (state.view === 'chat' && !state.activePeer) renderView('chat');
+  });
 
   window.addEventListener('blip-mesh-labels-changed', () => {
     if (state.view === 'peers') renderView('peers');
@@ -1702,7 +2131,7 @@ export function updatePeers({ peers, occupiedIds }) {
   state.occupiedIds = occupiedIds;
 
   peers.forEach((p) => {
-    if (p.online && !prevOnline.has(p.blipId)) {
+    if (p.online && !prevOnline.has(p.blipId) && !state.config?.doNotDisturb) {
       sounds.peerOnline();
     }
     const chat = state.chatViews.get(p.blipId);
@@ -1728,6 +2157,7 @@ export function updatePeers({ peers, occupiedIds }) {
 
 export function handleTcpMessage(msg) {
   const peerId = msg.from === state.config.blipId ? msg.to : msg.from;
+  if (isBlocked(peerId)) return;
 
   ensureChatView(peerId);
   state.chatViews.get(peerId)?.handleIncoming(msg);
