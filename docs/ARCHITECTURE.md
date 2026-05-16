@@ -103,6 +103,19 @@ All UI audio is synthesized in the renderer via **Web Audio** (no asset files).
 
 Config: `uiSoundsEnabled`, `uiSoundsVolume`, `uiSoundPack`, `uiMelodyPack`. **Settings → Sound** — pack toggles + preview grid (`sounds.preview()` resumes `AudioContext` on user click).
 
+## File transfer (0.4.8)
+
+| Mode | Limit | Wire |
+|------|-------|------|
+| Inline | ≤768 KB | `message.attachment` with `kind: 'file'` + data URL |
+| Chunked | ≤16 MB | `file-offer` → `file-chunk` × N → `file-done`; receiver gets a chat message with assembled blob |
+
+Images still use `kind: 'image'` (JPEG resize). Group `group-msg` relays `attachment` for inline files only.
+
+## Presence text (0.4.8)
+
+UDP/mDNS announce includes optional `presenceText` (max 48 chars, sanitized). Shown on the **Peers** list instead of pulse line when the peer is online. Config key: `presenceText`.
+
 ## Group mesh (0.4.5)
 
 - **Group chat**: host relays `group-msg` to all members; `group-invite` / `group-host` for membership and host failover.

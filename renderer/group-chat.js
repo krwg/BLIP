@@ -2,6 +2,14 @@ import { t } from './i18n.js';
 import { sounds } from './audio.js';
 import { appendLinkifiedText } from './linkify.js';
 import { attachEmojiPicker } from './emoji-picker.js';
+import {
+  encodeChatImageAttachment,
+  encodeInlineFileAttachment,
+  isImageFile,
+  validateChatFile,
+  INLINE_FILE_BYTES,
+} from './chat-attachments.js';
+import { formatFileSize } from './file-transfer.js';
 import { createMessageId } from './message-id.js';
 import { addGroupMessage, getGroupMessages, groupDisplayName, amHost } from './groups.js';
 
@@ -13,11 +21,33 @@ function formatChatTime(ts) {
   }
 }
 
+function appendFileCard(block, attachment) {
+  const card = document.createElement("div");
+  card.className = 'chat-file-card';
+  const label = document.createElement('span');
+  label.className = 'chat-file-name';
+  label.textContent = attachment.name || 'file';
+  const meta = document.createElement('span');
+  meta.className = 'chat-file-meta';
+  meta.textContent = formatFileSize(attachment.size);
+  card.appendChild(label);
+  card.appendChild(meta);
+  if (attachment.dataUrl) {
+    const dl = document.createElement('a');
+    dl.className = 'btn btn-lang chat-file-dl';
+    dl.href = attachment.dataUrl;
+    dl.download = attachment.name || 'download';
+    dl.textContent = t('chat.file_download');
+    card.appendChild(dl);
+  }
+  block.appendChild(card);
+}
+
 export function createGroupChatView(group, config, onSend, onBack, onGroupCall) {
   const wrap = document.createElement('div');
   wrap.className = 'chat-view group-chat-view';
 
-  const header = document.createElement('div');
+  const header = document.createElement("div");
   header.className = 'chat-header glass';
 
   if (onBack) {
@@ -29,7 +59,7 @@ export function createGroupChatView(group, config, onSend, onBack, onGroupCall) 
     header.appendChild(backBtn);
   }
 
-  const meta = document.createElement('div');
+  const meta = document.createElement("div");
   meta.className = 'chat-peer-meta';
   const name = document.createElement('span');
   name.className = 'chat-peer-name';
@@ -50,11 +80,24 @@ export function createGroupChatView(group, config, onSend, onBack, onGroupCall) 
   callBtn.addEventListener('click', () => onGroupCall?.(group.id));
   header.appendChild(callBtn);
 
-  const messagesEl = document.createElement('div');
+  const messagesEl = document.createElement("div");
   messagesEl.className = 'chat-messages glass';
 
-  const inputRow = document.createElement('div');
+  const inputRow = document.createElement("div");
   inputRow.className = 'chat-input-row';
+
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.className = 'chat-attach-input';
+  fileInput.hidden = true;
+
+  const fileBtn = document.createElement('button');
+  fileBtn.type = 'button';
+  fileBtn.className = 'btn btn-lang chat-tool-btn chat-file-btn';
+  fileBtn.title = t('chat.attach_file');
+  fileBtn.dataset.i18n = 'chat.file_btn';
+  fileBtn.textContent = t('chat.file_btn');
+  fileBtn.addEventListener('click', () => fileInput.click());
 
   const emojiBtn = document.createElement('button');
   emojiBtn.type = 'button';
@@ -73,22 +116,65 @@ export function createGroupChatView(group, config, onSend, onBack, onGroupCall) 
   sendBtn.className = 'btn btn-accent';
   sendBtn.textContent = t('chat.send');
 
-  async function send() {
-    const text = input.value.trim();
-    if (!text) return;
-    input.value = '';
-    const msg = {
-      id: createMessageId(),
-      from: config.blipId,
-      text,
-      timestamp: Date.now(),
-      outgoing: true,
-    };
+  async function publish(msg) {
     addGroupMessage(group.id, msg);
     renderMessages();
     sounds.messageSent();
     await onSend?.(group.id, msg);
   }
+
+  async function send() {
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    await publish({
+      id: createMessageId(),
+      from: config.blipId,
+      text,
+      timestamp: Date.now(),
+      outgoing: true,
+    });
+  }
+
+  async function sendAttachment(file) {
+    if (!file) return;
+    try {
+      let attachment;
+      let text;
+      if (isImageFile(file)) {
+        attachment = await encodeChatImageAttachment(file);
+        text = t('chat.image_sent');
+      } else {
+        if (file.size > INLINE_FILE_BYTES) {
+          alert(t('chat.group_file_limit'));
+          return;
+        }
+        validateChatFile(file);
+        attachment = await encodeInlineFileAttachment(file);
+        text = t('chat.file_sent');
+      }
+      await publish({
+        id: createMessageId(),
+        from: config.blipId,
+        text,
+        timestamp: Date.now(),
+        outgoing: true,
+        attachment,
+      });
+    } catch (err) {
+      const key =
+        err?.message === 'file_too_big' || err?.message === 'use_chunked'
+          ? 'chat.group_file_limit'
+          : 'chat.attach_failed';
+      alert(t(key));
+    }
+  }
+
+  fileInput.addEventListener('change', async () => {
+    const f = fileInput.files?.[0];
+    fileInput.value = '';
+    await sendAttachment(f);
+  });
 
   sendBtn.addEventListener('click', send);
   input.addEventListener('keydown', (e) => {
@@ -98,9 +184,11 @@ export function createGroupChatView(group, config, onSend, onBack, onGroupCall) 
     }
   });
 
+  inputRow.appendChild(fileBtn);
   inputRow.appendChild(emojiBtn);
   inputRow.appendChild(input);
   inputRow.appendChild(sendBtn);
+  inputRow.appendChild(fileInput);
 
   wrap.appendChild(header);
   wrap.appendChild(messagesEl);
@@ -117,17 +205,29 @@ export function createGroupChatView(group, config, onSend, onBack, onGroupCall) 
       return;
     }
     msgs.forEach((m) => {
-      const block = document.createElement('div');
+      const block = document.createElement("div");
       const mine = Number(m.from) === Number(config.blipId);
       block.className = `chat-block ${mine ? 'outgoing' : 'incoming'}`;
       const who = document.createElement('span');
       who.className = 'group-msg-from';
       who.textContent = mine ? t('group.you') : `#${m.from}`;
-      const text = document.createElement('span');
-      text.className = 'chat-text';
-      appendLinkifiedText(text, m.text, (url) => window.blip?.openExternal?.(url));
       block.appendChild(who);
-      block.appendChild(text);
+      if (m.attachment?.kind === 'image' && m.attachment.dataUrl) {
+        const img = document.createElement('img');
+        img.className = 'chat-image';
+        img.src = m.attachment.dataUrl;
+        img.alt = m.attachment.name || 'image';
+        img.loading = 'lazy';
+        block.appendChild(img);
+      } else if (m.attachment?.kind === 'file') {
+        appendFileCard(block, m.attachment);
+      }
+      if (m.text) {
+        const text = document.createElement('span');
+        text.className = 'chat-text';
+        appendLinkifiedText(text, m.text, (url) => window.blip?.openExternal?.(url));
+        block.appendChild(text);
+      }
       if (m.timestamp) {
         const time = document.createElement('span');
         time.className = 'chat-time';
@@ -149,15 +249,12 @@ export function createGroupChatView(group, config, onSend, onBack, onGroupCall) 
       renderMessages();
       sounds.messageReceived();
     },
-    updateGroup(g) {
-      group.hostId = g.hostId;
-      group.members = g.members;
-      group.name = g.name;
-      name.textContent = groupDisplayName(group);
-      const hostLabel2 = amHost(group, config.blipId)
-        ? t('group.you_host')
-        : t('group.host_line').replace('{id}', String(group.hostId));
-      sub.textContent = `${t('group.members')}: ${group.members.length} · ${hostLabel2}`;
+    updateGroup(next) {
+      group.hostId = next.hostId;
+      group.members = next.members;
+      sub.textContent = `${t('group.members')}: ${group.members.length} · ${
+        amHost(group, config.blipId) ? t('group.you_host') : t('group.host_line').replace('{id}', String(group.hostId))
+      }`;
     },
   };
 }

@@ -32,6 +32,8 @@ const DEFAULT_CONFIG = {
   globalShortcutsEnabled: true,
   /** LAN presence in UDP announce: online | away | busy */
   presenceStatus: 'online',
+  /** Optional custom status line (shown to peers when online) */
+  presenceText: '',
 };
 
 let configPath = null;

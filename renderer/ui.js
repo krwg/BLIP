@@ -13,6 +13,7 @@ import {
   joinGroupCall,
 } from './groups-wire.js';
 import { logPeerEvent, getNetworkLogEntries, clearNetworkLog } from './network-log.js';
+import { createMessageId } from './message-id.js';
 import { showSignalLost } from './call.js';
 import {
   createAvatarElement,
@@ -29,6 +30,7 @@ import {
   SOUND_PACK_IDS,
   MELODY_PACK_IDS,
 } from './audio.js';
+import { sendChatFile, fileToDataUrl, handleFileTransferTcp } from './file-transfer.js';
 import { formatPeerDisplayName } from './peer-labels.js';
 import { openMeshLabelDialog } from './mesh-label-dialog.js';
 import { showAppToast } from './toasts.js';
@@ -160,6 +162,25 @@ function peerPresenceClass(peer) {
   return 'online';
 }
 
+function peerStatusTooltip(peer) {
+  const base =
+    peerPresenceClass(peer) === 'away'
+      ? t('peers.away')
+      : peerPresenceClass(peer) === 'busy'
+        ? t('peers.busy')
+        : peer.online
+          ? t('peers.online')
+          : t('peers.offline');
+  const custom = (peer?.presenceText || '').trim();
+  return custom && peer.online ? `${base} · ${custom}` : base;
+}
+
+function formatPeerSubline(peer) {
+  const custom = (peer?.presenceText || '').trim();
+  if (peer?.online && custom) return custom;
+  return formatPeerPulseLine(peer);
+}
+
 function ensureGroupChatView(groupId) {
   if (!state.groupChatViews.has(groupId)) {
     const group = getGroup(groupId);
@@ -229,7 +250,16 @@ function ensureChatView(peerId) {
           messageId: payload.messageId,
           emoji: payload.emoji,
           add: payload.add,
-        })
+        }),
+      async (to, file, onProgress) => {
+        const result = await sendChatFile(api, state.config, to, file, onProgress);
+        if (result.chunked) {
+          const dataUrl = await fileToDataUrl(file);
+          result.attachment = { ...result.attachment, dataUrl };
+        }
+        return result;
+      },
+      (e, peerId) => showPeerContextMenu(e, peerId, { hideMessage: true })
     );
     if (peer) chat.setPeerName(formatPeerDisplayName(peer, peerId));
     state.chatViews.set(peerId, chat);
@@ -439,7 +469,8 @@ function renderPeersView() {
       const pulseLine = document.createElement('span');
       pulseLine.className = 'peer-pulse';
       pulseLine.dataset.peerPulse = String(peer.blipId);
-      pulseLine.textContent = formatPeerPulseLine(peer);
+      pulseLine.textContent = formatPeerSubline(peer);
+      pulseLine.classList.toggle('peer-pulse--status', !!(peer.online && (peer.presenceText || '').trim()));
       const lat = peerLatencyMs.get(peer.blipId);
       pulseLine.classList.toggle('peer-pulse--live', peer.online && lat != null);
       pulseLine.classList.toggle('peer-pulse--offline', !peer.online);
@@ -460,14 +491,7 @@ function renderPeersView() {
       const dot = document.createElement('span');
       const pClass = peerPresenceClass(peer);
       dot.className = `status-dot ${pClass}`;
-      dot.title =
-        pClass === 'away'
-          ? t('peers.away')
-          : pClass === 'busy'
-            ? t('peers.busy')
-            : peer.online
-              ? t('peers.online')
-              : t('peers.offline');
+      dot.title = peerStatusTooltip(peer);
 
       row.appendChild(avatar);
       row.appendChild(info);
@@ -521,7 +545,22 @@ async function promptMeshLabel(peer) {
   });
 }
 
-function showPeerContextMenu(e, peer) {
+function peerForContextMenu(peerOrId) {
+  if (peerOrId && typeof peerOrId === 'object' && peerOrId.blipId != null) return peerOrId;
+  const id = Number(peerOrId);
+  const found = state.peers.find((p) => p.blipId === id);
+  if (found) return found;
+  return {
+    blipId: id,
+    displayName: formatPeerDisplayName(null, id),
+    online: false,
+    presence: 'offline',
+    presenceText: '',
+  };
+}
+
+function showPeerContextMenu(e, peerOrId, options = {}) {
+  const peer = peerForContextMenu(peerOrId);
   const menu = document.createElement('div');
   menu.className = 'context-menu glass';
   menu.style.left = `${e.clientX}px`;
@@ -616,7 +655,7 @@ function showPeerContextMenu(e, peer) {
   menu.addEventListener('mousedown', (ev) => ev.stopPropagation());
   menu.addEventListener('click', (ev) => ev.stopPropagation());
 
-  menu.appendChild(msgItem);
+  if (!options.hideMessage) menu.appendChild(msgItem);
   menu.appendChild(callItem);
   menu.appendChild(labelItem);
   menu.appendChild(pingItem);
@@ -1151,6 +1190,47 @@ function buildSettingsProfilePanel() {
   frag.appendChild(nameInput);
   frag.appendChild(presenceLabel);
   frag.appendChild(presenceRow);
+
+  const statusLabel = document.createElement('label');
+  statusLabel.dataset.i18n = 'settings.status_text';
+  statusLabel.textContent = t('settings.status_text');
+  const statusInput = document.createElement('input');
+  statusInput.type = 'text';
+  statusInput.className = 'input settings-status-input';
+  statusInput.maxLength = 48;
+  statusInput.placeholder = t('settings.status_placeholder');
+  statusInput.dataset.i18nPlaceholder = 'settings.status_placeholder';
+  statusInput.value = state.config.presenceText || '';
+
+  const statusPresets = document.createElement('div');
+  statusPresets.className = 'presence-row settings-status-presets';
+  [
+    { text: '', key: 'settings.status_clear' },
+    { text: 'In game', key: 'settings.status_game' },
+    { text: 'AFK', key: 'settings.status_afk' },
+    { text: 'Working', key: 'settings.status_work' },
+  ].forEach(({ text, key }) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn-lang';
+    btn.dataset.i18n = key;
+    btn.textContent = t(key);
+    btn.addEventListener('click', async () => {
+      statusInput.value = text;
+      state.config = await api.saveConfig({ presenceText: text });
+    });
+    statusPresets.appendChild(btn);
+  });
+
+  statusInput.addEventListener('change', async () => {
+    const presenceText = statusInput.value.trim().slice(0, 48);
+    statusInput.value = presenceText;
+    state.config = await api.saveConfig({ presenceText });
+  });
+
+  frag.appendChild(statusLabel);
+  frag.appendChild(statusInput);
+  frag.appendChild(statusPresets);
   frag.appendChild(buildAvatarSettingsSection());
   frag.appendChild(idRow);
   return frag;
@@ -2483,7 +2563,8 @@ function refreshPeerPulseDom() {
     const id = Number(el.dataset.peerPulse);
     const peer = state.peers.find((p) => p.blipId === id);
     if (!peer) return;
-    el.textContent = formatPeerPulseLine(peer);
+    el.textContent = formatPeerSubline(peer);
+    el.classList.toggle('peer-pulse--status', !!(peer.online && (peer.presenceText || '').trim()));
     el.classList.toggle('peer-pulse--live', peer.online && peerLatencyMs.has(id));
     el.classList.toggle('peer-pulse--offline', !peer.online);
   });
@@ -2687,7 +2768,9 @@ function renderChatHubView() {
         const prevText =
           row.lastMsg.attachment?.kind === 'image'
             ? t('chat.image_preview')
-            : (row.lastMsg.text || '').slice(0, 48);
+            : row.lastMsg.attachment?.kind === 'file'
+              ? t('chat.file_preview').replace('{name}', row.lastMsg.attachment.name || 'file')
+              : (row.lastMsg.text || '').slice(0, 48);
         preview.textContent = prevText;
         info.appendChild(preview);
       }
@@ -2708,6 +2791,11 @@ function renderChatHubView() {
       item.appendChild(info);
       item.appendChild(dot);
       item.addEventListener('click', () => openChat(row.blipId));
+      item.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        showPeerContextMenu(e, peer || { blipId: row.blipId, displayName: row.displayName, online: row.online });
+      });
       list.appendChild(item);
     });
   }
@@ -2946,6 +3034,27 @@ function handleTypingTcp(msg) {
 }
 
 export function handleTcpMessage(msg) {
+  if (msg.type?.startsWith?.('file-')) {
+    if (isBlocked(Number(msg.from))) return;
+    handleFileTransferTcp(msg, {
+      config: state.config,
+      onProgress: () => {},
+      onComplete: (peerId, payload) => {
+        const incoming = {
+          type: 'message',
+          from: peerId,
+          to: state.config.blipId,
+          id: createMessageId(),
+          text: t('chat.file_received'),
+          timestamp: Date.now(),
+          attachment: payload.attachment,
+        };
+        routePeerMessage(incoming);
+      },
+    });
+    return;
+  }
+
   if (msg.type?.startsWith?.('group-')) {
     void handleGroupTcpMessage(msg, {
       api,
@@ -2985,6 +3094,13 @@ export function handleTcpMessage(msg) {
 
   if (msg.type !== 'message') return;
 
+  routePeerMessage(msg);
+}
+
+function routePeerMessage(msg) {
+  const peerId = Number(msg.from === state.config.blipId ? msg.to : msg.from);
+  if (!Number.isFinite(peerId) || isBlocked(peerId)) return;
+
   ensureChatView(peerId);
   state.chatViews.get(peerId)?.handleIncoming(msg);
 
@@ -2994,7 +3110,12 @@ export function handleTcpMessage(msg) {
 
   bumpUnread(peerId);
 
-  const preview = typeof msg.text === 'string' ? msg.text.slice(0, 120) : '';
+  let preview = typeof msg.text === 'string' ? msg.text.slice(0, 120) : '';
+  if (msg.attachment?.kind === 'file') {
+    preview = t('chat.file_preview').replace('{name}', msg.attachment.name || 'file');
+  } else if (msg.attachment?.kind === 'image') {
+    preview = t('chat.image_preview');
+  }
   showMessageToast(peerId, preview);
 
   const typingOther =

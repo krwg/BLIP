@@ -1,6 +1,9 @@
-const MAX_FILE_BYTES = 4 * 1024 * 1024;
+export const MAX_CHAT_FILE_BYTES = 16 * 1024 * 1024;
+export const INLINE_FILE_BYTES = 768 * 1024;
+const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
 const MAX_EDGE = 960;
 const MAX_DATA_URL_CHARS = 520_000;
+const MAX_INLINE_DATA_URL_CHARS = 1_100_000;
 
 function inferImageMime(file) {
   if (file.type && file.type.startsWith('image/')) return file.type;
@@ -11,14 +14,30 @@ function inferImageMime(file) {
   return 'image/jpeg';
 }
 
+export function isImageFile(file) {
+  if (!file) return false;
+  if (file.type?.startsWith('image/')) return true;
+  const n = (file.name || '').toLowerCase();
+  return /\.(png|jpe?g|gif|webp|bmp|svg)$/.test(n);
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('read'));
+    reader.readAsDataURL(file);
+  });
+}
+
 /**
  * Resize image for LAN send (JPEG, capped size).
  * @param {File} file
- * @returns {Promise<{ kind: 'image', name: string, mime: string, dataUrl: string }>}
+ * @returns {Promise<{ kind: 'image', name: string, mime: string, size: number, dataUrl: string }>}
  */
 export async function encodeChatImageAttachment(file) {
   if (!file || !file.size) throw new Error('empty');
-  if (file.size > MAX_FILE_BYTES) throw new Error('file_too_big');
+  if (file.size > MAX_IMAGE_BYTES) throw new Error('file_too_big');
   const mime = inferImageMime(file);
   if (!mime.startsWith('image/')) throw new Error('bad_mime');
 
@@ -59,9 +78,39 @@ export async function encodeChatImageAttachment(file) {
       kind: 'image',
       name: file.name || 'image.jpg',
       mime: 'image/jpeg',
+      size: file.size,
       dataUrl,
     };
   } finally {
     URL.revokeObjectURL(blobUrl);
   }
+}
+
+/**
+ * Small generic file inline in a chat message (data URL).
+ * @param {File} file
+ */
+export async function encodeInlineFileAttachment(file) {
+  if (!file || !file.size) throw new Error('empty');
+  if (file.size > INLINE_FILE_BYTES) throw new Error('use_chunked');
+  if (file.size > MAX_CHAT_FILE_BYTES) throw new Error('file_too_big');
+
+  const dataUrl = await readFileAsDataUrl(file);
+  if (typeof dataUrl !== 'string' || dataUrl.length > MAX_INLINE_DATA_URL_CHARS) {
+    throw new Error('too_large');
+  }
+
+  const mime = file.type || 'application/octet-stream';
+  return {
+    kind: 'file',
+    name: file.name || 'file',
+    mime,
+    size: file.size,
+    dataUrl,
+  };
+}
+
+export function validateChatFile(file) {
+  if (!file || !file.size) throw new Error('empty');
+  if (file.size > MAX_CHAT_FILE_BYTES) throw new Error('file_too_big');
 }

@@ -305,6 +305,10 @@ function handleTcpPayload(msg, fromBlipId) {
     case 'group-call-start':
     case 'group-call-signal':
     case 'group-call-end':
+    case 'file-offer':
+    case 'file-chunk':
+    case 'file-done':
+    case 'file-abort':
       sendToRenderer('tcp-message', msg);
       break;
     case 'call-offer': {

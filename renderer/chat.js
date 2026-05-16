@@ -3,7 +3,12 @@ import { sounds } from './audio.js';
 import { createAvatarElement } from './avatar.js';
 import { appendLinkifiedText } from './linkify.js';
 import { attachEmojiPicker } from './emoji-picker.js';
-import { encodeChatImageAttachment } from './chat-attachments.js';
+import {
+  encodeChatImageAttachment,
+  isImageFile,
+  validateChatFile,
+} from './chat-attachments.js';
+import { formatFileSize } from './file-transfer.js';
 import { createMessageId } from './message-id.js';
 
 const STORAGE_KEY = 'blip_chat_v1';
@@ -107,7 +112,9 @@ export function exportPeerChat(peerId, displayName) {
   const lines = msgs.map((m) => {
     const who = m.outgoing ? 'You' : label;
     const time = new Date(m.timestamp || Date.now()).toLocaleString();
-    const body = m.attachment?.kind === 'image' ? `[image] ${m.text || ''}`.trim() : m.text;
+    let body = m.text || '';
+    if (m.attachment?.kind === 'image') body = `[image] ${body}`.trim();
+    else if (m.attachment?.kind === 'file') body = `[file] ${m.attachment.name || ''} ${body}`.trim();
     return `[${time}] ${who}: ${body}`;
   });
   const body = lines.length ? `${lines.join('\n')}\n` : '';
@@ -131,7 +138,47 @@ function receiptLabel(m) {
   return '';
 }
 
-export function createChatView(peerId, config, onSend, onBack, onTyping, onReceipt, onReaction) {
+function appendFileAttachment(block, attachment, openExternalUrl) {
+  if (attachment?.kind !== 'file') return;
+  const card = document.createElement('div');
+  card.className = 'chat-file-card';
+  const label = document.createElement('span');
+  label.className = 'chat-file-name';
+  label.textContent = attachment.name || 'file';
+  const meta = document.createElement('span');
+  meta.className = 'chat-file-meta';
+  meta.textContent = formatFileSize(attachment.size);
+  card.appendChild(label);
+  card.appendChild(meta);
+  if (attachment.dataUrl) {
+    const dl = document.createElement('a');
+    dl.className = 'btn btn-lang chat-file-dl';
+    dl.href = attachment.dataUrl;
+    dl.download = attachment.name || 'download';
+    dl.textContent = t('chat.file_download');
+    dl.dataset.i18n = 'chat.file_download';
+    dl.addEventListener('click', (e) => e.stopPropagation());
+    card.appendChild(dl);
+  } else if (attachment.pending) {
+    const pending = document.createElement('span');
+    pending.className = 'chat-file-pending';
+    pending.textContent = t('chat.file_sending').replace('{pct}', String(attachment.progress || 0));
+    card.appendChild(pending);
+  }
+  block.appendChild(card);
+}
+
+export function createChatView(
+  peerId,
+  config,
+  onSend,
+  onBack,
+  onTyping,
+  onReceipt,
+  onReaction,
+  onSendFile,
+  onPeerMenu
+) {
   const wrap = document.createElement('div');
   wrap.className = 'chat-view';
 
@@ -168,8 +215,18 @@ export function createChatView(peerId, config, onSend, onBack, onTyping, onRecei
   meta.appendChild(idLabel);
   header.appendChild(avatarMount);
   header.appendChild(meta);
+  if (onPeerMenu) {
+    const openPeerMenu = (e) => {
+      e.preventDefault();
+      onPeerMenu(e, peerId);
+    };
+    header.addEventListener('contextmenu', openPeerMenu);
+    meta.addEventListener('contextmenu', openPeerMenu);
+    avatarMount.addEventListener('contextmenu', openPeerMenu);
+    meta.classList.add('chat-peer-meta--menu');
+  }
 
-  const headActions = document.createElement('div');
+  const headActions = document.createElement("div");
   headActions.className = 'chat-header-actions';
 
   const searchInput = document.createElement('input');
@@ -277,19 +334,18 @@ export function createChatView(peerId, config, onSend, onBack, onTyping, onRecei
   const inputRow = document.createElement('div');
   inputRow.className = 'chat-input-row';
 
-  const attachInput = document.createElement('input');
-  attachInput.type = 'file';
-  attachInput.accept = 'image/*';
-  attachInput.className = 'chat-attach-input';
-  attachInput.hidden = true;
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.className = 'chat-attach-input';
+  fileInput.hidden = true;
 
-  const attachBtn = document.createElement('button');
-  attachBtn.type = 'button';
-  attachBtn.className = 'btn btn-lang chat-tool-btn chat-attach-btn';
-  attachBtn.title = t('chat.attach_image');
-  attachBtn.dataset.i18n = 'chat.attach_btn';
-  attachBtn.textContent = t('chat.attach_btn');
-  attachBtn.addEventListener('click', () => attachInput.click());
+  const fileBtn = document.createElement('button');
+  fileBtn.type = 'button';
+  fileBtn.className = 'btn btn-lang chat-tool-btn chat-file-btn';
+  fileBtn.title = t('chat.attach_file');
+  fileBtn.dataset.i18n = 'chat.file_btn';
+  fileBtn.textContent = t('chat.file_btn');
+  fileBtn.addEventListener('click', () => fileInput.click());
 
   const emojiBtn = document.createElement('button');
   emojiBtn.type = 'button';
@@ -396,10 +452,10 @@ export function createChatView(peerId, config, onSend, onBack, onTyping, onRecei
     await sendPayload({ text });
   }
 
-  attachInput.addEventListener('change', async () => {
-    const file = attachInput.files?.[0];
-    attachInput.value = '';
-    await sendImageFile(file);
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files?.[0];
+    fileInput.value = '';
+    await sendGenericFile(file);
   });
 
   sendBtn.addEventListener('click', send);
@@ -412,11 +468,11 @@ export function createChatView(peerId, config, onSend, onBack, onTyping, onRecei
     }
   });
 
-  inputRow.appendChild(attachBtn);
+  inputRow.appendChild(fileBtn);
   inputRow.appendChild(emojiBtn);
   inputRow.appendChild(input);
   inputRow.appendChild(sendBtn);
-  inputRow.appendChild(attachInput);
+  inputRow.appendChild(fileInput);
 
   async function sendImageFile(file) {
     if (!file) return;
@@ -426,6 +482,64 @@ export function createChatView(peerId, config, onSend, onBack, onTyping, onRecei
     } catch (err) {
       const key = err?.message === 'file_too_big' ? 'chat.attach_too_big' : 'chat.attach_failed';
       alert(t(key));
+    }
+  }
+
+  async function sendGenericFile(file) {
+    if (!file) return;
+    if (isImageFile(file)) {
+      await sendImageFile(file);
+      return;
+    }
+    if (!onSendFile) return;
+    try {
+      validateChatFile(file);
+    } catch (err) {
+      alert(t(err?.message === 'file_too_big' ? 'chat.file_too_big' : 'chat.attach_failed'));
+      return;
+    }
+    const pendingId = createMessageId();
+    const pendingMsg = {
+      id: pendingId,
+      text: t('chat.file_sent'),
+      timestamp: Date.now(),
+      outgoing: true,
+      attachment: {
+        kind: 'file',
+        name: file.name,
+        size: file.size,
+        pending: true,
+        progress: 0,
+      },
+    };
+    addMessage(peerId, pendingMsg);
+    renderMessages();
+    try {
+      const result = await onSendFile(peerId, file, (pct) => {
+        pendingMsg.attachment.progress = pct;
+        renderMessages();
+      });
+      const attachment = result.attachment;
+      pendingMsg.attachment = { ...attachment, pending: false };
+      pendingMsg.pending = false;
+      persist();
+      renderMessages();
+      if (result.inline) {
+        await onSend(peerId, {
+          id: pendingId,
+          text: t('chat.file_sent'),
+          timestamp: pendingMsg.timestamp,
+          attachment,
+        });
+      }
+      sounds.messageSent();
+    } catch (err) {
+      const list = getMessages(peerId);
+      const idx = list.findIndex((m) => m.id === pendingId);
+      if (idx >= 0) list.splice(idx, 1);
+      persist();
+      renderMessages();
+      alert(t('chat.attach_failed'));
     }
   }
 
@@ -440,15 +554,14 @@ export function createChatView(peerId, config, onSend, onBack, onTyping, onRecei
     wrap.classList.toggle('chat-view--drag', on);
   }
 
-  function hasImageFile(dt) {
-    if (!dt?.files?.length) return false;
-    return [...dt.files].some((f) => f.type.startsWith('image/'));
+  function hasDropFiles(dt) {
+    return !!(dt?.files?.length);
   }
 
   function onDragEnter(e) {
     e.preventDefault();
     dragDepth += 1;
-    if (hasImageFile(e.dataTransfer)) setDropActive(true);
+    if (hasDropFiles(e.dataTransfer)) setDropActive(true);
   }
 
   function onDragLeave(e) {
@@ -459,7 +572,7 @@ export function createChatView(peerId, config, onSend, onBack, onTyping, onRecei
 
   function onDragOver(e) {
     e.preventDefault();
-    if (hasImageFile(e.dataTransfer)) e.dataTransfer.dropEffect = 'copy';
+    if (hasDropFiles(e.dataTransfer)) e.dataTransfer.dropEffect = 'copy';
   }
 
   async function onDrop(e) {
@@ -467,13 +580,10 @@ export function createChatView(peerId, config, onSend, onBack, onTyping, onRecei
     dragDepth = 0;
     setDropActive(false);
     const files = [...(e.dataTransfer?.files || [])];
-    const images = files.filter((f) => f.type.startsWith('image/'));
-    if (!images.length) {
-      if (files.length) alert(t('chat.drop_images_only'));
-      return;
-    }
-    for (const file of images) {
-      await sendImageFile(file);
+    if (!files.length) return;
+    for (const file of files) {
+      if (isImageFile(file)) await sendImageFile(file);
+      else await sendGenericFile(file);
     }
   }
 
@@ -565,9 +675,11 @@ export function createChatView(peerId, config, onSend, onBack, onTyping, onRecei
         img.alt = m.attachment.name || 'image';
         img.loading = 'lazy';
         block.appendChild(img);
+      } else if (m.attachment?.kind === 'file') {
+        appendFileAttachment(block, m.attachment, openExternalUrl);
       }
 
-      if (m.text) {
+      if (m.text && !(m.attachment?.pending && !m.text.trim())) {
         const text = document.createElement('span');
         text.className = 'chat-text';
         appendLinkifiedText(text, m.text, openExternalUrl);

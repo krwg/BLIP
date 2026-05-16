@@ -99,6 +99,7 @@ export async function sendGroupChatMessage(api, config, groupId, msg) {
         text: msg.text,
         id: msg.id,
         timestamp: msg.timestamp,
+        attachment: msg.attachment,
       });
     }
     return { ok: true };
@@ -113,6 +114,7 @@ export async function sendGroupChatMessage(api, config, groupId, msg) {
     text: msg.text,
     id: msg.id,
     timestamp: msg.timestamp,
+    attachment: msg.attachment,
   });
 }
 
@@ -185,6 +187,7 @@ export async function handleGroupTcpMessage(msg, ctx) {
       from: msg.from,
       text: msg.text,
       timestamp: msg.timestamp || Date.now(),
+      attachment: msg.attachment,
     };
 
     if (amHost(group, myId)) {
@@ -202,6 +205,7 @@ export async function handleGroupTcpMessage(msg, ctx) {
             text: msg.text,
             id: msg.id,
             timestamp: msg.timestamp,
+            attachment: msg.attachment,
           });
         }
       }

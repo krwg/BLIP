@@ -79,6 +79,8 @@ Quick VM flow: host runs BLIP (ID **1**), VM runs BLIP (ID **2**), same subnet v
 | **Avatars** | Upload, regenerate, or 8×8 generated from ID |
 | **Themes** | Light/dark palettes + animated backgrounds (EN/RU names) |
 | **Sound** | Chiptune Web Audio — **SIGNAL** / **PULSE** FX packs, **MESH** / **GRID** call melodies; preview in **Settings → Sound**; DND mutes all |
+| **Files** | P2P file send in chat (up to 16 MB, chunked); drag & drop; group inline files ≤768 KB |
+| **Status** | Custom status line on LAN (Profile) — “In game”, AFK, etc. |
 | **Shortcuts** | In-window + system-wide (**Alt+1–4**, tray-safe) |
 | **Languages** | English / Russian |
 | **Settings** | Profile, privacy/block list, appearance, network, shortcuts, call devices |
@@ -339,6 +341,8 @@ The **Minecraft** font is licensed separately under [MIT](https://github.com/bs-
 | **Аватары** | Загрузка, пересоздание или 8×8 от ID |
 | **Темы** | Светлые/тёмные палитры и анимированные фоны (названия EN/RU) |
 | **Звук** | Chiptune (Web Audio): наборы **СИГНАЛ** / **ПУЛЬС**, мелодии **MESH** / **СЕТКА**; прослушивание в **Настройки → Звук**; DND отключает |
+| **Файлы** | P2P в чате (до 16 МБ, чанки); drag & drop; в группе до 768 КБ |
+| **Статус** | Свой текст статуса в LAN (Профиль) — «в игре», AFK и т.д. |
 | **Горячие клавиши** | В окне + системные (**Alt+1–4**, из трея) |
 | **Языки** | English / Русский |
 | **Настройки** | Профиль, конфиденциальность/блок, вид, сеть, горячие клавиши, звонок |

@@ -5,6 +5,15 @@ import { resolvePorts, getDiscoveryBroadcastPorts } from './ports.js';
 
 const ANNOUNCE_INTERVAL = 5000;
 const PEER_TIMEOUT = 30000;
+const MAX_PRESENCE_TEXT = 48;
+
+function sanitizePresenceText(raw) {
+  if (raw == null) return '';
+  return String(raw)
+    .replace(/[\u0000-\u001f\u007f]/g, '')
+    .trim()
+    .slice(0, MAX_PRESENCE_TEXT);
+}
 
 export class Discovery {
   constructor(config, onPeersChange) {
@@ -111,6 +120,7 @@ export class Discovery {
       blipId: this.config.blipId,
       displayName: this.config.displayName,
       presence,
+      presenceText: sanitizePresenceText(this.config.presenceText),
       ip: getLocalIp(),
       udpPort,
       tcpPort,
@@ -152,10 +162,12 @@ export class Discovery {
     const existing = this.peers.get(data.blipId);
     const presence =
       data.presence === 'away' || data.presence === 'busy' ? data.presence : 'online';
+    const presenceText = sanitizePresenceText(data.presenceText);
     const peer = {
       blipId: data.blipId,
       displayName: data.displayName || `BLIP-${data.blipId}`,
       presence,
+      presenceText,
       ip: announceIp || data.ip,
       tcpPort: peerTcp,
       udpPort: peerUdp,
@@ -168,6 +180,7 @@ export class Discovery {
       existing.ip !== peer.ip ||
       existing.displayName !== peer.displayName ||
       existing.presence !== peer.presence ||
+      existing.presenceText !== peer.presenceText ||
       existing.tcpPort !== peer.tcpPort
     ) {
       this.peers.set(data.blipId, peer);
@@ -175,6 +188,7 @@ export class Discovery {
       existing.lastSeen = Date.now();
       existing.online = true;
       existing.presence = presence;
+      existing.presenceText = presenceText;
       existing.tcpPort = peerTcp;
       existing.udpPort = peerUdp;
     }

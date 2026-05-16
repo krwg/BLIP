@@ -9,6 +9,17 @@ Release **version numbers** track [`app-metadata.json`](app-metadata.json) (sync
 
 ## [Unreleased]
 
+## [0.4.8] — Mesh
+
+### Added
+
+- **LAN file transfer** — send files in 1:1 chat (inline up to **768 KB**, chunked TCP up to **16 MB**); drag & drop images and files; **FILE** button; download card in chat. Group chats support inline files/images up to **768 KB**.
+- **Custom status text** — optional line (e.g. “In game”, “AFK”) in **Settings → Profile**; broadcast on UDP/mDNS (`presenceText`); shown under peer name when online.
+
+### Changed
+
+- Drop overlay accepts any file type in direct chat (images still compressed as before).
+
 ## [0.4.5] — Mesh
 
 ### Added

@@ -700,8 +700,21 @@ select.blip-select:focus {
   line-height: 1;
 }
 
-.chat-attach-btn {
+.chat-file-btn {
   color: var(--blip-accent);
+  min-width: 44px;
+  border: 2px solid var(--blip-accent);
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.65);
+  image-rendering: pixelated;
+}
+
+.chat-file-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.65);
+}
+
+.chat-peer-meta--menu {
+  cursor: context-menu;
 }
 
 .chat-emoji-btn {
@@ -1790,6 +1803,50 @@ select.blip-select:focus {
 
 .settings-sound-pack-row {
   margin-bottom: 4px;
+}
+
+.settings-status-input {
+  max-width: 360px;
+  margin-bottom: 6px;
+}
+
+.settings-status-presets {
+  margin-bottom: 8px;
+}
+
+.peer-pulse--status {
+  color: var(--blip-accent);
+}
+
+.chat-file-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  border: 2px solid var(--blip-border);
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.chat-file-name {
+  font-weight: 700;
+  font-size: 12px;
+  word-break: break-all;
+}
+
+.chat-file-meta {
+  font-size: 10px;
+  color: var(--blip-muted);
+}
+
+.chat-file-dl {
+  margin-left: auto;
+}
+
+.chat-file-pending {
+  font-size: 10px;
+  color: var(--blip-muted);
 }
 
 .settings-sound-volume-row {
