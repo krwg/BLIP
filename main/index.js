@@ -12,6 +12,8 @@ import { resolveBuildAsset } from './paths.js';
 import { resolvePorts } from './ports.js';
 import { serializeSdp, sendCallPayload } from './call-wire.js';
 import { fetchGithubReleases } from './github-releases.js';
+import { registerGlobalShortcuts, unregisterGlobalShortcuts } from './global-shortcuts.js';
+import os from 'os';
 
 if (process.env.BLIP_USER_DATA_DIR) {
   app.setPath('userData', process.env.BLIP_USER_DATA_DIR);
@@ -119,6 +121,23 @@ function createWindow() {
 
   mainWindow.on('closed', () => {
     mainWindow = null;
+    unregisterGlobalShortcuts();
+  });
+
+  mainWindow.webContents.once('did-finish-load', () => {
+    refreshGlobalShortcuts();
+  });
+}
+
+function refreshGlobalShortcuts() {
+  if (!config?.blipId) {
+    unregisterGlobalShortcuts();
+    return;
+  }
+  registerGlobalShortcuts({
+    enabled: config.globalShortcutsEnabled !== false,
+    getMainWindow: () => mainWindow,
+    getCallWindow: () => callWindow,
   });
 }
 
@@ -272,6 +291,9 @@ function handleTcpPayload(msg, fromBlipId) {
     case 'message':
       sendToRenderer('tcp-message', msg);
       break;
+    case 'typing':
+      sendToRenderer('tcp-message', msg);
+      break;
     case 'call-offer': {
       const callerId = msg.from ?? fromBlipId;
       if (config?.desktopCallNotifications !== false && !config?.doNotDisturb) {
@@ -416,6 +438,12 @@ function setupIpc() {
     if (callWindow && !callWindow.isDestroyed()) {
       callWindow.webContents.send('config-updated', config);
     }
+    if (
+      updates?.globalShortcutsEnabled !== undefined ||
+      updates?.blipId !== undefined
+    ) {
+      refreshGlobalShortcuts();
+    }
     return config;
   });
 
@@ -430,10 +458,12 @@ function setupIpc() {
     const peers = discovery?.getPeers() || [];
     return {
       blipId: config.blipId,
+      hostname: os.hostname(),
       localIp: getLocalIp(),
       localIpv4s: [...getLocalIpv4Set()],
       tcpPort,
       udpPort,
+      discoveryActive: !!discovery?.socket,
       onlinePeers: peers.filter((p) => p.online).length,
       totalPeers: peers.length,
     };
@@ -442,13 +472,19 @@ function setupIpc() {
   ipcMain.handle('send-tcp-message', async (_, payload) => {
     try {
       const socket = await ensurePeerSocket(payload.to);
-      await sendOnSocket(socket, {
-        type: 'message',
+      const type = payload.type || 'message';
+      const packet = {
+        type,
         from: config.blipId,
         to: payload.to,
-        text: payload.text,
-        timestamp: Date.now(),
-      });
+      };
+      if (type === 'typing') {
+        packet.active = !!payload.active;
+      } else {
+        packet.text = payload.text;
+        packet.timestamp = Date.now();
+      }
+      await sendOnSocket(socket, packet);
       return { ok: true };
     } catch (err) {
       return { ok: false, error: err.message };
@@ -678,11 +714,15 @@ function setupMediaPermissions() {
   });
 
   session.defaultSession.setDisplayMediaRequestHandler(
-    async (_request, callback) => {
+    async (request, callback) => {
+      if (request.useSystemPicker) {
+        callback({});
+        return;
+      }
       try {
         const sources = await desktopCapturer.getSources({
           types: ['screen', 'window'],
-          thumbnailSize: { width: 0, height: 0 },
+          thumbnailSize: { width: 1920, height: 1080 },
         });
         const screen = sources.find((s) => s.id.startsWith('screen:'));
         const pick = screen ?? sources[0];
@@ -731,6 +771,7 @@ app.whenReady().then(async () => {
 
 app.on('before-quit', () => {
   appIsQuitting = true;
+  unregisterGlobalShortcuts();
   destroyTray();
 });
 

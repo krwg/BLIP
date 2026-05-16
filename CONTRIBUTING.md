@@ -59,6 +59,14 @@ npm run electron:build:portable
 
 Outputs go to `dist-electron/` (see `electron-builder.yml`).
 
+## Release metadata
+
+Version and codename live in [`app-metadata.json`](app-metadata.json) (synced into `package.json` on `npm run build`). Update [`CHANGELOG.md`](CHANGELOG.md) when shipping.
+
+## TCP payloads (renderer ↔ main)
+
+Chat and signalling use newline-delimited JSON on TCP port **42070**. Common `type` values: `message`, `typing`, `ping`/`pong`, `call-*`. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
 ## Version / metadata
 
 - Release version and display metadata live in **`app-metadata.json`**.

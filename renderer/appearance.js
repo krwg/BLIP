@@ -60,6 +60,16 @@ export function applyAppearance(config) {
   const bg = normalizeBgId(config?.animatedBgId);
   html.dataset.theme = theme;
   html.dataset.animatedBg = bg;
+  delete html.dataset.callWindow;
+  syncReducedMotion();
+}
+
+/** Call window: theme colors only — no animated wallpaper over video. */
+export function applyCallWindowAppearance(config) {
+  const html = document.documentElement;
+  html.dataset.theme = normalizeThemeId(config?.themeId);
+  html.dataset.animatedBg = 'none';
+  html.dataset.callWindow = '1';
   syncReducedMotion();
 }
 

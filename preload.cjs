@@ -101,4 +101,19 @@ contextBridge.exposeInMainWorld('blip', {
     ipcRenderer.on('config-updated', handler);
     return () => ipcRenderer.removeListener('config-updated', handler);
   },
+  onGlobalNavigate: (cb) => {
+    const handler = (_, data) => cb(data);
+    ipcRenderer.on('global-navigate', handler);
+    return () => ipcRenderer.removeListener('global-navigate', handler);
+  },
+  onGlobalToggleDnd: (cb) => {
+    const handler = () => cb();
+    ipcRenderer.on('global-toggle-dnd', handler);
+    return () => ipcRenderer.removeListener('global-toggle-dnd', handler);
+  },
+  onGlobalHangup: (cb) => {
+    const handler = () => cb();
+    ipcRenderer.on('global-hangup', handler);
+    return () => ipcRenderer.removeListener('global-hangup', handler);
+  },
 });

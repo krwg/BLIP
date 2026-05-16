@@ -1,5 +1,11 @@
 import { setLang } from './i18n.js';
-import { initUI, updatePeers, handleTcpMessage } from './ui.js';
+import {
+  initUI,
+  updatePeers,
+  handleTcpMessage,
+  navigateToView,
+  toggleDoNotDisturb,
+} from './ui.js';
 
 const api = {
   saveConfig: (data) => window.blip.saveConfig(data),
@@ -52,6 +58,13 @@ async function boot() {
 
   window.blip.onPeersUpdated((data) => updatePeers(data));
   window.blip.onTcpMessage((msg) => handleTcpMessage(msg));
+
+  window.blip.onGlobalNavigate?.((payload) => {
+    if (payload?.view) navigateToView(payload.view);
+  });
+  window.blip.onGlobalToggleDnd?.(() => {
+    void toggleDoNotDisturb();
+  });
 
   /* Calls run in separate BrowserWindow (call-window.html) — see main process */
 }

@@ -80,7 +80,7 @@ export function exportPeerChat(peerId, displayName) {
   URL.revokeObjectURL(url);
 }
 
-export function createChatView(peerId, config, onSend, onBack) {
+export function createChatView(peerId, config, onSend, onBack, onTyping) {
   const wrap = document.createElement('div');
   wrap.className = 'chat-view';
 
@@ -218,6 +218,17 @@ export function createChatView(peerId, config, onSend, onBack) {
   empty.textContent = t('chat.empty');
   messagesEl.appendChild(empty);
 
+  const typingBar = document.createElement('div');
+  typingBar.className = 'chat-typing hidden';
+  const typingDots = document.createElement('span');
+  typingDots.className = 'chat-typing-dots';
+  typingDots.setAttribute('aria-hidden', 'true');
+  typingDots.textContent = '···';
+  const typingText = document.createElement('span');
+  typingText.className = 'chat-typing-text';
+  typingBar.appendChild(typingDots);
+  typingBar.appendChild(typingText);
+
   const inputRow = document.createElement('div');
   inputRow.className = 'chat-input-row';
   const input = document.createElement('input');
@@ -233,7 +244,61 @@ export function createChatView(peerId, config, onSend, onBack) {
   sendBtn.dataset.i18n = 'chat.send';
   sendBtn.textContent = t('chat.send');
 
+  let typingEmitTimer = null;
+  let typingStopTimer = null;
+  let lastTypingEmit = 0;
+
+  function emitTyping(active) {
+    onTyping?.(peerId, active);
+  }
+
+  function stopTypingSignal() {
+    clearTimeout(typingEmitTimer);
+    clearTimeout(typingStopTimer);
+    typingEmitTimer = null;
+    typingStopTimer = null;
+    if (lastTypingEmit) {
+      lastTypingEmit = 0;
+      emitTyping(false);
+    }
+  }
+
+  function onInputTyping() {
+    const text = input.value.trim();
+    if (!text) {
+      stopTypingSignal();
+      return;
+    }
+    const now = Date.now();
+    if (!lastTypingEmit || now - lastTypingEmit > 1800) {
+      lastTypingEmit = now;
+      emitTyping(true);
+    }
+    clearTimeout(typingStopTimer);
+    typingStopTimer = setTimeout(() => {
+      lastTypingEmit = 0;
+      emitTyping(false);
+    }, 2800);
+  }
+
+  let hideTypingUiTimer = null;
+
+  function setTyping(active, displayName) {
+    clearTimeout(hideTypingUiTimer);
+    if (!active) {
+      typingBar.classList.add('hidden');
+      return;
+    }
+    const label = displayName || `BLIP-${peerId}`;
+    typingText.textContent = t('chat.typing').replace('{name}', label);
+    typingBar.classList.remove('hidden');
+    hideTypingUiTimer = setTimeout(() => {
+      typingBar.classList.add('hidden');
+    }, 4500);
+  }
+
   async function send() {
+    stopTypingSignal();
     const text = input.value.trim();
     if (!text) return;
     const msg = {
@@ -257,6 +322,8 @@ export function createChatView(peerId, config, onSend, onBack) {
   }
 
   sendBtn.addEventListener('click', send);
+  input.addEventListener('input', onInputTyping);
+  input.addEventListener('blur', stopTypingSignal);
   input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -269,6 +336,7 @@ export function createChatView(peerId, config, onSend, onBack) {
 
   wrap.appendChild(header);
   wrap.appendChild(messagesEl);
+  wrap.appendChild(typingBar);
   wrap.appendChild(inputRow);
 
   function renderMessages() {
@@ -348,10 +416,12 @@ export function createChatView(peerId, config, onSend, onBack) {
       mountHeaderAvatar();
     },
     handleIncoming(msg) {
+      setTyping(false);
       addMessage(peerId, { ...msg, outgoing: false });
       renderMessages();
       flashNew();
       sounds.messageReceived();
     },
+    setTyping,
   };
 }

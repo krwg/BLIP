@@ -148,6 +148,9 @@ body {
   flex: 1;
   padding: 16px;
   overflow: auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 /* Buttons */
@@ -198,6 +201,7 @@ body {
 }
 
 .nav-btn {
+  position: relative;
   width: 100%;
   padding: 10px 4px;
   border: 2px solid transparent;
@@ -207,6 +211,21 @@ body {
   font-size: 11px;
   text-transform: uppercase;
   cursor: pointer;
+}
+
+.nav-unread-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  font-size: 9px;
+  line-height: 16px;
+  text-align: center;
+  background: var(--blip-danger);
+  color: #fff;
+  border: 1px solid var(--blip-bg);
 }
 
 .nav-btn:hover,
@@ -370,26 +389,44 @@ select.blip-select:focus {
 
 /* Dial */
 .dial-view {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 0;
+}
+
+.dial-center {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 20px;
+  width: 100%;
+  max-width: 360px;
   text-align: center;
+}
+
+.dial-title {
+  margin: 0;
+  width: 100%;
 }
 
 .dial-body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 20px;
   width: 100%;
 }
 
 .dial-input {
-  font-size: 32px;
+  font-size: 40px;
   text-align: center;
-  max-width: 120px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: 140px;
+  letter-spacing: 4px;
+  padding: 12px 16px;
 }
 
 .dial-actions {
@@ -397,6 +434,11 @@ select.blip-select:focus {
   flex-wrap: wrap;
   justify-content: center;
   gap: 12px;
+  width: 100%;
+}
+
+.dial-actions .btn {
+  min-width: 120px;
 }
 
 /* Chat hub */
@@ -444,10 +486,24 @@ select.blip-select:focus {
   text-overflow: ellipsis;
 }
 
+.chat-hub-unread {
+  flex-shrink: 0;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  font-size: 10px;
+  line-height: 20px;
+  text-align: center;
+  background: var(--blip-danger);
+  color: #fff;
+  border: 2px solid var(--blip-bg);
+}
+
 /* Peers */
-.peers-mesh-hint {
-  margin: -8px 0 4px;
-  max-width: 420px;
+.peers-subtitle {
+  margin: 0 0 12px;
+  max-width: 520px;
+  line-height: 1.45;
 }
 
 .peers-list {
@@ -478,6 +534,29 @@ select.blip-select:focus {
 .peer-name {
   text-transform: uppercase;
   font-size: 13px;
+}
+
+.peer-pulse {
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--blip-accent);
+}
+
+.peer-pulse--live {
+  text-shadow: 0 0 8px color-mix(in srgb, var(--blip-accent) 45%, transparent);
+}
+
+.peer-pulse--offline {
+  color: var(--blip-muted);
+  text-shadow: none;
+}
+
+.peer-typing {
+  font-size: 11px;
+  font-style: italic;
+  color: var(--blip-accent);
+  animation: chat-typing-pulse 1.2s ease-in-out infinite;
 }
 
 .peer-id {
@@ -763,6 +842,35 @@ select.blip-select:focus {
   letter-spacing: 0.5px;
 }
 
+.chat-typing {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--blip-accent);
+  border: 2px solid color-mix(in srgb, var(--blip-accent) 35%, transparent);
+  background: color-mix(in srgb, var(--blip-accent) 8%, transparent);
+}
+
+.chat-typing-dots {
+  letter-spacing: 2px;
+  animation: chat-typing-dots 1s steps(3) infinite;
+}
+
+@keyframes chat-typing-dots {
+  0% { opacity: 0.35; }
+  50% { opacity: 1; }
+  100% { opacity: 0.35; }
+}
+
+@keyframes chat-typing-pulse {
+  0%, 100% { opacity: 0.65; }
+  50% { opacity: 1; }
+}
+
 .chat-input-row {
   display: flex;
   gap: 8px;
@@ -831,12 +939,46 @@ select.blip-select:focus {
   height: 320px;
 }
 
+.call-video-wrap--camera {
+  width: 320px;
+  height: 320px;
+}
+
+.call-video-wrap--stage {
+  width: min(92vw, 1280px);
+  aspect-ratio: 16 / 9;
+  height: auto;
+  max-height: min(80vh, 720px);
+  background: #000;
+  border: 2px solid var(--blip-accent);
+}
+
+.call-overlay--theater {
+  background: #000;
+}
+
+.call-inner--stage {
+  width: min(96vw, 1320px);
+  max-width: none;
+  padding: 16px 20px 20px;
+}
+
 .call-video {
   width: 100%;
   height: 100%;
-  object-fit: cover;
   border: 2px solid var(--blip-accent);
+  background: #000;
+}
+
+.call-video--camera {
+  object-fit: cover;
   image-rendering: pixelated;
+}
+
+.call-video--stage {
+  object-fit: contain;
+  image-rendering: auto;
+  border-color: color-mix(in srgb, var(--blip-accent) 65%, #000);
 }
 
 .call-video.local {
@@ -848,6 +990,43 @@ select.blip-select:focus {
   z-index: 2;
 }
 
+.call-video-wrap--stage .call-video.local.call-video--stage {
+  width: min(22vw, 200px);
+  height: auto;
+  aspect-ratio: 16 / 9;
+  max-height: 112px;
+}
+
+.call-video-fs-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 4;
+  font-size: 10px;
+  padding: 4px 10px;
+  opacity: 0.92;
+}
+
+.call-video-wrap:fullscreen {
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: none !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  border: none;
+  background: #000;
+}
+
+.call-video-wrap:fullscreen .call-video--stage {
+  width: 100%;
+  height: 100%;
+}
+
+.call-video-wrap:fullscreen .call-video-fs-btn {
+  top: 12px;
+  right: 12px;
+}
+
 .video-pixel-grid {
   position: absolute;
   inset: 0;
@@ -856,6 +1035,10 @@ select.blip-select:focus {
     repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0, 255, 200, 0.15) 3px, rgba(0, 255, 200, 0.15) 4px),
     repeating-linear-gradient(90deg, transparent, transparent 3px, rgba(0, 255, 200, 0.15) 3px, rgba(0, 255, 200, 0.15) 4px);
   z-index: 1;
+}
+
+.call-video-wrap--stage .video-pixel-grid {
+  display: none;
 }
 
 .call-voice-wrap {
@@ -1184,6 +1367,47 @@ select.blip-select:focus {
   font-size: 11px;
   color: var(--blip-muted);
   font-family: var(--blip-mono, monospace);
+}
+
+.settings-network-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.settings-mic-test {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.settings-mic-test-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.settings-mic-meter {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 28px;
+}
+
+.settings-mic-bar {
+  flex: 1;
+  max-width: 20px;
+  height: 8px;
+  background: var(--blip-muted);
+  opacity: 0.35;
+  transition: height 0.05s linear, opacity 0.05s linear;
+}
+
+.settings-mic-bar.lit {
+  height: 24px;
+  opacity: 1;
+  background: var(--blip-accent);
 }
 
 .settings-update-status {

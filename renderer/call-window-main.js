@@ -3,7 +3,7 @@
  */
 import { setLang, applyI18n, onLangChange } from './i18n.js';
 import { createCallUI } from './call.js';
-import { applyAppearance, listenReducedMotion } from './appearance.js';
+import { applyCallWindowAppearance, listenReducedMotion } from './appearance.js';
 import { setSoundPrefs } from './audio.js';
 
 let callAppearanceRm = null;
@@ -44,7 +44,7 @@ function applyCallWindowChrome(cfg) {
     enabled: cfg.uiSoundsEnabled !== false && cfg.doNotDisturb !== true,
     volume: typeof cfg.uiSoundsVolume === 'number' ? cfg.uiSoundsVolume : 1,
   });
-  applyAppearance(cfg);
+  applyCallWindowAppearance(cfg);
   applyI18n(document);
   callUI?.refreshI18n?.();
 }
@@ -117,6 +117,9 @@ async function boot() {
   window.blip.onCallRenegotiateAnswer((data) => {
     callUI.handleRenegotiateAnswer(data);
   });
+  window.blip.onGlobalHangup?.(() => {
+    callUI?.hangupCall?.();
+  });
 
   document.addEventListener('keydown', (e) => {
     if (e.repeat || e.ctrlKey || e.altKey || e.metaKey) return;
@@ -136,6 +139,11 @@ async function boot() {
     }
     if (key === 's' || key === 'S') {
       callUI.toggleScreenShare();
+      e.preventDefault();
+      return;
+    }
+    if (key === 'f' || key === 'F') {
+      callUI.toggleVideoFullscreen();
       e.preventDefault();
       return;
     }

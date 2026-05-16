@@ -29,6 +29,7 @@
 | npm scripts | [npm scripts](#en-scripts) | [Скрипты npm](#ru-scripts) |
 | Ports | [Ports](#en-ports) | [Порты](#ru-ports) |
 | Usage | [Usage](#en-usage) | [Использование](#ru-usage) |
+| Shortcuts | [Shortcuts](#en-shortcuts) | [Горячие клавиши](#ru-shortcuts) |
 | Fonts | [Fonts](#en-fonts) | [Шрифты](#ru-fonts) |
 | Project layout | [Project layout](#en-layout) | [Структура](#ru-layout) |
 | Design tokens | [Design](#en-design) | [Дизайн](#ru-design) |
@@ -68,12 +69,19 @@ Quick VM flow: host runs BLIP (ID **1**), VM runs BLIP (ID **2**), same subnet v
 |---------|-------------|
 | **BLIP ID** | Pick a number on the 8×8 grid; conflicts resolved via TCP ping |
 | **Discovery** | UDP `42069` + mDNS fallback |
-| **Chat** | TCP `42070`, JSON messages |
-| **Calls** | WebRTC without STUN/TURN (LAN only) |
-| **Avatars** | 8×8 canvas, colors from ID hash |
-| **Sound** | Web Audio API synthesis (no audio files) |
-| **Languages** | English / Russian (`localStorage`) |
-| **Window** | Custom title bar, system tray |
+| **Chat** | TCP messages, search/export, timestamps, Mesh Labels, typing indicator, unread badges |
+| **Calls** | Separate call window; WebRTC voice/video (LAN, no STUN/TURN) |
+| **Screen share** | 720p+ capture, theater layout, fullscreen (**F**), no wallpaper over video |
+| **Mesh Pulse** | Live LAN heartbeat — auto ping every minute, latency under each peer |
+| **Trust & block** | First-chat confirm; local block list; **Settings → Privacy** |
+| **Avatars** | Upload, regenerate, or 8×8 generated from ID |
+| **Themes** | Light/dark palettes + animated backgrounds (EN/RU names) |
+| **Sound** | UI synthesis; Do Not Disturb; optional OS notifications |
+| **Shortcuts** | In-window + system-wide (**Alt+1–4**, tray-safe) |
+| **Languages** | English / Russian |
+| **Settings** | Profile, privacy/block list, appearance, network, shortcuts, call devices |
+| **Window** | Custom title bar, system tray, close-to-tray (Windows) |
+| **Updates** | Auto-check on startup (packaged builds) |
 
 <h3 id="en-architecture">Architecture</h3>
 
@@ -163,8 +171,8 @@ Icons: root `icon.svg` → `npm run build:icons` → `build/icon.ico`.
 
 | Command | Output |
 |---------|--------|
-| `npm run electron:build` | **`BLIP-Setup-0.1.4.exe`** — full NSIS installer |
-| `npm run electron:build:portable` | **`BLIP-0.1.4-Portable.exe`** — single-file portable |
+| `npm run electron:build` | **`BLIP-Setup-0.3.5.exe`** — full NSIS installer (version from `app-metadata.json`) |
+| `npm run electron:build:portable` | **`BLIP-0.3.5-Portable.exe`** — single-file portable |
 | `npm run electron:build:all` | Both artifacts |
 | `npm run electron:build:dir` | `dist-electron/win-unpacked/BLIP.exe` (debug folder) |
 
@@ -209,12 +217,27 @@ Icons: root `icon.svg` → `npm run build:icons` → `build/icon.ico`.
 
 <h3 id="en-usage">Usage</h3>
 
-1. Launch **BLIP** on each machine on the same network.
+1. Launch **BLIP** on each machine on the same network (or VPN such as Hamachi / Radmin).
 2. Pick a free number on the **8×8** grid.
-3. Set your display name in **SETTINGS** · switch **EN / RU**.
-4. Dial a BLIP ID or open **PEERS** → message or call.
+3. Open **SETTINGS**: display name, **EN / RU**, themes, notifications, audio devices.
+4. **DIAL** — enter a BLIP ID (centered); **MESSAGE** opens chat, **CALL** starts a voice call.
+5. **PEERS** — online list with **Mesh Pulse** latency (auto refresh every minute); click to chat; right-click for Mesh label, ping, block.
+6. **CHAT** — typing indicator when the peer composes; unread badge on the nav until you open the thread.
+7. **Calls** — separate window: **M** mute, **D** deafen, **S** screen share, **F** fullscreen, **Esc** hang up.
 
 > Open firewall ports **42069–42070** only if peers are not discovered.
+
+<h3 id="en-shortcuts">Keyboard shortcuts</h3>
+
+| Scope | Keys | Action |
+|-------|------|--------|
+| Main (in window) | **Alt+1–4** | Dial / Peers / Chat / Settings |
+| Main | **Ctrl+,** | Settings |
+| Main | **Ctrl+F** | Focus chat search (open conversation) |
+| Main (system, optional) | Same as above + **Ctrl+Shift+D** (DND), **Ctrl+Shift+End** (hang up) | Works from tray — toggle in **Settings → Shortcuts** |
+| Call window | **M** / **D** / **S** / **F** | Mute / deafen / screen share / fullscreen |
+| Call window | **Enter** | Accept incoming call |
+| Call window | **Esc** | End call |
 
 <h3 id="en-fonts">Fonts</h3>
 
@@ -304,12 +327,19 @@ The **Minecraft** font is licensed separately under [MIT](https://github.com/bs-
 |---------|----------|
 | **BLIP ID** | Выбор номера на сетке 8×8, конфликты через TCP ping |
 | **Discovery** | UDP `42069` + mDNS fallback |
-| **Чат** | TCP `42070`, JSON-сообщения |
-| **Звонки** | WebRTC без STUN/TURN (только LAN) |
-| **Аватары** | 8×8 canvas, цвет от hash ID |
-| **Звук** | Web Audio API — синтез, без файлов |
-| **Языки** | English / Русский (`localStorage`) |
-| **Окно** | Кастомный title bar, system tray |
+| **Чат** | Сообщения TCP, поиск/экспорт, время, Mesh Labels, «печатает…», непрочитанное |
+| **Звонки** | Отдельное окно; WebRTC голос/видео (LAN, без STUN/TURN) |
+| **Демонстрация экрана** | Захват 720p+, режим theater, полный экран (**F**), без фона поверх видео |
+| **Mesh Pulse** | Живой пульс LAN: автопинг раз в минуту, задержка под каждым абонентом |
+| **Доверие и блок** | Подтверждение первого чата; локальный блок; **Настройки → Конфиденциальность** |
+| **Аватары** | Загрузка, пересоздание или 8×8 от ID |
+| **Темы** | Светлые/тёмные палитры и анимированные фоны (названия EN/RU) |
+| **Звук** | Синтез UI; «Не беспокоить»; уведомления ОС |
+| **Горячие клавиши** | В окне + системные (**Alt+1–4**, из трея) |
+| **Языки** | English / Русский |
+| **Настройки** | Профиль, конфиденциальность/блок, вид, сеть, горячие клавиши, звонок |
+| **Окно** | Свой title bar, трей, сворачивание в трей (Windows) |
+| **Обновления** | Проверка при запуске (собранные сборки) |
 
 <h3 id="ru-architecture">Архитектура</h3>
 
@@ -369,8 +399,8 @@ npx electron .
 
 | Команда | Результат |
 |---------|-----------|
-| `npm run electron:build` | **`BLIP-Setup-0.1.4.exe`** — установщик NSIS |
-| `npm run electron:build:portable` | **`BLIP-0.1.4-Portable.exe`** — portable |
+| `npm run electron:build` | **`BLIP-Setup-0.3.5.exe`** — установщик NSIS (версия из `app-metadata.json`) |
+| `npm run electron:build:portable` | **`BLIP-0.3.5-Portable.exe`** — portable |
 | `npm run electron:build:all` | Оба файла |
 | `npm run electron:build:dir` | `dist-electron/win-unpacked/BLIP.exe` |
 
@@ -415,12 +445,27 @@ npx electron .
 
 <h3 id="ru-usage">Использование</h3>
 
-1. Запустите **BLIP** на каждом ПК в одной сети.
+1. Запустите **BLIP** на каждом ПК в одной сети (или VPN: Hamachi / Radmin).
 2. Выберите свободный номер на сетке **8×8**.
-3. Задайте имя в **НАСТРОЙКИ** · переключите **EN / RU**.
-4. Наберите BLIP ID или откройте **АБОНЕНТЫ** → сообщение / звонок.
+3. **НАСТРОЙКИ**: имя, **EN / RU**, темы, уведомления, устройства звука.
+4. **НАБОР** — введите BLIP ID (по центру); **СООБЩЕНИЕ** — чат, **ЗВОНОК** — голосовой звонок.
+5. **АБОНЕНТЫ** — список в сети, **Пульс · N мс** (автораз в минуту); клик — чат; ПКМ — Mesh label, пинг, блок.
+6. **ЧАТ** — «печатает…» у собеседника; счётчик непрочитанного на кнопке **Чат**.
+7. **Звонок** — отдельное окно: **M** микрофон, **D** звук, **S** экран, **F** полный экран, **Esc** сброс.
 
 > Откройте порты **42069–42070** в firewall, только если пиры не видны.
+
+<h3 id="ru-shortcuts">Горячие клавиши</h3>
+
+| Область | Клавиши | Действие |
+|---------|---------|----------|
+| Главное окно | **Alt+1–4** | Набор / Абоненты / Чат / Настройки |
+| Главное | **Ctrl+,** | Настройки |
+| Главное | **Ctrl+F** | Поиск в открытом чате |
+| Системные (опц.) | То же + **Ctrl+Shift+D** (не беспокоить), **Ctrl+Shift+End** (сброс звонка) | Из трея — в **Настройки → Горячие клавиши** |
+| Окно звонка | **M** / **D** / **S** / **F** | Микрофон / звук / экран / полный экран |
+| Окно звонка | **Enter** | Принять звонок |
+| Окно звонка | **Esc** | Сброс |
 
 <h3 id="ru-fonts">Шрифты</h3>
 

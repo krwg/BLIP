@@ -201,6 +201,17 @@ body > #call-shell {
   min-height: 100vh;
 }
 
+html[data-call-window='1'] body {
+  background: var(--blip-bg);
+}
+
+html[data-call-window='1'] body::before {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  animation: none !important;
+  background: none !important;
+}
+
 html[data-animated-bg='none'] body::before {
   opacity: 0;
 }

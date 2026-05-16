@@ -9,6 +9,29 @@ Release **version numbers** track [`app-metadata.json`](app-metadata.json) (sync
 
 ## [Unreleased]
 
+## [0.3.5] — Mesh
+
+Mesh tightens the LAN experience: system shortcuts, live peer latency, Discord-style chat presence, and a proper screen-share pipeline.
+
+### Added
+
+- **Dial**: BLIP ID input and **Message** / **Call** actions centered on the page.
+- **Mesh Pulse**: automatic round-trip ping every minute for online peers; **Pulse · N ms** under each name on **Peers** (manual ping still in the context menu).
+- **Typing indicators**: TCP `typing` packets; **{name} is typing** bar in chat and **typing…** under peers (Discord-style).
+- **Unread badges**: red count on **Chat** nav and per-conversation rows until you open the chat.
+- **OS global shortcuts** (optional, **Settings → Shortcuts**): **Alt+1–4** (views), **Ctrl+,** (settings), **Ctrl+Shift+D** (Do Not Disturb), **Ctrl+Shift+End** (hang up) — work when the window is in the tray.
+- **Network diagnostics**: **Refresh** and **Copy** in **Settings → Network**; hostname and discovery status.
+- **Microphone test** in **Settings → Call**: live input level meter.
+- **Screen share (theater mode)**: **720p+** capture, **S** to share, **F** fullscreen; clean video without theme wallpaper or pixel grid on the stream.
+
+### Changed
+
+- **Video calls**: camera capture targets **720p** (was 320×320); screen share uses higher WebRTC bitrate and `object-fit: contain` in theater layout.
+
+### Fixed
+
+- **Call window**: animated backgrounds no longer render over shared or remote video (theme colors only).
+
 ## [0.3.0] — Mesh
 
 ### Added

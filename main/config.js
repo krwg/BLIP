@@ -24,6 +24,8 @@ const DEFAULT_CONFIG = {
   audioInputDeviceId: '',
   /** `deviceId` for remote audio (`HTMLMediaElement.setSinkId`). */
   audioOutputDeviceId: '',
+  /** Register Alt+1–4, Ctrl+,, Ctrl+Shift+D, Ctrl+Shift+End at OS level (works when tray-hidden). */
+  globalShortcutsEnabled: true,
 };
 
 let configPath = null;

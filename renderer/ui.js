@@ -57,6 +57,14 @@ let lastUpdateToastDismiss = null;
 /** @type {Map<number, number>} */
 const peerLatencyMs = new Map();
 
+const MESH_PULSE_INTERVAL_MS = 60_000;
+let meshPulseTimer = null;
+
+/** @type {Map<number, number>} */
+const unreadByPeer = new Map();
+/** @type {Set<number>} */
+const peersTyping = new Set();
+
 async function openCallOutgoing(peerId, video = false) {
   if (!window.blip?.openCallOutgoing) return;
   try {
@@ -130,12 +138,53 @@ function ensureChatView(peerId) {
       () => {
         state.activePeer = null;
         renderView('chat');
-      }
+      },
+      (to, active) =>
+        api.sendTcpMessage({
+          type: 'typing',
+          to,
+          active,
+        })
     );
     if (peer) chat.setPeerName(formatPeerDisplayName(peer, peerId));
     state.chatViews.set(peerId, chat);
   }
   return state.chatViews.get(peerId);
+}
+
+function getUnreadTotal() {
+  let n = 0;
+  for (const c of unreadByPeer.values()) n += c;
+  return n;
+}
+
+function updateNavUnreadBadge() {
+  const chatBtn = document.querySelector('.nav-btn[data-view="chat"]');
+  if (!chatBtn) return;
+  const total = getUnreadTotal();
+  let badge = chatBtn.querySelector('.nav-unread-badge');
+  if (total > 0) {
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.className = 'nav-unread-badge';
+      chatBtn.appendChild(badge);
+    }
+    badge.textContent = total > 99 ? '99+' : String(total);
+  } else {
+    badge?.remove();
+  }
+}
+
+function bumpUnread(peerId) {
+  if (state.view === 'chat' && state.activePeer === peerId) return;
+  unreadByPeer.set(peerId, (unreadByPeer.get(peerId) || 0) + 1);
+  updateNavUnreadBadge();
+}
+
+function clearUnread(peerId) {
+  if (!unreadByPeer.has(peerId)) return;
+  unreadByPeer.delete(peerId);
+  updateNavUnreadBadge();
 }
 
 function updateNavActive() {
@@ -145,6 +194,7 @@ function updateNavActive() {
     if (view === 'chat' && state.view === 'chat') active = true;
     btn.classList.toggle('active', active);
   });
+  updateNavUnreadBadge();
 }
 
 function createNav(onNavigate) {
@@ -167,8 +217,11 @@ function renderDialView() {
   const wrap = document.createElement('div');
   wrap.className = 'view dial-view';
 
+  const center = document.createElement('div');
+  center.className = 'dial-center';
+
   const title = document.createElement('h2');
-  title.className = 'section-title';
+  title.className = 'section-title dial-title';
   title.dataset.i18n = 'dial.title';
   title.textContent = t('dial.title');
 
@@ -236,8 +289,9 @@ function renderDialView() {
   dialBody.appendChild(input);
   dialBody.appendChild(actions);
 
-  wrap.appendChild(title);
-  wrap.appendChild(dialBody);
+  center.appendChild(title);
+  center.appendChild(dialBody);
+  wrap.appendChild(center);
   return wrap;
 }
 
@@ -250,10 +304,10 @@ function renderPeersView() {
   title.dataset.i18n = 'peers.title';
   title.textContent = t('peers.title');
 
-  const meshHint = document.createElement('p');
-  meshHint.className = 'hint peers-mesh-hint';
-  meshHint.dataset.i18n = 'peers.mesh_hint';
-  meshHint.textContent = t('peers.mesh_hint');
+  const peersSubtitle = document.createElement('p');
+  peersSubtitle.className = 'hint peers-subtitle';
+  peersSubtitle.dataset.i18n = 'peers.subtitle';
+  peersSubtitle.textContent = t('peers.subtitle');
 
   const list = document.createElement('div');
   list.className = 'peers-list';
@@ -286,10 +340,27 @@ function renderPeersView() {
       name.textContent = formatPeerDisplayName(peer);
       const idSpan = document.createElement('span');
       idSpan.className = 'peer-id';
+      idSpan.textContent = `#${peer.blipId}`;
+
+      const pulseLine = document.createElement('span');
+      pulseLine.className = 'peer-pulse';
+      pulseLine.dataset.peerPulse = String(peer.blipId);
+      pulseLine.textContent = formatPeerPulseLine(peer);
       const lat = peerLatencyMs.get(peer.blipId);
-      idSpan.textContent =
-        lat != null ? `#${peer.blipId} · ${lat} ms` : `#${peer.blipId}`;
+      pulseLine.classList.toggle('peer-pulse--live', peer.online && lat != null);
+      pulseLine.classList.toggle('peer-pulse--offline', !peer.online);
+
+      const typingLine = document.createElement('span');
+      typingLine.className = 'peer-typing hidden';
+      typingLine.dataset.peerTyping = String(peer.blipId);
+      if (peersTyping.has(peer.blipId)) {
+        typingLine.textContent = t('peers.typing');
+        typingLine.classList.remove('hidden');
+      }
+
       info.appendChild(name);
+      info.appendChild(pulseLine);
+      info.appendChild(typingLine);
       info.appendChild(idSpan);
 
       const dot = document.createElement('span');
@@ -316,9 +387,19 @@ function renderPeersView() {
   }
 
   wrap.appendChild(title);
-  wrap.appendChild(meshHint);
+  wrap.appendChild(peersSubtitle);
   wrap.appendChild(list);
   return wrap;
+}
+
+function refreshPeersTypingDom() {
+  if (state.view !== 'peers' || !mainContent?.isConnected) return;
+  mainContent.querySelectorAll('[data-peer-typing]').forEach((el) => {
+    const id = Number(el.dataset.peerTyping);
+    const show = peersTyping.has(id);
+    el.classList.toggle('hidden', !show);
+    if (show) el.textContent = t('peers.typing');
+  });
 }
 
 async function promptMeshLabel(peer) {
@@ -765,6 +846,28 @@ async function runStartupUpdateCheck() {
   }
 
   await checkUpdatesViaGithub(current);
+}
+
+export function navigateToView(view) {
+  if (!state.config?.blipId) return;
+  if (view === 'settings') state.settingsSection = null;
+  if (view === 'chat' && state.view === 'chat' && state.activePeer) {
+    state.activePeer = null;
+  }
+  renderView(view);
+}
+
+export async function toggleDoNotDisturb() {
+  if (!state.config?.blipId) return;
+  const next = !state.config.doNotDisturb;
+  state.config = await api.saveConfig({ doNotDisturb: next });
+  applySoundPrefsFromConfig(state.config);
+  if (state.view === 'settings') renderView('settings');
+  showAppToast({
+    title: next ? t('settings.notifications_dnd') : t('toast.dnd_off_title'),
+    body: next ? t('settings.notifications_dnd_hint') : t('toast.dnd_off_body'),
+    durationMs: 3500,
+  });
 }
 
 function setupGlobalShortcuts() {
@@ -1266,10 +1369,114 @@ function buildSettingsCallPanel() {
 
   void populateDevices();
 
+  const micTestWrap = document.createElement('div');
+  micTestWrap.className = 'settings-mic-test';
+  const micTestLabel = document.createElement('span');
+  micTestLabel.className = 'settings-sub-label';
+  micTestLabel.dataset.i18n = 'settings.call_mic_test_label';
+  micTestLabel.textContent = t('settings.call_mic_test_label');
+
+  const micTestActions = document.createElement('div');
+  micTestActions.className = 'settings-mic-test-actions';
+
+  const micTestBtn = document.createElement('button');
+  micTestBtn.type = 'button';
+  micTestBtn.className = 'btn btn-lang';
+  micTestBtn.dataset.i18n = 'settings.call_mic_test';
+  micTestBtn.textContent = t('settings.call_mic_test');
+
+  const micTestStopBtn = document.createElement('button');
+  micTestStopBtn.type = 'button';
+  micTestStopBtn.className = 'btn btn-danger hidden';
+  micTestStopBtn.dataset.i18n = 'settings.call_mic_test_stop';
+  micTestStopBtn.textContent = t('settings.call_mic_test_stop');
+
+  const micMeter = document.createElement('div');
+  micMeter.className = 'settings-mic-meter hidden';
+  for (let i = 0; i < 12; i++) {
+    const bar = document.createElement('div');
+    bar.className = 'settings-mic-bar';
+    micMeter.appendChild(bar);
+  }
+
+  let micTestStream = null;
+  let micTestRaf = 0;
+  let micTestCtx = null;
+
+  function stopMicTest() {
+    if (micTestRaf) cancelAnimationFrame(micTestRaf);
+    micTestRaf = 0;
+    if (micTestStream) {
+      micTestStream.getTracks().forEach((tr) => tr.stop());
+      micTestStream = null;
+    }
+    if (micTestCtx) {
+      void micTestCtx.close();
+      micTestCtx = null;
+    }
+    micMeter.querySelectorAll('.settings-mic-bar').forEach((b) => b.classList.remove('lit'));
+    micMeter.classList.add('hidden');
+    micTestBtn.classList.remove('hidden');
+    micTestStopBtn.classList.add('hidden');
+  }
+
+  micTestBtn.addEventListener('click', async () => {
+    stopMicTest();
+    const deviceId = micSelect.value;
+    const audio =
+      deviceId && deviceId !== 'default'
+        ? { deviceId: { exact: deviceId } }
+        : true;
+    try {
+      micTestStream = await navigator.mediaDevices.getUserMedia({ audio });
+      micTestCtx = new AudioContext();
+      const src = micTestCtx.createMediaStreamSource(micTestStream);
+      const analyser = micTestCtx.createAnalyser();
+      analyser.fftSize = 256;
+      src.connect(analyser);
+      const bins = new Uint8Array(analyser.frequencyBinCount);
+      const bars = [...micMeter.querySelectorAll('.settings-mic-bar')];
+
+      const tick = () => {
+        analyser.getByteFrequencyData(bins);
+        let sum = 0;
+        for (let i = 0; i < bins.length; i++) sum += bins[i];
+        const level = Math.min(1, sum / bins.length / 96);
+        bars.forEach((bar, i) => {
+          const threshold = (i + 1) / bars.length;
+          bar.classList.toggle('lit', level >= threshold * 0.82);
+        });
+        micTestRaf = requestAnimationFrame(tick);
+      };
+      tick();
+      micMeter.classList.remove('hidden');
+      micTestBtn.classList.add('hidden');
+      micTestStopBtn.classList.remove('hidden');
+    } catch (err) {
+      console.warn('[settings] mic test:', err.message);
+      showAppToast({
+        title: t('settings.call_mic_test_fail'),
+        body: err?.message || '',
+        durationMs: 4500,
+        variant: 'danger',
+      });
+    }
+  });
+
+  micTestStopBtn.addEventListener('click', () => stopMicTest());
+  micSelect.addEventListener('change', () => stopMicTest());
+
+  micTestActions.appendChild(micTestBtn);
+  micTestActions.appendChild(micTestStopBtn);
+  micTestWrap.appendChild(micTestLabel);
+  micTestWrap.appendChild(micTestActions);
+  micTestWrap.appendChild(micMeter);
+
   frag.appendChild(micLabel);
   frag.appendChild(micSelect);
   frag.appendChild(outLabel);
   frag.appendChild(outSelect);
+  frag.appendChild(micTestWrap);
   return frag;
 }
 
@@ -1283,65 +1490,140 @@ function buildSettingsNetworkPanel() {
   h.textContent = t('settings.section_network');
   frag.appendChild(h);
 
-  const list = document.createElement('dl');
-  list.className = 'settings-network-list';
+  const actions = document.createElement('div');
+  actions.className = 'settings-network-actions';
 
-  function addRow(labelKey, valueEl) {
-    const dt = document.createElement('dt');
-    dt.dataset.i18n = labelKey;
-    dt.textContent = t(labelKey);
-    const dd = document.createElement('dd');
-    if (typeof valueEl === 'string') {
-      dd.textContent = valueEl;
-    } else {
-      dd.appendChild(valueEl);
-    }
-    list.appendChild(dt);
-    list.appendChild(dd);
+  const refreshBtn = document.createElement('button');
+  refreshBtn.type = 'button';
+  refreshBtn.className = 'btn btn-lang';
+  refreshBtn.dataset.i18n = 'settings.network_refresh';
+  refreshBtn.textContent = t('settings.network_refresh');
+
+  const copyBtn = document.createElement('button');
+  copyBtn.type = 'button';
+  copyBtn.className = 'btn btn-lang';
+  copyBtn.dataset.i18n = 'settings.network_copy';
+  copyBtn.textContent = t('settings.network_copy');
+
+  actions.appendChild(refreshBtn);
+  actions.appendChild(copyBtn);
+  frag.appendChild(actions);
+
+  const bodyHost = document.createElement('div');
+  bodyHost.className = 'settings-network-body';
+  frag.appendChild(bodyHost);
+
+  let lastDiagnostics = null;
+
+  function formatDiagnosticsText(info) {
+    const online = state.peers.filter((p) => p.online).length;
+    const discovery = info.discoveryActive
+      ? t('settings.network_discovery_on')
+      : t('settings.network_discovery_off');
+    return [
+      `BLIP #${info.blipId ?? '—'}`,
+      `${t('settings.network_hostname')}: ${info.hostname || '—'}`,
+      `${t('settings.network_local_ip')}: ${info.localIp || '—'}`,
+      `${t('settings.network_ipv4_all')}: ${(info.localIpv4s || []).join(', ') || '—'}`,
+      `${t('settings.network_tcp')}: ${info.tcpPort ?? '—'}`,
+      `${t('settings.network_udp')}: ${info.udpPort ?? '—'}`,
+      `${t('settings.network_discovery')}: ${discovery}`,
+      `${t('settings.network_peers')}: ${t('settings.network_peers_value')
+        .replace('{online}', String(online))
+        .replace('{total}', String(info.totalPeers ?? state.peers.length))}`,
+    ].join('\n');
   }
 
-  const loading = document.createElement('p');
-  loading.className = 'hint';
-  loading.textContent = '…';
-  frag.appendChild(loading);
-
-  void window.blip.getNetworkDiagnostics?.().then((info) => {
-    loading.remove();
+  function renderDiagnostics(info) {
+    bodyHost.innerHTML = '';
+    lastDiagnostics = info;
     if (!info) {
       const err = document.createElement('p');
       err.className = 'hint';
       err.textContent = t('settings.network_unavailable');
-      frag.appendChild(err);
+      bodyHost.appendChild(err);
       return;
     }
+
+    const list = document.createElement('dl');
+    list.className = 'settings-network-list';
+
+    function addRow(labelKey, value) {
+      const dt = document.createElement('dt');
+      dt.dataset.i18n = labelKey;
+      dt.textContent = t(labelKey);
+      const dd = document.createElement('dd');
+      dd.textContent = value;
+      list.appendChild(dt);
+      list.appendChild(dd);
+    }
+
+    const online = state.peers.filter((p) => p.online).length;
+    const discovery = info.discoveryActive
+      ? t('settings.network_discovery_on')
+      : t('settings.network_discovery_off');
+
     addRow('settings.network_blip_id', String(info.blipId ?? '—'));
+    addRow('settings.network_hostname', info.hostname || '—');
     addRow('settings.network_local_ip', info.localIp || '—');
-    const ips = (info.localIpv4s || []).join(', ') || '—';
-    addRow('settings.network_ipv4_all', ips);
+    addRow('settings.network_ipv4_all', (info.localIpv4s || []).join(', ') || '—');
     addRow('settings.network_tcp', String(info.tcpPort ?? '—'));
     addRow('settings.network_udp', String(info.udpPort ?? '—'));
-    const online = state.peers.filter((p) => p.online).length;
+    addRow('settings.network_discovery', discovery);
     addRow(
       'settings.network_peers',
       t('settings.network_peers_value')
         .replace('{online}', String(online))
         .replace('{total}', String(info.totalPeers ?? state.peers.length))
     );
-    frag.appendChild(list);
+
+    bodyHost.appendChild(list);
 
     const envHint = document.createElement('p');
     envHint.className = 'hint settings-network-env';
     envHint.dataset.i18n = 'settings.network_env_hint';
     envHint.textContent = t('settings.network_env_hint');
-    frag.appendChild(envHint);
-  }).catch(() => {
-    loading.remove();
-    const err = document.createElement('p');
-    err.className = 'hint';
-    err.textContent = t('settings.network_unavailable');
-    frag.appendChild(err);
+    bodyHost.appendChild(envHint);
+  }
+
+  async function loadDiagnostics() {
+    bodyHost.innerHTML = '';
+    const loading = document.createElement('p');
+    loading.className = 'hint';
+    loading.textContent = '…';
+    bodyHost.appendChild(loading);
+    try {
+      const info = await window.blip.getNetworkDiagnostics?.();
+      renderDiagnostics(info);
+    } catch {
+      renderDiagnostics(null);
+    }
+  }
+
+  refreshBtn.addEventListener('click', () => {
+    void loadDiagnostics();
   });
 
+  copyBtn.addEventListener('click', async () => {
+    if (!lastDiagnostics) return;
+    const text = formatDiagnosticsText(lastDiagnostics);
+    try {
+      await navigator.clipboard.writeText(text);
+      showAppToast({
+        title: t('settings.network_copy_done'),
+        durationMs: 2800,
+      });
+    } catch (err) {
+      showAppToast({
+        title: t('settings.network_copy_fail'),
+        body: err?.message || '',
+        durationMs: 4000,
+        variant: 'danger',
+      });
+    }
+  });
+
+  void loadDiagnostics();
   return frag;
 }
 
@@ -1389,9 +1671,47 @@ function buildSettingsShortcutsPanel() {
     ['settings.shortcuts_mute', 'M'],
     ['settings.shortcuts_deafen', 'D'],
     ['settings.shortcuts_share', 'S'],
+    ['settings.shortcuts_fullscreen', 'F'],
     ['settings.shortcuts_accept', 'Enter'],
     ['settings.shortcuts_end', 'Esc'],
   ]);
+
+  addShortcutBlock('settings.shortcuts_global_scope', [
+    ['settings.shortcuts_nav_dial', 'Alt+1'],
+    ['settings.shortcuts_nav_peers', 'Alt+2'],
+    ['settings.shortcuts_nav_chat', 'Alt+3'],
+    ['settings.shortcuts_nav_settings', 'Alt+4'],
+    ['settings.shortcuts_open_settings', 'Ctrl+,'],
+    ['settings.shortcuts_toggle_dnd', 'Ctrl+Shift+D'],
+    ['settings.shortcuts_hangup_global', 'Ctrl+Shift+End'],
+  ]);
+
+  const globalHint = document.createElement('p');
+  globalHint.className = 'hint';
+  globalHint.dataset.i18n = 'settings.shortcuts_global_hint';
+  globalHint.textContent = t('settings.shortcuts_global_hint');
+  frag.appendChild(globalHint);
+
+  const globalToggle = document.createElement('label');
+  globalToggle.className = 'settings-tray-toggle-row';
+  const globalCb = document.createElement('input');
+  globalCb.type = 'checkbox';
+  globalCb.checked = state.config.globalShortcutsEnabled !== false;
+  const globalSpan = document.createElement('span');
+  globalSpan.dataset.i18n = 'settings.shortcuts_global_enable';
+  globalSpan.textContent = t('settings.shortcuts_global_enable');
+  globalToggle.appendChild(globalCb);
+  globalToggle.appendChild(globalSpan);
+  globalCb.addEventListener('change', async () => {
+    state.config = await api.saveConfig({ globalShortcutsEnabled: globalCb.checked });
+    showAppToast({
+      title: globalCb.checked
+        ? t('settings.shortcuts_global_on')
+        : t('settings.shortcuts_global_off'),
+      durationMs: 3200,
+    });
+  });
+  frag.appendChild(globalToggle);
 
   return frag;
 }
@@ -1842,6 +2162,64 @@ function showError(title, hint) {
   setTimeout(() => box.remove(), 4000);
 }
 
+function formatPeerPulseLine(peer) {
+  const lat = peerLatencyMs.get(peer.blipId);
+  if (lat != null) {
+    return t('peers.pulse_ms').replace('{ms}', String(lat));
+  }
+  if (peer.online) return t('peers.pulse_pending');
+  return t('peers.pulse_offline');
+}
+
+function refreshPeerPulseDom() {
+  if (state.view !== 'peers' || !mainContent?.isConnected) return;
+  mainContent.querySelectorAll('[data-peer-pulse]').forEach((el) => {
+    const id = Number(el.dataset.peerPulse);
+    const peer = state.peers.find((p) => p.blipId === id);
+    if (!peer) return;
+    el.textContent = formatPeerPulseLine(peer);
+    el.classList.toggle('peer-pulse--live', peer.online && peerLatencyMs.has(id));
+    el.classList.toggle('peer-pulse--offline', !peer.online);
+  });
+}
+
+async function pingPeerSilent(blipId) {
+  if (!window.blip?.pingPeer) return;
+  try {
+    const result = await window.blip.pingPeer(blipId);
+    if (result?.ok && result.ms != null) {
+      peerLatencyMs.set(blipId, result.ms);
+    } else {
+      peerLatencyMs.delete(blipId);
+    }
+  } catch {
+    peerLatencyMs.delete(blipId);
+  }
+}
+
+async function runMeshPulseRound() {
+  if (!state.config?.blipId) return;
+  const targets = state.peers.filter((p) => p.online && !isBlocked(p.blipId));
+  await Promise.all(targets.map((p) => pingPeerSilent(p.blipId)));
+  refreshPeerPulseDom();
+}
+
+function startMeshPulse() {
+  if (!state.config?.blipId) return;
+  if (meshPulseTimer) return;
+  void runMeshPulseRound();
+  meshPulseTimer = setInterval(() => {
+    void runMeshPulseRound();
+  }, MESH_PULSE_INTERVAL_MS);
+}
+
+function stopMeshPulse() {
+  if (meshPulseTimer) {
+    clearInterval(meshPulseTimer);
+    meshPulseTimer = null;
+  }
+}
+
 async function runPeerPing(peer) {
   if (!peer?.online || !window.blip?.pingPeer) {
     showAppToast({ title: t('peers.ping_fail'), variant: 'danger', durationMs: 4000 });
@@ -1855,11 +2233,11 @@ async function runPeerPing(peer) {
       body: t('peers.ping_ok_body').replace('{ms}', String(result.ms)),
       durationMs: 4000,
     });
-    if (state.view === 'peers') renderView('peers');
+    refreshPeerPulseDom();
   } else {
     peerLatencyMs.delete(peer.blipId);
     showAppToast({ title: t('peers.ping_fail'), variant: 'danger', durationMs: 4000 });
-    if (state.view === 'peers') renderView('peers');
+    refreshPeerPulseDom();
   }
 }
 
@@ -1884,6 +2262,7 @@ async function openChat(peerId) {
 
   state.activePeer = id;
   state.view = 'chat';
+  clearUnread(id);
   ensureChatView(id);
   if (mainContent?.isConnected) {
     renderView('chat');
@@ -1962,6 +2341,14 @@ function renderChatHubView() {
       const dot = document.createElement('span');
       dot.className = `status-dot ${row.online ? 'online' : 'offline'}`;
 
+      const unread = unreadByPeer.get(row.blipId) || 0;
+      if (unread > 0) {
+        const badge = document.createElement('span');
+        badge.className = 'chat-hub-unread';
+        badge.textContent = unread > 99 ? '99+' : String(unread);
+        item.appendChild(badge);
+      }
+
       item.appendChild(avatar);
       item.appendChild(info);
       item.appendChild(dot);
@@ -2009,13 +2396,20 @@ function renderView(viewName) {
   applyI18n(mainContent);
 
   updateNavActive();
+
+  if (viewName === 'peers') {
+    void runMeshPulseRound();
+  }
 }
 
 function render() {
   if (!state.config.blipId) {
+    stopMeshPulse();
     showGridView();
     return;
   }
+
+  startMeshPulse();
 
   const layout = document.createElement('div');
   layout.className = 'app-layout';
@@ -2155,7 +2549,30 @@ export function updatePeers({ peers, occupiedIds }) {
   }
 }
 
+function handleTypingTcp(msg) {
+  const peerId = Number(msg.from);
+  if (!Number.isFinite(peerId) || isBlocked(peerId)) return;
+  if (Number(msg.to) !== Number(state.config.blipId)) return;
+
+  if (msg.active) {
+    peersTyping.add(peerId);
+  } else {
+    peersTyping.delete(peerId);
+  }
+
+  ensureChatView(peerId);
+  const peer = state.peers.find((p) => p.blipId === peerId);
+  const label = formatPeerDisplayName(peer, peerId);
+  state.chatViews.get(peerId)?.setTyping?.(!!msg.active, label);
+  refreshPeersTypingDom();
+}
+
 export function handleTcpMessage(msg) {
+  if (msg.type === 'typing') {
+    handleTypingTcp(msg);
+    return;
+  }
+
   const peerId = msg.from === state.config.blipId ? msg.to : msg.from;
   if (isBlocked(peerId)) return;
 
@@ -2165,6 +2582,8 @@ export function handleTcpMessage(msg) {
   if (state.view === 'chat' && state.activePeer === peerId) {
     return;
   }
+
+  bumpUnread(peerId);
 
   const preview = typeof msg.text === 'string' ? msg.text.slice(0, 120) : '';
   showMessageToast(peerId, preview);
@@ -2181,6 +2600,7 @@ export function handleTcpMessage(msg) {
 
   state.view = 'chat';
   state.activePeer = peerId;
+  clearUnread(peerId);
   if (mainContent?.isConnected) renderView('chat');
 }
 
