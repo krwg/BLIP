@@ -5,3 +5,6 @@ dist
 # Local roadmap / ideas (not shipped)
 IDEAS.local.md
 SECURITY.local.md
+
+# GitHub profile repo draft (publish to github.com/krwg/krwg separately)
+github-profile/

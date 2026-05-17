@@ -1,59 +1,70 @@
 /**
- * Theme + animated background — driven by html[data-theme] and html[data-animated-bg].
- * Persisted via main process saveConfig: themeId, animatedBgId.
+ * Theme mode (light / dark / auto) + color accent + backgrounds.
  */
 
 import { t } from './i18n.js';
 
-export const THEME_GROUPS = {
-  light: [
-    'light-paper',
-    'light-fog',
-    'light-sand',
-    'light-glacier',
-    'light-meadow',
-    'light-circuit',
-    'light-rose',
-  ],
-  dark: [
-    'dark-signal',
-    'dark-void',
-    'dark-violet',
-    'dark-forest',
-    'dark-ember',
-    'dark-midnight',
-    'dark-cyan',
-    'dark-crimson',
-  ],
-};
+export const THEME_MODES = ['light', 'dark', 'auto'];
 
-/** No grid / checker / mesh tile patterns — thematic animated art. */
-export const ANIMATED_BACKGROUNDS = [
-  'none',
-  'waves',
-  'aurora',
-  'nebula',
-  'drift',
-  'pulse',
-  'tide',
-  'rain',
-  'beacon',
-  'hyperwave',
-  'plasma',
-  'vortex',
-  'synth',
-  'cosmos',
-  'skyline',
-  'bloom',
-  'horizon',
-  'ember',
-  'rift',
-  'depths',
-  'signal',
+export const ACCENT_IDS = [
+  'mint',
+  'cyan',
+  'teal',
+  'blue',
+  'indigo',
+  'violet',
+  'purple',
+  'pink',
+  'rose',
+  'red',
+  'orange',
+  'amber',
+  'lime',
+  'green',
+  'slate',
+  'gold',
 ];
 
-/** Migrate removed mesh-style backgrounds to art equivalents. */
+/** CSS-animated (themes.css). */
+export const ANIMATED_BACKGROUNDS = ['none', 'beacon', 'depths', 'signal', 'ember', 'rift'];
+
+/** Art layers (wallpaper-art.css). */
+export const STATIC_ART_BACKGROUNDS = ['skyline', 'bloom', 'horizon', 'void', 'dusk'];
+
+export const ALL_BACKGROUNDS = [...ANIMATED_BACKGROUNDS, ...STATIC_ART_BACKGROUNDS.filter((id) => id !== 'none')];
+
+const LEGACY_THEME_MAP = {
+  'light-paper': { mode: 'light', accent: 'teal' },
+  'light-fog': { mode: 'light', accent: 'blue' },
+  'light-sand': { mode: 'light', accent: 'amber' },
+  'light-glacier': { mode: 'light', accent: 'cyan' },
+  'light-meadow': { mode: 'light', accent: 'green' },
+  'light-circuit': { mode: 'light', accent: 'lime' },
+  'light-rose': { mode: 'light', accent: 'rose' },
+  'dark-signal': { mode: 'dark', accent: 'mint' },
+  'dark-void': { mode: 'dark', accent: 'slate' },
+  'dark-violet': { mode: 'dark', accent: 'violet' },
+  'dark-forest': { mode: 'dark', accent: 'green' },
+  'dark-ember': { mode: 'dark', accent: 'orange' },
+  'dark-midnight': { mode: 'dark', accent: 'indigo' },
+  'dark-cyan': { mode: 'dark', accent: 'cyan' },
+  'dark-crimson': { mode: 'dark', accent: 'red' },
+};
+
 const LEGACY_BG_MAP = {
+  none: 'none',
+  waves: 'beacon',
+  aurora: 'bloom',
+  nebula: 'void',
+  drift: 'dusk',
+  pulse: 'signal',
+  tide: 'depths',
+  rain: 'rift',
+  hyperwave: 'beacon',
+  plasma: 'ember',
+  vortex: 'rift',
+  synth: 'signal',
+  cosmos: 'void',
   grid: 'skyline',
   circuit: 'signal',
   static: 'ember',
@@ -61,29 +72,50 @@ const LEGACY_BG_MAP = {
   pixelstorm: 'skyline',
   shards: 'depths',
   scanlines: 'horizon',
+  city: 'skyline',
 };
 
-const DEFAULT_THEME = 'dark-signal';
+const DEFAULT_MODE = 'dark';
+const DEFAULT_ACCENT = 'mint';
 const DEFAULT_BG = 'none';
 
-export function normalizeThemeId(id) {
-  const all = [...THEME_GROUPS.light, ...THEME_GROUPS.dark];
-  return all.includes(id) ? id : DEFAULT_THEME;
+export function normalizeThemeMode(mode, legacyThemeId) {
+  if (THEME_MODES.includes(mode)) return mode;
+  const leg = LEGACY_THEME_MAP[legacyThemeId];
+  if (leg) return leg.mode;
+  if (legacyThemeId?.startsWith('light')) return 'light';
+  if (legacyThemeId?.startsWith('dark')) return 'dark';
+  return DEFAULT_MODE;
+}
+
+export function normalizeAccentId(accentId, legacyThemeId) {
+  if (ACCENT_IDS.includes(accentId)) return accentId;
+  const leg = LEGACY_THEME_MAP[legacyThemeId];
+  if (leg?.accent) return leg.accent;
+  return DEFAULT_ACCENT;
 }
 
 export function normalizeBgId(id) {
   const mapped = LEGACY_BG_MAP[id] || id;
-  return ANIMATED_BACKGROUNDS.includes(mapped) ? mapped : DEFAULT_BG;
+  if (ANIMATED_BACKGROUNDS.includes(mapped)) return mapped;
+  if (STATIC_ART_BACKGROUNDS.includes(mapped)) return mapped;
+  return DEFAULT_BG;
 }
 
-export const THEME_META = THEME_GROUPS.light
-  .concat(THEME_GROUPS.dark)
-  .map((id) => ({ id }));
+export function resolveEffectiveTheme(mode) {
+  if (mode === 'light' || mode === 'dark') return mode;
+  const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)')?.matches;
+  return prefersDark ? 'dark' : 'light';
+}
 
-export const BG_META = ANIMATED_BACKGROUNDS.map((id) => ({ id }));
+export function labelThemeMode(id) {
+  const key = `appearance.mode.${id}`;
+  const label = t(key);
+  return label === key ? id : label;
+}
 
-export function labelTheme(id) {
-  const key = `appearance.theme.${id}`;
+export function labelAccent(id) {
+  const key = `appearance.accent.${id}`;
   const label = t(key);
   return label === key ? id : label;
 }
@@ -96,9 +128,14 @@ export function labelBg(id) {
 
 export function applyAppearance(config) {
   const html = document.documentElement;
-  const theme = normalizeThemeId(config?.themeId);
+  const mode = normalizeThemeMode(config?.themeMode, config?.themeId);
+  const accent = normalizeAccentId(config?.accentId, config?.themeId);
   const bg = normalizeBgId(config?.animatedBgId);
-  html.dataset.theme = theme;
+  const effective = resolveEffectiveTheme(mode);
+
+  html.dataset.themeMode = mode;
+  html.dataset.theme = effective;
+  html.dataset.accent = accent;
   html.dataset.animatedBg = bg;
   delete html.dataset.callWindow;
   html.dataset.reactiveBg =
@@ -106,10 +143,13 @@ export function applyAppearance(config) {
   syncReducedMotion(config);
 }
 
-/** Call window: theme colors only — no animated wallpaper over video. */
 export function applyCallWindowAppearance(config) {
   const html = document.documentElement;
-  html.dataset.theme = normalizeThemeId(config?.themeId);
+  const mode = normalizeThemeMode(config?.themeMode, config?.themeId);
+  const accent = normalizeAccentId(config?.accentId, config?.themeId);
+  html.dataset.themeMode = mode;
+  html.dataset.theme = resolveEffectiveTheme(mode);
+  html.dataset.accent = accent;
   html.dataset.animatedBg = 'none';
   html.dataset.callWindow = '1';
   html.dataset.reactiveBg = '0';
@@ -125,12 +165,18 @@ export function syncReducedMotion(config) {
 }
 
 export function listenReducedMotion(cb, getConfig) {
-  const mq = window.matchMedia?.('(prefers-reduced-motion: reduce)');
-  if (!mq) return () => {};
+  const mqMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+  const mqScheme = window.matchMedia?.('(prefers-color-scheme: dark)');
   const fn = () => {
-    syncReducedMotion(getConfig?.());
+    const cfg = getConfig?.();
+    if (cfg) applyAppearance(cfg);
+    syncReducedMotion(cfg);
     cb?.();
   };
-  mq.addEventListener('change', fn);
-  return () => mq.removeEventListener('change', fn);
+  mqMotion?.addEventListener('change', fn);
+  mqScheme?.addEventListener('change', fn);
+  return () => {
+    mqMotion?.removeEventListener('change', fn);
+    mqScheme?.removeEventListener('change', fn);
+  };
 }

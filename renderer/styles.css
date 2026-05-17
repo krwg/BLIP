@@ -3166,6 +3166,184 @@ body.media-viewer-open {
   transition: width 0.1s linear;
 }
 
+/* Pixel toggles & hint buttons */
+.pixel-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  margin: 8px 0;
+}
+
+.pixel-toggle-input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+
+.pixel-toggle {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  border: 2px solid var(--blip-glass-border);
+  background: color-mix(in srgb, var(--blip-bg) 80%, transparent);
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.45);
+  position: relative;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.pixel-toggle::after {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  background: transparent;
+  transition: background 0.12s ease;
+}
+
+.pixel-toggle-input:checked + .pixel-toggle {
+  background: color-mix(in srgb, var(--blip-accent) 35%, var(--blip-bg));
+  border-color: var(--blip-accent);
+}
+
+.pixel-toggle-input:checked + .pixel-toggle::after {
+  background: var(--blip-accent);
+}
+
+.pixel-toggle-input:focus-visible + .pixel-toggle {
+  outline: 2px solid var(--blip-accent);
+  outline-offset: 2px;
+}
+
+.pixel-toggle-label {
+  flex: 1;
+  line-height: 1.35;
+}
+
+.pixel-hint-btn {
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 2px solid var(--blip-muted);
+  background: var(--blip-input-bg);
+  color: var(--blip-accent);
+  font-family: var(--blip-font, monospace);
+  font-size: 12px;
+  font-weight: bold;
+  line-height: 1;
+  cursor: help;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.4);
+}
+
+.pixel-hint-btn:hover {
+  border-color: var(--blip-accent);
+  color: var(--blip-on-accent);
+  background: var(--blip-accent);
+}
+
+.settings-label-row,
+.settings-toggle-with-hint,
+.section-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.section-title-row {
+  margin-bottom: 8px;
+}
+
+.section-title-row .section-title {
+  margin: 0;
+}
+
+.status-preset-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 16px;
+}
+
+.status-preset-btn {
+  font-size: 10px;
+  padding: 6px 10px;
+}
+
+.dial-stats {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin: 16px 0 20px;
+  padding: 12px 16px;
+  max-width: 420px;
+}
+
+.dial-stat {
+  flex: 1;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dial-stat strong {
+  font-size: 18px;
+  color: var(--blip-accent);
+}
+
+.dial-stat span {
+  font-size: 9px;
+  text-transform: uppercase;
+  color: var(--blip-muted);
+  letter-spacing: 0.06em;
+}
+
+.dial-error {
+  text-align: center;
+  color: var(--blip-danger);
+  margin: 4px 0 8px;
+}
+
+.settings-panel--about {
+  text-align: center;
+  align-items: center;
+}
+
+.settings-about-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0 20px;
+}
+
+.settings-about-icon {
+  width: 72px;
+  height: 72px;
+  image-rendering: pixelated;
+  border: 2px solid var(--blip-glass-border);
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.5);
+}
+
+.settings-about-line {
+  font-size: 16px;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.settings-about-version {
+  color: var(--blip-accent);
+  margin: 0;
+}
+
+.settings-about-links {
+  justify-content: center;
+}
+
 /* Scrollbars */
 ::-webkit-scrollbar {
   width: 6px;

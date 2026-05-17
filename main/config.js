@@ -10,7 +10,13 @@ const DEFAULT_CONFIG = {
   udpPort: 42069,
   tcpPort: 42070,
   themeId: 'dark-signal',
+  /** light | dark | auto (system) */
+  themeMode: 'dark',
+  /** Color accent id — see themes.css [data-accent] */
+  accentId: 'mint',
   animatedBgId: 'none',
+  /** User uploaded profile image on disk */
+  customAvatar: false,
   /** User override: pause animated wallpapers (lighter GPU). */
   reduceMotion: false,
   /** Pulse animated wallpaper from mic level (voice / 1:1 call). */

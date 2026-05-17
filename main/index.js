@@ -28,6 +28,12 @@ import { resolveBuildAsset } from './paths.js';
 import { resolvePorts } from './ports.js';
 import { serializeSdp, sendCallPayload } from './call-wire.js';
 import { fetchGithubReleases } from './github-releases.js';
+import {
+  getCustomAvatarDataUrl,
+  saveCustomAvatar,
+  clearCustomAvatar,
+  hasCustomAvatar,
+} from './avatar-store.js';
 import { registerGlobalShortcuts, unregisterGlobalShortcuts } from './global-shortcuts.js';
 import {
   listDisplaySources,
@@ -580,6 +586,7 @@ function handleTcpPayload(msg, fromBlipId) {
     case 'file-done':
     case 'file-abort':
     case 'clipboard-push':
+    case 'avatar-share':
       sendToRenderer('tcp-message', msg);
       break;
     case 'call-offer': {
@@ -736,7 +743,7 @@ function setupIpc() {
     const prevLang = config?.language;
     config = saveConfig(updates);
     if (updates?.receiveBetaUpdates !== undefined || updates?.autoDownloadUpdates !== undefined) {
-      configureAutoUpdater(config);
+      void configureAutoUpdater(config);
     }
     discovery?.updateConfig(config);
     discovery?.announce();
@@ -962,6 +969,26 @@ function setupIpc() {
     ...loadAppMetadata(),
     isPackaged: app.isPackaged,
   }));
+
+  ipcMain.handle('get-avatar-data-url', () => getCustomAvatarDataUrl());
+
+  ipcMain.handle('save-avatar', async (_, dataUrl) => {
+    try {
+      saveCustomAvatar(dataUrl);
+      config = saveConfig({ customAvatar: true });
+      discovery?.announce();
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: e?.message || 'save_failed' };
+    }
+  });
+
+  ipcMain.handle('clear-avatar', () => {
+    clearCustomAvatar();
+    config = saveConfig({ customAvatar: false });
+    discovery?.announce();
+    return { ok: true };
+  });
 
   ipcMain.handle('check-for-updates', () => checkForUpdatesNow(() => config));
   ipcMain.handle('quit-and-install', () => {

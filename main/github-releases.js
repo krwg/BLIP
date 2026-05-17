@@ -11,7 +11,7 @@ function parseGithubRepo(url) {
   return m ? m[1].replace(/\.git$/, '') : 'krwg/BLIP';
 }
 
-function loadGithubRepo() {
+export function loadGithubRepo() {
   try {
     if (existsSync(appMetaPath)) {
       const meta = JSON.parse(readFileSync(appMetaPath, 'utf8'));
@@ -21,6 +21,11 @@ function loadGithubRepo() {
     /* ignore */
   }
   return 'krwg/BLIP';
+}
+
+export function getGithubPublishConfig() {
+  const [owner, repo] = loadGithubRepo().split('/');
+  return { provider: 'github', owner: owner || 'krwg', repo: repo || 'BLIP' };
 }
 
 /**

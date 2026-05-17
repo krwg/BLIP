@@ -660,3 +660,70 @@ html[data-reduced-motion='1'][data-animated-bg]:not([data-animated-bg='none']) b
   animation: none !important;
   opacity: calc(var(--blip-bg-layer-opacity, 0.45) * 0.55);
 }
+
+/* —— 0.7.2 base theme modes —— */
+html[data-theme='dark'] {
+  --blip-bg: #0a0a0a;
+  --blip-text: #e0e0e0;
+  --blip-muted: #333333;
+  --blip-accent: #00ffc8;
+  --blip-on-accent: #0a0a0a;
+  --blip-danger: #ff3366;
+  --blip-glass: rgba(20, 20, 20, 0.7);
+  --blip-glass-border: #00ffc8;
+  --blip-chat-incoming: rgba(20, 20, 20, 0.9);
+  --blip-toast-bg: rgba(20, 20, 20, 0.92);
+  --blip-input-bg: rgba(0, 0, 0, 0.25);
+  --blip-caret: #00ffc8;
+  --blip-bg-layer-opacity: 0.55;
+}
+
+html[data-theme='light'] {
+  --blip-bg: #f4f0e8;
+  --blip-text: #1c1914;
+  --blip-muted: #8a8278;
+  --blip-accent: #0d9488;
+  --blip-on-accent: #f4f0e8;
+  --blip-danger: #c2410c;
+  --blip-glass: rgba(255, 255, 255, 0.72);
+  --blip-glass-border: #0d9488;
+  --blip-chat-incoming: rgba(255, 255, 255, 0.88);
+  --blip-toast-bg: rgba(255, 252, 248, 0.94);
+  --blip-input-bg: rgba(255, 255, 255, 0.55);
+  --blip-caret: #0d9488;
+  --blip-bg-layer-opacity: 0.4;
+}
+
+html[data-accent='mint'] { --blip-accent: #00ffc8; --blip-glass-border: #00ffc8; --blip-caret: #00ffc8; }
+html[data-accent='cyan'] { --blip-accent: #22d3ee; --blip-glass-border: #22d3ee; --blip-caret: #22d3ee; }
+html[data-accent='teal'] { --blip-accent: #14b8a6; --blip-glass-border: #14b8a6; --blip-caret: #14b8a6; }
+html[data-accent='blue'] { --blip-accent: #3b82f6; --blip-glass-border: #3b82f6; --blip-caret: #3b82f6; }
+html[data-accent='indigo'] { --blip-accent: #6366f1; --blip-glass-border: #6366f1; --blip-caret: #6366f1; }
+html[data-accent='violet'] { --blip-accent: #a78bfa; --blip-glass-border: #a78bfa; --blip-caret: #a78bfa; }
+html[data-accent='purple'] { --blip-accent: #c084fc; --blip-glass-border: #c084fc; --blip-caret: #c084fc; }
+html[data-accent='pink'] { --blip-accent: #f472b6; --blip-glass-border: #f472b6; --blip-caret: #f472b6; }
+html[data-accent='rose'] { --blip-accent: #fb7185; --blip-glass-border: #fb7185; --blip-caret: #fb7185; }
+html[data-accent='red'] { --blip-accent: #ef4444; --blip-glass-border: #ef4444; --blip-caret: #ef4444; }
+html[data-accent='orange'] { --blip-accent: #f97316; --blip-glass-border: #f97316; --blip-caret: #f97316; }
+html[data-accent='amber'] { --blip-accent: #f59e0b; --blip-glass-border: #f59e0b; --blip-caret: #f59e0b; }
+html[data-accent='lime'] { --blip-accent: #84cc16; --blip-glass-border: #84cc16; --blip-caret: #84cc16; }
+html[data-accent='green'] { --blip-accent: #22c55e; --blip-glass-border: #22c55e; --blip-caret: #22c55e; }
+html[data-accent='slate'] { --blip-accent: #94a3b8; --blip-glass-border: #94a3b8; --blip-caret: #94a3b8; }
+html[data-accent='gold'] { --blip-accent: #eab308; --blip-glass-border: #eab308; --blip-caret: #eab308; }
+
+html[data-theme='light'][data-accent='mint'] { --blip-on-accent: #f4f0e8; }
+html[data-theme='light'][data-accent='cyan'] { --blip-on-accent: #f0f9ff; }
+html[data-theme='light'][data-accent='teal'] { --blip-on-accent: #f0fdfa; }
+html[data-theme='light'][data-accent='blue'] { --blip-on-accent: #eff6ff; }
+html[data-theme='light'][data-accent='indigo'] { --blip-on-accent: #eef2ff; }
+html[data-theme='light'][data-accent='violet'] { --blip-on-accent: #f5f3ff; }
+html[data-theme='light'][data-accent='purple'] { --blip-on-accent: #faf5ff; }
+html[data-theme='light'][data-accent='pink'] { --blip-on-accent: #fdf2f8; }
+html[data-theme='light'][data-accent='rose'] { --blip-on-accent: #fff1f2; }
+html[data-theme='light'][data-accent='red'] { --blip-on-accent: #fef2f2; }
+html[data-theme='light'][data-accent='orange'] { --blip-on-accent: #fff7ed; }
+html[data-theme='light'][data-accent='amber'] { --blip-on-accent: #fffbeb; }
+html[data-theme='light'][data-accent='lime'] { --blip-on-accent: #f7fee7; }
+html[data-theme='light'][data-accent='green'] { --blip-on-accent: #f0fdf4; }
+html[data-theme='light'][data-accent='slate'] { --blip-on-accent: #f8fafc; }
+html[data-theme='light'][data-accent='gold'] { --blip-on-accent: #fefce8; }

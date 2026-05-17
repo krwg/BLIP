@@ -14,28 +14,78 @@ html[data-reactive-bg='1'][data-animated-bg]:not([data-animated-bg='none']) body
   transform: scale(calc(1.02 + var(--blip-bg-pulse) * 0.035));
 }
 
-/* —— Skyline (LAN city art) —— */
+/* —— City skyline (static art — no LAN grid) —— */
 html[data-animated-bg='skyline'] body::before {
-  opacity: var(--blip-bg-layer-opacity, 0.58);
+  opacity: var(--blip-bg-layer-opacity, 0.62);
   background:
-    radial-gradient(ellipse 55% 35% at 72% 18%, color-mix(in srgb, var(--blip-accent) 55%, transparent), transparent 70%),
-    linear-gradient(180deg, color-mix(in srgb, var(--blip-accent) 12%, transparent) 0%, transparent 42%),
-    linear-gradient(175deg, transparent 58%, color-mix(in srgb, var(--blip-text) 35%, transparent) 58.2%, transparent 58.5%),
-    linear-gradient(182deg, transparent 64%, color-mix(in srgb, var(--blip-text) 28%, transparent) 64.3%, transparent 64.8%),
-    linear-gradient(168deg, transparent 52%, color-mix(in srgb, var(--blip-accent) 22%, transparent) 52.4%, transparent 53%),
-    linear-gradient(190deg, transparent 70%, color-mix(in srgb, var(--blip-text) 40%, transparent) 70.5%, transparent 71%),
-    linear-gradient(0deg, color-mix(in srgb, var(--blip-bg) 85%, transparent), transparent 38%);
-  background-size: 120% 120%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
-  animation: blip-bg-skyline 28s ease-in-out infinite alternate;
+    radial-gradient(ellipse 45% 30% at 78% 12%, color-mix(in srgb, var(--blip-accent) 40%, #1a1030), transparent 72%),
+    radial-gradient(ellipse 30% 18% at 22% 20%, color-mix(in srgb, var(--blip-danger) 18%, transparent), transparent 70%),
+    linear-gradient(180deg, color-mix(in srgb, #0d1528 80%, var(--blip-bg)) 0%, color-mix(in srgb, #12182a 60%, var(--blip-bg)) 38%, transparent 62%),
+    linear-gradient(175deg, transparent 54%, color-mix(in srgb, var(--blip-text) 42%, transparent) 54.15%, transparent 54.35%),
+    linear-gradient(178deg, transparent 48%, color-mix(in srgb, var(--blip-text) 55%, transparent) 48.2%, transparent 48.45%),
+    linear-gradient(172deg, transparent 62%, color-mix(in srgb, var(--blip-text) 38%, transparent) 62.1%, transparent 62.3%),
+    linear-gradient(185deg, transparent 44%, color-mix(in srgb, var(--blip-accent) 28%, transparent) 44.2%, transparent 44.5%),
+    linear-gradient(168deg, transparent 68%, color-mix(in srgb, var(--blip-text) 48%, transparent) 68.2%, transparent 68.5%),
+    linear-gradient(192deg, transparent 58%, color-mix(in srgb, var(--blip-text) 35%, transparent) 58.15%, transparent 58.4%),
+    linear-gradient(0deg, color-mix(in srgb, var(--blip-bg) 92%, transparent), transparent 36%);
+  background-size: 100% 100%;
+  animation: none;
 }
 
 html[data-animated-bg='skyline'] body::after {
-  opacity: calc(var(--blip-bg-layer-opacity, 0.5) * 0.55);
-  background: radial-gradient(circle at 18% 78%, color-mix(in srgb, var(--blip-accent) 70%, transparent) 0 2px, transparent 3px),
-    radial-gradient(circle at 44% 72%, color-mix(in srgb, var(--blip-accent) 50%, transparent) 0 1px, transparent 2px),
-    radial-gradient(circle at 81% 68%, color-mix(in srgb, var(--blip-danger) 45%, transparent) 0 2px, transparent 3px);
+  opacity: calc(var(--blip-bg-layer-opacity, 0.55) * 0.9);
+  background:
+    linear-gradient(90deg, transparent 8%, color-mix(in srgb, var(--blip-accent) 65%, transparent) 8.1%, transparent 8.25%),
+    linear-gradient(90deg, transparent 24%, color-mix(in srgb, var(--blip-accent) 45%, transparent) 24.08%, transparent 24.2%),
+    linear-gradient(90deg, transparent 41%, color-mix(in srgb, var(--blip-danger) 40%, transparent) 41.06%, transparent 41.18%),
+    linear-gradient(90deg, transparent 57%, color-mix(in srgb, var(--blip-accent) 55%, transparent) 57.05%, transparent 57.2%),
+    linear-gradient(90deg, transparent 73%, color-mix(in srgb, var(--blip-accent) 35%, transparent) 73.04%, transparent 73.15%),
+    linear-gradient(90deg, transparent 88%, color-mix(in srgb, var(--blip-danger) 50%, transparent) 88.05%, transparent 88.2%),
+    radial-gradient(circle at 14% 76%, color-mix(in srgb, var(--blip-accent) 80%, transparent) 0 2px, transparent 3px),
+    radial-gradient(circle at 31% 71%, color-mix(in srgb, var(--blip-accent) 55%, transparent) 0 1px, transparent 2px),
+    radial-gradient(circle at 52% 74%, color-mix(in srgb, var(--blip-accent) 70%, transparent) 0 2px, transparent 3px),
+    radial-gradient(circle at 69% 69%, color-mix(in srgb, var(--blip-danger) 50%, transparent) 0 2px, transparent 3px),
+    radial-gradient(circle at 86% 72%, color-mix(in srgb, var(--blip-accent) 60%, transparent) 0 1px, transparent 2px);
   background-size: 100% 100%;
-  animation: blip-bg-city-lights 4s ease-in-out infinite alternate;
+  animation: blip-bg-city-lights 6s ease-in-out infinite alternate;
+}
+
+/* —— Void (static) —— */
+html[data-animated-bg='void'] body::before {
+  opacity: var(--blip-bg-layer-opacity, 0.65);
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 40%, color-mix(in srgb, var(--blip-accent) 12%, transparent), transparent 70%),
+    radial-gradient(circle at 20% 80%, color-mix(in srgb, var(--blip-danger) 8%, transparent), transparent 40%),
+    linear-gradient(180deg, #020208 0%, var(--blip-bg) 100%);
+  animation: none;
+}
+
+html[data-animated-bg='void'] body::after {
+  opacity: calc(var(--blip-bg-layer-opacity, 0.45) * 0.6);
+  background: radial-gradient(1px 1px at 12% 22%, color-mix(in srgb, var(--blip-text) 70%, transparent), transparent),
+    radial-gradient(1px 1px at 44% 18%, color-mix(in srgb, var(--blip-accent) 80%, transparent), transparent),
+    radial-gradient(1px 1px at 78% 28%, color-mix(in srgb, var(--blip-text) 50%, transparent), transparent),
+    radial-gradient(1px 1px at 66% 62%, color-mix(in srgb, var(--blip-accent) 60%, transparent), transparent);
+  animation: none;
+}
+
+/* —— Dusk (static) —— */
+html[data-animated-bg='dusk'] body::before {
+  opacity: var(--blip-bg-layer-opacity, 0.6);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--blip-danger) 35%, #1a1028) 0%,
+    color-mix(in srgb, var(--blip-accent) 25%, #2a1840) 35%,
+    color-mix(in srgb, var(--blip-bg) 90%, transparent) 72%
+  );
+  animation: none;
+}
+
+html[data-animated-bg='dusk'] body::after {
+  opacity: calc(var(--blip-bg-layer-opacity, 0.5) * 0.85);
+  background: linear-gradient(180deg, transparent 55%, color-mix(in srgb, var(--blip-text) 40%, transparent) 100%);
+  clip-path: polygon(0 100%, 0 70%, 12% 58%, 28% 65%, 45% 50%, 62% 58%, 80% 45%, 100% 52%, 100% 100%);
+  animation: none;
 }
 
 /* —— Bloom (organic aurora blobs) —— */

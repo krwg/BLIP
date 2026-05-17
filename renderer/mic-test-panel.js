@@ -1,8 +1,8 @@
 import { t } from './i18n.js';
 import { getVoiceMediaStream } from './audio-capture.js';
+import { createPixelToggle, createPixelHintIcon } from './settings-ui.js';
 
 /**
- * Discord-style mic test: level meter, input gain slider, noise suppression toggle.
  * @param {object} config
  * @param {(patch: object) => Promise<object>} saveConfig
  */
@@ -10,24 +10,24 @@ export function buildMicTestPanel(config, saveConfig) {
   const wrap = document.createElement('div');
   wrap.className = 'mic-test-panel';
 
+  const titleRow = document.createElement('div');
+  titleRow.className = 'settings-label-row';
   const title = document.createElement('h3');
   title.className = 'section-subtitle';
   title.dataset.i18n = 'settings.mic_test_title';
   title.textContent = t('settings.mic_test_title');
-  wrap.appendChild(title);
+  titleRow.appendChild(title);
+  titleRow.appendChild(createPixelHintIcon('settings.mic_test_hint'));
+  wrap.appendChild(titleRow);
 
-  const hint = document.createElement('p');
-  hint.className = 'hint';
-  hint.dataset.i18n = 'settings.mic_test_hint';
-  hint.textContent = t('settings.mic_test_hint');
-  wrap.appendChild(hint);
-
-  const meter = document.createElement('div');
-  meter.className = 'mic-test-meter';
-  const meterFill = document.createElement('div');
-  meterFill.className = 'mic-test-meter-fill';
-  meter.appendChild(meterFill);
-  wrap.appendChild(meter);
+  const nsToggle = createPixelToggle({
+    checked: config.noiseSuppression !== false,
+    labelKey: 'settings.noise_suppression',
+    onChange: async (checked) => {
+      await saveConfig({ noiseSuppression: checked });
+    },
+  });
+  wrap.appendChild(nsToggle.el);
 
   const gainLabel = document.createElement('label');
   gainLabel.className = 'settings-field-label';
@@ -48,17 +48,12 @@ export function buildMicTestPanel(config, saveConfig) {
   wrap.appendChild(gainLabel);
   wrap.appendChild(gainRow);
 
-  const nsRow = document.createElement('label');
-  nsRow.className = 'settings-tray-toggle-row';
-  const nsCb = document.createElement('input');
-  nsCb.type = 'checkbox';
-  nsCb.checked = config.noiseSuppression !== false;
-  const nsSpan = document.createElement('span');
-  nsSpan.dataset.i18n = 'settings.noise_suppression';
-  nsSpan.textContent = t('settings.noise_suppression');
-  nsRow.appendChild(nsCb);
-  nsRow.appendChild(nsSpan);
-  wrap.appendChild(nsRow);
+  const meter = document.createElement('div');
+  meter.className = 'mic-test-meter';
+  const meterFill = document.createElement('div');
+  meterFill.className = 'mic-test-meter-fill';
+  meter.appendChild(meterFill);
+  wrap.appendChild(meter);
 
   const actions = document.createElement('div');
   actions.className = 'mic-test-actions';
@@ -112,7 +107,7 @@ export function buildMicTestPanel(config, saveConfig) {
     stopTest();
     const live = {
       ...config,
-      noiseSuppression: nsCb.checked,
+      noiseSuppression: nsToggle.input.checked,
       micInputGain: Number(gainSlider.value),
     };
     try {
@@ -120,24 +115,18 @@ export function buildMicTestPanel(config, saveConfig) {
       testCtx = new AudioContext();
       testSrc = testCtx.createMediaStreamSource(testStream);
       testGain = testCtx.createGain();
-      testGain.gain.value = (Number(gainSlider.value) || 100) / 100;
-      testDest = testCtx.createMediaStreamDestination();
+      testGain.gain.value = Number(gainSlider.value) / 100;
       analyser = testCtx.createAnalyser();
       analyser.fftSize = 256;
+      testDest = testCtx.createMediaStreamDestination();
       testSrc.connect(testGain);
       testGain.connect(analyser);
-      testGain.connect(testDest);
-      testGain.connect(testCtx.destination);
-      const audio = document.createElement('audio');
-      audio.autoplay = true;
-      audio.srcObject = testDest.stream;
-      void audio.play().catch(() => {});
-      meterRaf = requestAnimationFrame(tickMeter);
+      analyser.connect(testDest);
+      tickMeter();
       testBtn.dataset.i18n = 'settings.mic_test_stop';
       testBtn.textContent = t('settings.mic_test_stop');
-    } catch (err) {
-      console.warn('[mic-test]', err?.message || err);
-      stopTest();
+    } catch (e) {
+      console.warn('[mic-test]', e);
     }
   }
 
@@ -148,20 +137,11 @@ export function buildMicTestPanel(config, saveConfig) {
 
   gainSlider.addEventListener('input', () => {
     gainVal.textContent = `${gainSlider.value}%`;
-    if (testGain) testGain.gain.value = (Number(gainSlider.value) || 100) / 100;
-    void saveConfig({ micInputGain: Number(gainSlider.value) });
+    if (testGain) testGain.gain.value = Number(gainSlider.value) / 100;
+  });
+  gainSlider.addEventListener('change', async () => {
+    await saveConfig({ micInputGain: Number(gainSlider.value) });
   });
 
-  nsCb.addEventListener('change', async () => {
-    await saveConfig({ noiseSuppression: nsCb.checked });
-    if (testStream) {
-      stopTest();
-      await startTest();
-    }
-  });
-
-  return {
-    el: wrap,
-    destroy: () => stopTest(),
-  };
+  return { el: wrap, stop: stopTest };
 }

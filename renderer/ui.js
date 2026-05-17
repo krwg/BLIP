@@ -32,7 +32,15 @@ import { getVoiceChannelRoster } from './voice-channel-roster.js';
 import { logPeerEvent, getNetworkLogEntries, clearNetworkLog } from './network-log.js';
 import { createMessageId } from './message-id.js';
 import { showSignalLost } from './call.js';
-import { createAvatarElement, regenerateAvatar } from './avatar.js';
+import {
+  createAvatarElement,
+  regenerateAvatar,
+  fileToAvatarDataUrl,
+  loadSelfAvatarFromMain,
+  setSelfAvatarCache,
+  setPeerAvatarDataUrl,
+  getSelfAvatarCache,
+} from './avatar.js';
 import {
   sounds,
   setSoundPrefs,
@@ -67,7 +75,16 @@ import {
   normalizeStreamQuality,
   normalizeFullscreenQuality,
 } from './call-media.js';
-import { buildThemedSelect, fillSettingsDropdown, buildSettingsField } from './settings-ui.js';
+import {
+  buildThemedSelect,
+  fillSettingsDropdown,
+  buildSettingsField,
+  buildSettingsFieldWithHint,
+  buildSettingsLabelRow,
+  createPixelToggle,
+  createPixelHintIcon,
+  copyTextToClipboard,
+} from './settings-ui.js';
 import { buildMicTestPanel } from './mic-test-panel.js';
 import {
   startClipboardSync,
@@ -90,16 +107,38 @@ import {
   getBlockedPeerIds,
 } from './peer-trust.js';
 import {
-  THEME_GROUPS,
-  BG_META,
+  THEME_MODES,
+  ACCENT_IDS,
+  ANIMATED_BACKGROUNDS,
+  STATIC_ART_BACKGROUNDS,
   applyAppearance,
   listenReducedMotion,
-  labelTheme,
+  labelThemeMode,
+  labelAccent,
   labelBg,
-  normalizeThemeId,
+  normalizeThemeMode,
+  normalizeAccentId,
   normalizeBgId,
 } from './appearance.js';
 import { initReactiveWallpaper, applyReactiveWallpaperConfig } from './reactive-wallpaper.js';
+
+async function broadcastCustomAvatar() {
+  const dataUrl = getSelfAvatarCache();
+  if (!dataUrl || !state.config?.blipId) return;
+  const targets = state.peers.filter((p) => p.online && !isBlocked(p.blipId));
+  for (const p of targets) {
+    try {
+      await api.sendTcpMessage({
+        type: 'avatar-share',
+        to: p.blipId,
+        from: state.config.blipId,
+        dataUrl,
+      });
+    } catch {
+      /* offline */
+    }
+  }
+}
 
 function restartClipboardSync() {
   stopClipboardSync();
@@ -486,10 +525,6 @@ function renderDialView() {
   input.dataset.i18nPlaceholder = 'dial.placeholder';
   input.inputMode = 'numeric';
 
-  input.addEventListener('input', () => {
-    input.value = input.value.replace(/\D/g, '').slice(0, 2);
-  });
-
   const actions = document.createElement('div');
   actions.className = 'dial-actions';
 
@@ -505,11 +540,37 @@ function renderDialView() {
   callBtn.dataset.i18n = 'dial.call';
   callBtn.textContent = t('dial.call');
 
+  const dialError = document.createElement('p');
+  dialError.className = 'hint dial-error hidden';
+  dialError.dataset.i18n = 'dial.invalid_id';
+  dialError.textContent = t('dial.invalid_id');
+
   function resolvePeerId() {
-    const n = Number(input.value);
-    if (n < 1 || n > 64) return null;
+    const raw = input.value.trim();
+    if (!raw) return null;
+    const n = Number(raw);
+    if (!Number.isFinite(n) || n < 1 || n > 64) return 'invalid';
     return n;
   }
+
+  function showDialError() {
+    dialError.classList.remove('hidden');
+  }
+
+  function hideDialError() {
+    dialError.classList.add('hidden');
+  }
+
+  input.addEventListener('input', () => {
+    input.value = input.value.replace(/\D/g, '').slice(0, 2);
+    if (input.value.length >= 2) {
+      const r = resolvePeerId();
+      if (r === 'invalid') showDialError();
+      else hideDialError();
+    } else {
+      hideDialError();
+    }
+  });
 
   function findPeer(id) {
     return state.peers.find((p) => p.blipId === id && p.online);
@@ -517,7 +578,12 @@ function renderDialView() {
 
   msgBtn.addEventListener('click', () => {
     const id = resolvePeerId();
+    if (id === 'invalid') {
+      showDialError();
+      return;
+    }
     if (!id) return;
+    hideDialError();
     if (!findPeer(id)) {
       showSignalLost(wrap);
       return;
@@ -527,7 +593,12 @@ function renderDialView() {
 
   callBtn.addEventListener('click', () => {
     const id = resolvePeerId();
+    if (id === 'invalid') {
+      showDialError();
+      return;
+    }
     if (!id) return;
+    hideDialError();
     if (!findPeer(id)) {
       showSignalLost(wrap);
       return;
@@ -540,9 +611,31 @@ function renderDialView() {
   const dialBody = document.createElement('div');
   dialBody.className = 'dial-body';
   dialBody.appendChild(input);
+  dialBody.appendChild(dialError);
   dialBody.appendChild(actions);
 
+  const stats = document.createElement('div');
+  stats.className = 'dial-stats glass';
+  const onlineN = state.peers.filter((p) => p.online && !isBlocked(p.blipId)).length;
+  for (const [val, key] of [
+    [String(onlineN), 'dial.stat_online'],
+    [`#${state.config.blipId ?? '—'}`, 'dial.stat_you'],
+    ['64', 'dial.stat_mesh'],
+  ]) {
+    const cell = document.createElement('div');
+    cell.className = 'dial-stat';
+    const strong = document.createElement('strong');
+    strong.textContent = val;
+    const span = document.createElement('span');
+    span.dataset.i18n = key;
+    span.textContent = t(key);
+    cell.appendChild(strong);
+    cell.appendChild(span);
+    stats.appendChild(cell);
+  }
+
   center.appendChild(title);
+  center.appendChild(stats);
   center.appendChild(dialBody);
   wrap.appendChild(center);
   return wrap;
@@ -557,10 +650,10 @@ function renderPeersView() {
   title.dataset.i18n = 'peers.title';
   title.textContent = t('peers.title');
 
-  const peersSubtitle = document.createElement('p');
-  peersSubtitle.className = 'hint peers-subtitle';
-  peersSubtitle.dataset.i18n = 'peers.subtitle';
-  peersSubtitle.textContent = t('peers.subtitle');
+  const titleRow = document.createElement('div');
+  titleRow.className = 'section-title-row';
+  titleRow.appendChild(title);
+  titleRow.appendChild(createPixelHintIcon('peers.subtitle_hint'));
 
   const list = document.createElement('div');
   list.className = 'peers-list';
@@ -663,8 +756,7 @@ function renderPeersView() {
     });
   }
 
-  wrap.appendChild(title);
-  wrap.appendChild(peersSubtitle);
+  wrap.appendChild(titleRow);
   wrap.appendChild(list);
   return wrap;
 }
@@ -908,11 +1000,9 @@ function buildAvatarSettingsSection() {
   block.className = 'settings-avatar-wrap';
   if (!state.config?.blipId) return block;
 
-  const h = document.createElement('h3');
-  h.className = 'section-subtitle';
-  h.dataset.i18n = 'settings.avatar_title';
-  h.textContent = t('settings.avatar_title');
-  block.appendChild(h);
+  const head = buildSettingsLabelRow('settings.avatar_title', 'settings.avatar_hint');
+  head.classList.add('settings-avatar-head');
+  block.appendChild(head);
 
   const row = document.createElement('div');
   row.className = 'settings-avatar-row';
@@ -932,26 +1022,76 @@ function buildAvatarSettingsSection() {
   const col = document.createElement('div');
   col.className = 'settings-avatar-actions';
 
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.accept = 'image/png,image/jpeg,image/webp';
+  fileInput.className = 'settings-avatar-file-input';
+  fileInput.id = 'settings-avatar-file';
+
+  const uploadLabel = document.createElement('label');
+  uploadLabel.htmlFor = fileInput.id;
+  uploadLabel.className = 'btn btn-accent settings-avatar-upload-label';
+  uploadLabel.dataset.i18n = 'settings.avatar_upload';
+  uploadLabel.textContent = t('settings.avatar_upload');
+
+  fileInput.addEventListener('change', async () => {
+    const file = fileInput.files?.[0];
+    fileInput.value = '';
+    if (!file) return;
+    try {
+      const dataUrl = await fileToAvatarDataUrl(file);
+      const r = await window.blip.saveAvatar?.(dataUrl);
+      if (!r?.ok) throw new Error(r?.error || 'save_failed');
+      setSelfAvatarCache(dataUrl);
+      state.config.customAvatar = true;
+      refreshPreview();
+      window.dispatchEvent(new CustomEvent('blip-avatar-changed'));
+      void broadcastCustomAvatar();
+      showAppToast({ title: t('settings.avatar_saved'), durationMs: 3000 });
+    } catch (e) {
+      showAppToast({
+        title: t('settings.avatar_failed'),
+        body: e?.message || '',
+        variant: 'danger',
+        durationMs: 4500,
+      });
+    }
+  });
+
+  const removeBtn = document.createElement('button');
+  removeBtn.type = 'button';
+  removeBtn.className = 'btn btn-lang';
+  removeBtn.dataset.i18n = 'settings.avatar_remove';
+  removeBtn.textContent = t('settings.avatar_remove');
+  removeBtn.addEventListener('click', async () => {
+    await window.blip.clearAvatar?.();
+    setSelfAvatarCache(null);
+    state.config.customAvatar = false;
+    refreshPreview();
+    window.dispatchEvent(new CustomEvent('blip-avatar-changed'));
+    void broadcastCustomAvatar();
+  });
+
   const regenBtn = document.createElement('button');
   regenBtn.type = 'button';
-  regenBtn.className = 'btn btn-accent';
+  regenBtn.className = 'btn btn-lang';
   regenBtn.dataset.i18n = 'settings.avatar_regenerate';
   regenBtn.textContent = t('settings.avatar_regenerate');
-  regenBtn.addEventListener('click', () => {
+  regenBtn.addEventListener('click', async () => {
+    if (state.config.customAvatar) await window.blip.clearAvatar?.();
+    setSelfAvatarCache(null);
+    state.config.customAvatar = false;
     regenerateAvatar(state.config.blipId);
     refreshPreview();
     window.dispatchEvent(new CustomEvent('blip-avatar-changed'));
   });
 
+  col.appendChild(fileInput);
+  col.appendChild(uploadLabel);
+  col.appendChild(removeBtn);
   col.appendChild(regenBtn);
   row.appendChild(col);
   block.appendChild(row);
-
-  const hint = document.createElement('p');
-  hint.className = 'settings-motion-hint';
-  hint.dataset.i18n = 'settings.avatar_hint';
-  hint.textContent = t('settings.avatar_hint');
-  block.appendChild(hint);
 
   return block;
 }
@@ -970,31 +1110,18 @@ function buildLaunchAtLoginSection() {
   h.textContent = t('settings.launch_at_login');
   block.appendChild(h);
 
-  const row = document.createElement('label');
-  row.className = 'settings-tray-toggle-row';
-
-  const cb = document.createElement('input');
-  cb.type = 'checkbox';
-  cb.checked = !!state.config.launchAtLogin;
-
-  const span = document.createElement('span');
-  span.dataset.i18n = 'settings.launch_at_login';
-  span.textContent = t('settings.launch_at_login');
-
-  row.appendChild(cb);
-  row.appendChild(span);
-
-  cb.addEventListener('change', async () => {
-    state.config = await api.saveConfig({ launchAtLogin: cb.checked });
+  const row = document.createElement('div');
+  row.className = 'settings-toggle-with-hint';
+  const toggle = createPixelToggle({
+    checked: !!state.config.launchAtLogin,
+    labelKey: 'settings.launch_at_login',
+    onChange: async (checked) => {
+      state.config = await api.saveConfig({ launchAtLogin: checked });
+    },
   });
-
+  row.appendChild(toggle.el);
+  row.appendChild(createPixelHintIcon('settings.launch_at_login_hint'));
   block.appendChild(row);
-
-  const hint = document.createElement('p');
-  hint.className = 'settings-motion-hint';
-  hint.dataset.i18n = 'settings.launch_at_login_hint';
-  hint.textContent = t('settings.launch_at_login_hint');
-  block.appendChild(hint);
 
   return block;
 }
@@ -1013,31 +1140,18 @@ function buildCloseToTraySection() {
   h.textContent = t('settings.tray_title');
   block.appendChild(h);
 
-  const row = document.createElement('label');
-  row.className = 'settings-tray-toggle-row';
-
-  const cb = document.createElement('input');
-  cb.type = 'checkbox';
-  cb.checked = !!state.config.closeToTray;
-
-  const span = document.createElement('span');
-  span.dataset.i18n = 'settings.close_to_tray';
-  span.textContent = t('settings.close_to_tray');
-
-  row.appendChild(cb);
-  row.appendChild(span);
-
-  cb.addEventListener('change', async () => {
-    state.config = await api.saveConfig({ closeToTray: cb.checked });
+  const row = document.createElement('div');
+  row.className = 'settings-toggle-with-hint';
+  const toggle = createPixelToggle({
+    checked: !!state.config.closeToTray,
+    labelKey: 'settings.close_to_tray',
+    onChange: async (checked) => {
+      state.config = await api.saveConfig({ closeToTray: checked });
+    },
   });
-
+  row.appendChild(toggle.el);
+  row.appendChild(createPixelHintIcon('settings.close_to_tray_hint'));
   block.appendChild(row);
-
-  const hint = document.createElement('p');
-  hint.className = 'settings-motion-hint';
-  hint.dataset.i18n = 'settings.close_to_tray_hint';
-  hint.textContent = t('settings.close_to_tray_hint');
-  block.appendChild(hint);
 
   return block;
 }
@@ -1045,66 +1159,76 @@ function buildCloseToTraySection() {
 function buildAppearanceSection() {
   const block = document.createElement('div');
   block.className = 'settings-appearance-wrap';
-  const curTheme = normalizeThemeId(state.config.themeId);
+  const curMode = normalizeThemeMode(state.config.themeMode, state.config.themeId);
+  const curAccent = normalizeAccentId(state.config.accentId, state.config.themeId);
   const curBg = normalizeBgId(state.config.animatedBgId);
 
-  const themeOpts = [...THEME_GROUPS.light, ...THEME_GROUPS.dark].map((id) => ({
-    value: id,
-    label: labelTheme(id),
-  }));
-  const themeSelect = buildThemedSelect();
-  fillSettingsDropdown(themeSelect, themeOpts, curTheme, async (id) => {
-    state.config = await api.saveConfig({ themeId: id });
+  const modeOpts = THEME_MODES.map((id) => ({ value: id, label: labelThemeMode(id) }));
+  const modeSelect = buildThemedSelect();
+  fillSettingsDropdown(modeSelect, modeOpts, curMode, async (id) => {
+    state.config = await api.saveConfig({ themeMode: id });
     applyAppearance(state.config);
   });
-  block.appendChild(buildSettingsField('settings.appearance_theme', themeSelect));
+  block.appendChild(buildSettingsField('settings.appearance_theme', modeSelect));
 
-  const bgOpts = BG_META.map(({ id }) => ({ value: id, label: labelBg(id) }));
-  const bgSelect = buildThemedSelect();
-  fillSettingsDropdown(bgSelect, bgOpts, curBg, async (id) => {
+  const accentOpts = ACCENT_IDS.map((id) => ({ value: id, label: labelAccent(id) }));
+  const accentSelect = buildThemedSelect();
+  fillSettingsDropdown(accentSelect, accentOpts, curAccent, async (id) => {
+    state.config = await api.saveConfig({ accentId: id });
+    applyAppearance(state.config);
+  });
+  block.appendChild(buildSettingsField('settings.appearance_accent', accentSelect));
+
+  const animOpts = ANIMATED_BACKGROUNDS.map((id) => ({ value: id, label: labelBg(id) }));
+  const animSelect = buildThemedSelect();
+  fillSettingsDropdown(animSelect, animOpts, ANIMATED_BACKGROUNDS.includes(curBg) ? curBg : 'none', async (id) => {
     state.config = await api.saveConfig({ animatedBgId: normalizeBgId(id) });
     applyAppearance(state.config);
     applyReactiveWallpaperConfig(state.config);
   });
-  block.appendChild(buildSettingsField('settings.bg_title', bgSelect));
+  block.appendChild(buildSettingsField('settings.bg_animated', animSelect));
 
-  const reactiveRow = document.createElement('label');
-  reactiveRow.className = 'settings-tray-toggle-row';
-  const reactiveCb = document.createElement('input');
-  reactiveCb.type = 'checkbox';
-  reactiveCb.checked = !!state.config.reactiveBackground;
-  const reactiveSpan = document.createElement('span');
-  reactiveSpan.dataset.i18n = 'settings.reactive_background';
-  reactiveSpan.textContent = t('settings.reactive_background');
-  reactiveRow.appendChild(reactiveCb);
-  reactiveRow.appendChild(reactiveSpan);
-  reactiveCb.addEventListener('change', async () => {
-    state.config = await api.saveConfig({ reactiveBackground: reactiveCb.checked });
-    applyAppearance(state.config);
-    applyReactiveWallpaperConfig(state.config);
+  const artOpts = STATIC_ART_BACKGROUNDS.map((id) => ({ value: id, label: labelBg(id) }));
+  const artSelect = buildThemedSelect();
+  fillSettingsDropdown(
+    artSelect,
+    artOpts,
+    STATIC_ART_BACKGROUNDS.includes(curBg) ? curBg : artOpts[0].value,
+    async (id) => {
+      state.config = await api.saveConfig({ animatedBgId: normalizeBgId(id) });
+      applyAppearance(state.config);
+      applyReactiveWallpaperConfig(state.config);
+    }
+  );
+  block.appendChild(buildSettingsField('settings.bg_art', artSelect));
+
+  const reactiveToggle = createPixelToggle({
+    checked: !!state.config.reactiveBackground,
+    labelKey: 'settings.reactive_background',
+    onChange: async (checked) => {
+      state.config = await api.saveConfig({ reactiveBackground: checked });
+      applyAppearance(state.config);
+      applyReactiveWallpaperConfig(state.config);
+    },
   });
+  const reactiveRow = document.createElement('div');
+  reactiveRow.className = 'settings-toggle-with-hint';
+  reactiveRow.appendChild(reactiveToggle.el);
+  reactiveRow.appendChild(createPixelHintIcon('settings.reactive_background_hint'));
   block.appendChild(reactiveRow);
 
-  const reactiveHint = document.createElement('p');
-  reactiveHint.className = 'settings-motion-hint';
-  reactiveHint.dataset.i18n = 'settings.reactive_background_hint';
-  reactiveHint.textContent = t('settings.reactive_background_hint');
-  block.appendChild(reactiveHint);
-
-  const motionRow = document.createElement('label');
-  motionRow.className = 'settings-tray-toggle-row';
-  const motionCb = document.createElement('input');
-  motionCb.type = 'checkbox';
-  motionCb.checked = !!state.config.reduceMotion;
-  const motionSpan = document.createElement('span');
-  motionSpan.dataset.i18n = 'settings.reduce_motion';
-  motionSpan.textContent = t('settings.reduce_motion');
-  motionRow.appendChild(motionCb);
-  motionRow.appendChild(motionSpan);
-  motionCb.addEventListener('change', async () => {
-    state.config = await api.saveConfig({ reduceMotion: motionCb.checked });
-    applyAppearance(state.config);
+  const motionToggle = createPixelToggle({
+    checked: !!state.config.reduceMotion,
+    labelKey: 'settings.reduce_motion',
+    onChange: async (checked) => {
+      state.config = await api.saveConfig({ reduceMotion: checked });
+      applyAppearance(state.config);
+    },
   });
+  const motionRow = document.createElement('div');
+  motionRow.className = 'settings-toggle-with-hint';
+  motionRow.appendChild(motionToggle.el);
+  motionRow.appendChild(createPixelHintIcon('settings.motion_hint'));
   block.appendChild(motionRow);
 
   const reactionInput = document.createElement('input');
@@ -1120,12 +1244,6 @@ function buildAppearanceSection() {
     for (const chat of state.chatViews.values()) chat.renderMessages?.();
   });
   block.appendChild(buildSettingsField('settings.default_reaction', reactionInput));
-
-  const motion = document.createElement('p');
-  motion.className = 'settings-motion-hint';
-  motion.dataset.i18n = 'settings.motion_hint';
-  motion.textContent = t('settings.motion_hint');
-  block.appendChild(motion);
 
   return block;
 }
@@ -1435,13 +1553,10 @@ function buildSettingsProfilePanel() {
     }
   );
 
-  frag.appendChild(nameLabel);
-  frag.appendChild(nameInput);
-  frag.appendChild(buildSettingsField('settings.presence', presenceSelect));
-
   const statusLabel = document.createElement('label');
-  statusLabel.dataset.i18n = 'settings.status_text';
-  statusLabel.textContent = t('settings.status_text');
+  statusLabel.className = 'settings-field-label';
+  statusLabel.dataset.i18n = 'settings.status_custom';
+  statusLabel.textContent = t('settings.status_custom');
   const statusInput = document.createElement('input');
   statusInput.type = 'text';
   statusInput.className = 'input settings-status-input';
@@ -1450,31 +1565,44 @@ function buildSettingsProfilePanel() {
   statusInput.dataset.i18nPlaceholder = 'settings.status_placeholder';
   statusInput.value = state.config.presenceText || '';
 
-  const presetSelect = buildThemedSelect();
-  const presetOpts = [
-    { value: '', label: t('settings.status_clear') },
-    { value: 'In game', label: t('settings.status_game') },
-    { value: 'AFK', label: t('settings.status_afk') },
-    { value: 'Working', label: t('settings.status_work') },
-  ];
-  const curPreset = presetOpts.some((o) => o.value === (state.config.presenceText || ''))
-    ? state.config.presenceText || ''
-    : '';
-  fillSettingsDropdown(presetSelect, presetOpts, curPreset, async (text) => {
-    statusInput.value = text;
-    state.config = await api.saveConfig({ presenceText: text });
-  });
-
   statusInput.addEventListener('change', async () => {
     const presenceText = statusInput.value.trim().slice(0, 48);
     statusInput.value = presenceText;
     state.config = await api.saveConfig({ presenceText });
   });
 
+  const presetsWrap = document.createElement('div');
+  presetsWrap.className = 'status-preset-buttons';
+  const presetDefs = [
+    { value: '', key: 'settings.status_empty' },
+    { value: 'In game', key: 'settings.status_game' },
+    { value: 'AFK', key: 'settings.status_afk' },
+    { value: 'Working', key: 'settings.status_work' },
+    { value: 'Streaming', key: 'settings.status_stream' },
+    { value: 'Listening', key: 'settings.status_listen' },
+    { value: 'Coding', key: 'settings.status_code' },
+    { value: 'Away', key: 'settings.status_away_short' },
+  ];
+  for (const def of presetDefs) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn-lang status-preset-btn';
+    btn.dataset.i18n = def.key;
+    btn.textContent = t(def.key);
+    btn.addEventListener('click', async () => {
+      statusInput.value = def.value;
+      state.config = await api.saveConfig({ presenceText: def.value });
+    });
+    presetsWrap.appendChild(btn);
+  }
+
+  frag.appendChild(buildAvatarSettingsSection());
+  frag.appendChild(buildSettingsField('settings.presence', presenceSelect));
   frag.appendChild(statusLabel);
   frag.appendChild(statusInput);
-  frag.appendChild(buildSettingsField('settings.status_presets', presetSelect));
-  frag.appendChild(buildAvatarSettingsSection());
+  frag.appendChild(presetsWrap);
+  frag.appendChild(nameLabel);
+  frag.appendChild(nameInput);
   frag.appendChild(idRow);
   return frag;
 }
@@ -1521,70 +1649,40 @@ function buildSettingsNotificationsPanel() {
   h.textContent = t('settings.section_notifications');
   frag.appendChild(h);
 
-  const label = document.createElement('label');
-  label.className = 'settings-tray-toggle-row';
+  frag.appendChild(
+    createPixelToggle({
+      checked: state.config.desktopNotifications !== false,
+      labelKey: 'settings.notifications_enable',
+      onChange: async (checked) => {
+        state.config = await api.saveConfig({ desktopNotifications: checked });
+      },
+    }).el
+  );
 
-  const cb = document.createElement('input');
-  cb.type = 'checkbox';
-  cb.checked = state.config.desktopNotifications !== false;
+  frag.appendChild(
+    createPixelToggle({
+      checked: state.config.desktopCallNotifications !== false,
+      labelKey: 'settings.notifications_calls',
+      onChange: async (checked) => {
+        state.config = await api.saveConfig({ desktopCallNotifications: checked });
+      },
+    }).el
+  );
 
-  const span = document.createElement('span');
-  span.dataset.i18n = 'settings.notifications_enable';
-  span.textContent = t('settings.notifications_enable');
-
-  label.appendChild(cb);
-  label.appendChild(span);
-
-  cb.addEventListener('change', async () => {
-    state.config = await api.saveConfig({ desktopNotifications: cb.checked });
+  const dndRow = document.createElement('div');
+  dndRow.className = 'settings-toggle-with-hint';
+  const dndToggle = createPixelToggle({
+    checked: state.config.doNotDisturb === true,
+    labelKey: 'settings.notifications_dnd',
+    onChange: async (checked) => {
+      state.config = await api.saveConfig({ doNotDisturb: checked });
+      applySoundPrefsFromConfig(state.config);
+    },
   });
+  dndRow.appendChild(dndToggle.el);
+  dndRow.appendChild(createPixelHintIcon('settings.notifications_dnd_hint'));
+  frag.appendChild(dndRow);
 
-  const callLabel = document.createElement('label');
-  callLabel.className = 'settings-tray-toggle-row';
-
-  const callCb = document.createElement('input');
-  callCb.type = 'checkbox';
-  callCb.checked = state.config.desktopCallNotifications !== false;
-
-  const callSpan = document.createElement('span');
-  callSpan.dataset.i18n = 'settings.notifications_calls';
-  callSpan.textContent = t('settings.notifications_calls');
-
-  callLabel.appendChild(callCb);
-  callLabel.appendChild(callSpan);
-
-  callCb.addEventListener('change', async () => {
-    state.config = await api.saveConfig({ desktopCallNotifications: callCb.checked });
-  });
-
-  const dndLabel = document.createElement('label');
-  dndLabel.className = 'settings-tray-toggle-row';
-
-  const dndCb = document.createElement('input');
-  dndCb.type = 'checkbox';
-  dndCb.checked = state.config.doNotDisturb === true;
-
-  const dndSpan = document.createElement('span');
-  dndSpan.dataset.i18n = 'settings.notifications_dnd';
-  dndSpan.textContent = t('settings.notifications_dnd');
-
-  dndLabel.appendChild(dndCb);
-  dndLabel.appendChild(dndSpan);
-
-  dndCb.addEventListener('change', async () => {
-    state.config = await api.saveConfig({ doNotDisturb: dndCb.checked });
-    applySoundPrefsFromConfig(state.config);
-  });
-
-  const dndHint = document.createElement('p');
-  dndHint.className = 'hint';
-  dndHint.dataset.i18n = 'settings.notifications_dnd_hint';
-  dndHint.textContent = t('settings.notifications_dnd_hint');
-
-  frag.appendChild(label);
-  frag.appendChild(callLabel);
-  frag.appendChild(dndLabel);
-  frag.appendChild(dndHint);
   return frag;
 }
 
@@ -1674,19 +1772,15 @@ function buildSettingsSoundPanel() {
   h.textContent = t('settings.section_sound');
   frag.appendChild(h);
 
-  const enableLabel = document.createElement('label');
-  enableLabel.className = 'settings-tray-toggle-row';
-
-  const enableCb = document.createElement('input');
-  enableCb.type = 'checkbox';
-  enableCb.checked = state.config.uiSoundsEnabled !== false;
-
-  const enableSpan = document.createElement('span');
-  enableSpan.dataset.i18n = 'settings.sound_enable';
-  enableSpan.textContent = t('settings.sound_enable');
-
-  enableLabel.appendChild(enableCb);
-  enableLabel.appendChild(enableSpan);
+  const enableToggle = createPixelToggle({
+    checked: state.config.uiSoundsEnabled !== false,
+    labelKey: 'settings.sound_enable',
+    onChange: async (checked) => {
+      state.config = await api.saveConfig({ uiSoundsEnabled: checked });
+      applySoundPrefsFromConfig(state.config);
+      syncVolumeDisabled();
+    },
+  });
 
   const volLabel = document.createElement('label');
   volLabel.className = 'settings-sound-volume-label';
@@ -1721,7 +1815,7 @@ function buildSettingsSoundPanel() {
   volRange.addEventListener('input', () => {
     volVal.textContent = `${volRange.value}%`;
     setSoundPrefs({
-      enabled: enableCb.checked,
+      enabled: enableToggle.input.checked,
       volume: Number(volRange.value) / 100,
       soundPack: state.config.uiSoundPack,
       melodyPack: state.config.uiMelodyPack,
@@ -1732,16 +1826,10 @@ function buildSettingsSoundPanel() {
   });
 
   function syncVolumeDisabled() {
-    volRange.disabled = !enableCb.checked;
-    volLabel.style.opacity = enableCb.checked ? '1' : '0.45';
+    volRange.disabled = !enableToggle.input.checked;
+    volLabel.style.opacity = enableToggle.input.checked ? '1' : '0.45';
   }
   syncVolumeDisabled();
-
-  enableCb.addEventListener('change', async () => {
-    state.config = await api.saveConfig({ uiSoundsEnabled: enableCb.checked });
-    applySoundPrefsFromConfig(state.config);
-    syncVolumeDisabled();
-  });
 
   volRow.appendChild(volRange);
   volRow.appendChild(volVal);
@@ -1816,7 +1904,7 @@ function buildSettingsSoundPanel() {
     previewGrid.appendChild(btn);
   });
 
-  frag.appendChild(enableLabel);
+  frag.appendChild(enableToggle.el);
   frag.appendChild(volLabel);
   frag.appendChild(volRow);
   frag.appendChild(buildSettingsField('settings.sound_pack', soundPackSelect));
@@ -1864,12 +1952,6 @@ function buildSettingsTransferPanel() {
   h.textContent = t('settings.section_transfer');
   frag.appendChild(h);
 
-  const hint = document.createElement('p');
-  hint.className = 'hint';
-  hint.dataset.i18n = 'settings.transfer_hint';
-  hint.textContent = t('settings.transfer_hint');
-  frag.appendChild(hint);
-
   const limitSelect = buildThemedSelect();
   const limitOpts = FILE_LIMIT_GB_OPTIONS.map((gb) => ({
     value: String(gb),
@@ -1883,7 +1965,9 @@ function buildSettingsTransferPanel() {
       state.config = await api.saveConfig({ maxFileTransferGb: Number(val) });
     }
   );
-  frag.appendChild(buildSettingsField('settings.file_limit', limitSelect));
+  frag.appendChild(
+    buildSettingsFieldWithHint('settings.file_limit', 'settings.transfer_hint', limitSelect)
+  );
   return frag;
 }
 
@@ -1897,11 +1981,9 @@ function buildSettingsCallPanel() {
   h.textContent = t('settings.section_call');
   frag.appendChild(h);
 
-  const hint = document.createElement('p');
-  hint.className = 'hint';
-  hint.dataset.i18n = 'settings.call_hint';
-  hint.textContent = t('settings.call_hint');
-  frag.appendChild(hint);
+  const callHead = buildSettingsLabelRow('settings.section_call', 'settings.call_hint');
+  callHead.classList.add('settings-panel-subhead');
+  frag.appendChild(callHead);
 
   const micTest = buildMicTestPanel(state.config, async (patch) => {
     state.config = await api.saveConfig(patch);
@@ -2110,13 +2192,9 @@ function buildSettingsNetworkPanel() {
       restartClipboardSync();
     }
   );
-  frag.appendChild(buildSettingsField('clipboard.mode', clipSelect));
-
-  const clipHint = document.createElement('p');
-  clipHint.className = 'settings-motion-hint';
-  clipHint.dataset.i18n = 'clipboard.hint';
-  clipHint.textContent = t('clipboard.hint');
-  frag.appendChild(clipHint);
+  frag.appendChild(
+    buildSettingsFieldWithHint('clipboard.mode', 'clipboard.hint', clipSelect)
+  );
 
   const actions = document.createElement('div');
   actions.className = 'settings-network-actions';
@@ -2276,16 +2354,15 @@ function buildSettingsNetworkPanel() {
   copyBtn.addEventListener('click', async () => {
     if (!lastDiagnostics) return;
     const text = formatDiagnosticsText(lastDiagnostics);
-    try {
-      await navigator.clipboard.writeText(text);
+    const ok = await copyTextToClipboard(text);
+    if (ok) {
       showAppToast({
         title: t('settings.network_copy_done'),
         durationMs: 2800,
       });
-    } catch (err) {
+    } else {
       showAppToast({
         title: t('settings.network_copy_fail'),
-        body: err?.message || '',
         durationMs: 4000,
         variant: 'danger',
       });
@@ -2355,32 +2432,24 @@ function buildSettingsShortcutsPanel() {
     ['settings.shortcuts_hangup_global', 'Ctrl+Shift+End'],
   ]);
 
-  const globalHint = document.createElement('p');
-  globalHint.className = 'hint';
-  globalHint.dataset.i18n = 'settings.shortcuts_global_hint';
-  globalHint.textContent = t('settings.shortcuts_global_hint');
-  frag.appendChild(globalHint);
-
-  const globalToggle = document.createElement('label');
-  globalToggle.className = 'settings-tray-toggle-row';
-  const globalCb = document.createElement('input');
-  globalCb.type = 'checkbox';
-  globalCb.checked = state.config.globalShortcutsEnabled !== false;
-  const globalSpan = document.createElement('span');
-  globalSpan.dataset.i18n = 'settings.shortcuts_global_enable';
-  globalSpan.textContent = t('settings.shortcuts_global_enable');
-  globalToggle.appendChild(globalCb);
-  globalToggle.appendChild(globalSpan);
-  globalCb.addEventListener('change', async () => {
-    state.config = await api.saveConfig({ globalShortcutsEnabled: globalCb.checked });
-    showAppToast({
-      title: globalCb.checked
-        ? t('settings.shortcuts_global_on')
-        : t('settings.shortcuts_global_off'),
-      durationMs: 3200,
-    });
+  const globalRow = document.createElement('div');
+  globalRow.className = 'settings-toggle-with-hint';
+  const globalToggle = createPixelToggle({
+    checked: state.config.globalShortcutsEnabled !== false,
+    labelKey: 'settings.shortcuts_global_enable',
+    onChange: async (checked) => {
+      state.config = await api.saveConfig({ globalShortcutsEnabled: checked });
+      showAppToast({
+        title: checked
+          ? t('settings.shortcuts_global_on')
+          : t('settings.shortcuts_global_off'),
+        durationMs: 3200,
+      });
+    },
   });
-  frag.appendChild(globalToggle);
+  globalRow.appendChild(globalToggle.el);
+  globalRow.appendChild(createPixelHintIcon('settings.shortcuts_global_hint'));
+  frag.appendChild(globalRow);
 
   return frag;
 }
@@ -2395,49 +2464,56 @@ function buildSettingsDeveloperPanel() {
   h.textContent = t('settings.section_developer');
   frag.appendChild(h);
 
-  const hint = document.createElement('p');
-  hint.className = 'hint';
-  hint.dataset.i18n = 'settings.dev_hint';
-  hint.textContent = t('settings.dev_hint');
-  frag.appendChild(hint);
+  const devHintRow = document.createElement('div');
+  devHintRow.className = 'settings-label-row';
+  const devSub = document.createElement('h3');
+  devSub.className = 'section-subtitle';
+  devSub.dataset.i18n = 'settings.dev_beta_updates';
+  devSub.textContent = t('settings.dev_beta_updates');
+  devHintRow.appendChild(devSub);
+  devHintRow.appendChild(createPixelHintIcon('settings.dev_hint'));
+  frag.appendChild(devHintRow);
 
-  const betaRow = document.createElement('label');
-  betaRow.className = 'settings-tray-toggle-row';
-  const betaCb = document.createElement('input');
-  betaCb.type = 'checkbox';
-  betaCb.checked = !!state.config?.receiveBetaUpdates;
-  const betaSpan = document.createElement('span');
-  betaSpan.dataset.i18n = 'settings.dev_beta_updates';
-  betaSpan.textContent = t('settings.dev_beta_updates');
-  betaRow.appendChild(betaCb);
-  betaRow.appendChild(betaSpan);
-  betaCb.addEventListener('change', async () => {
-    state.config = await api.saveConfig({ receiveBetaUpdates: betaCb.checked });
-    showAppToast({
-      title: betaCb.checked ? t('settings.dev_beta_on') : t('settings.dev_beta_off'),
-      durationMs: 4000,
-    });
+  const betaToggle = createPixelToggle({
+    checked: !!state.config?.receiveBetaUpdates,
+    labelKey: 'settings.dev_beta_updates',
+    onChange: async (checked) => {
+      state.config = await api.saveConfig({ receiveBetaUpdates: checked });
+      showAppToast({
+        title: checked ? t('settings.dev_beta_on') : t('settings.dev_beta_off'),
+        durationMs: 4000,
+      });
+    },
   });
-  frag.appendChild(betaRow);
+  frag.appendChild(betaToggle.el);
 
   return frag;
 }
 
 function buildSettingsAboutPanel() {
   const frag = document.createElement('div');
-  frag.className = 'settings-panel';
+  frag.className = 'settings-panel settings-panel--about';
 
-  const h = document.createElement('h2');
-  h.className = 'settings-panel-title';
-  h.dataset.i18n = 'settings.section_about';
-  h.textContent = t('settings.section_about');
-  frag.appendChild(h);
+  const hero = document.createElement('div');
+  hero.className = 'settings-about-hero';
+  const icon = document.createElement('img');
+  icon.className = 'settings-about-icon';
+  icon.alt = 'BLIP';
+  try {
+    icon.src = new URL('../../build/icon.png', import.meta.url).href;
+  } catch {
+    /* ignore */
+  }
+  hero.appendChild(icon);
 
   const aboutLine = document.createElement('p');
   aboutLine.className = 'settings-about-line';
 
   const aboutVersion = document.createElement('p');
   aboutVersion.className = 'settings-about-version';
+  hero.appendChild(aboutLine);
+  hero.appendChild(aboutVersion);
+  frag.appendChild(hero);
 
   const githubBtn = document.createElement('button');
   githubBtn.type = 'button';
@@ -2481,8 +2557,6 @@ function buildSettingsAboutPanel() {
   linkRow.appendChild(changelogBtn);
   linkRow.appendChild(releasesAboutBtn);
 
-  frag.appendChild(aboutLine);
-  frag.appendChild(aboutVersion);
   frag.appendChild(githubBtn);
   frag.appendChild(linkRow);
   return frag;
@@ -2543,6 +2617,9 @@ function formatUpdateStatusText() {
     case 'downloaded':
       return t('settings.updates_status_downloaded').replace('{v}', u.version || '—');
     case 'error':
+      if (u.code === 'stale_release') {
+        return t('settings.updates_status_stale_release');
+      }
       return t('settings.updates_status_error').replace('{m}', u.message || '');
     default:
       return t('settings.updates_status_idle');
@@ -2563,28 +2640,22 @@ function buildSettingsUpdatesPanel() {
   autoTitle.className = 'section-subtitle';
   autoTitle.dataset.i18n = 'settings.updates_auto_title';
   autoTitle.textContent = t('settings.updates_auto_title');
-  frag.appendChild(autoTitle);
 
-  const autoHint = document.createElement('p');
-  autoHint.className = 'hint';
-  autoHint.dataset.i18n = 'settings.updates_auto_hint';
-  autoHint.textContent = t('settings.updates_auto_hint');
-  frag.appendChild(autoHint);
+  const autoHintRow = document.createElement('div');
+  autoHintRow.className = 'settings-label-row';
+  autoHintRow.appendChild(autoTitle);
+  autoHintRow.appendChild(createPixelHintIcon('settings.updates_auto_hint'));
+  frag.appendChild(autoHintRow);
 
-  const autoDlRow = document.createElement('label');
-  autoDlRow.className = 'settings-tray-toggle-row';
-  const autoDlCb = document.createElement('input');
-  autoDlCb.type = 'checkbox';
-  autoDlCb.checked = state.config.autoDownloadUpdates !== false;
-  const autoDlSpan = document.createElement('span');
-  autoDlSpan.dataset.i18n = 'settings.updates_auto_download';
-  autoDlSpan.textContent = t('settings.updates_auto_download');
-  autoDlRow.appendChild(autoDlCb);
-  autoDlRow.appendChild(autoDlSpan);
-  autoDlCb.addEventListener('change', async () => {
-    state.config = await api.saveConfig({ autoDownloadUpdates: autoDlCb.checked });
-  });
-  frag.appendChild(autoDlRow);
+  frag.appendChild(
+    createPixelToggle({
+      checked: state.config.autoDownloadUpdates !== false,
+      labelKey: 'settings.updates_auto_download',
+      onChange: async (checked) => {
+        state.config = await api.saveConfig({ autoDownloadUpdates: checked });
+      },
+    }).el
+  );
 
   const verLine = document.createElement('p');
   verLine.className = 'settings-about-version';
@@ -3169,8 +3240,8 @@ function renderChatHubView() {
   if (rows.length === 0 && getGroupsFor(state.config.blipId).length === 0) {
     const empty = document.createElement('p');
     empty.className = 'hint';
-    empty.dataset.i18n = 'chat.pick_peer';
-    empty.textContent = t('chat.pick_peer');
+    empty.dataset.i18n = 'chat.no_chats';
+    empty.textContent = t('chat.no_chats');
     list.appendChild(empty);
   } else if (rows.length > 0) {
     rows.forEach((row) => {
@@ -3331,6 +3402,7 @@ export function initUI(config, blipApi) {
   applyAppearance(state.config);
   applyReactiveWallpaperConfig(state.config);
   initReactiveWallpaper(() => state.config);
+  void loadSelfAvatarFromMain();
   appearanceListenerDispose?.();
   appearanceListenerDispose = listenReducedMotion(
     () => applyAppearance(state.config),
@@ -3469,6 +3541,7 @@ export function updatePeers({ peers, occupiedIds }) {
     if (p.online && !prevOnline.has(p.blipId)) {
       logPeerEvent(p.blipId, 'online');
       if (!state.config?.doNotDisturb) sounds.peerOnline();
+      if (getSelfAvatarCache()) void broadcastCustomAvatar();
     } else if (!p.online && prevOnline.has(p.blipId)) {
       logPeerEvent(p.blipId, 'offline');
       if (!state.config?.doNotDisturb) sounds.peerOffline();
@@ -3514,6 +3587,25 @@ function handleTypingTcp(msg) {
 }
 
 export function handleTcpMessage(msg) {
+  if (msg.type === 'avatar-share') {
+    const from = Number(msg.from);
+    if (!Number.isFinite(from) || isBlocked(from)) return;
+    if (msg.dataUrl) setPeerAvatarDataUrl(from, String(msg.dataUrl));
+    else setPeerAvatarDataUrl(from, null);
+    const mine = getSelfAvatarCache();
+    if (mine) {
+      void api.sendTcpMessage({
+        type: 'avatar-share',
+        to: from,
+        from: state.config.blipId,
+        dataUrl: mine,
+      });
+    }
+    window.dispatchEvent(new CustomEvent('blip-avatar-changed'));
+    if (state.view === 'peers' || state.view === 'chat') renderView(state.view);
+    return;
+  }
+
   if (msg.type === 'clipboard-push') {
     if (isBlocked(Number(msg.from))) return;
     void handleClipboardPush(msg, {

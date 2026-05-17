@@ -11,6 +11,25 @@ Release **version numbers** track [`app-metadata.json`](app-metadata.json) (sync
 
 _Nothing yet._
 
+## [0.7.2] — Syscall
+
+### Added
+
+- **Custom profile photos** — upload/remove; shared with online peers over LAN (`avatar-share`).
+- **Pixel toggles** — square switches replace checkboxes across settings.
+- **Pixel ? hints** — tooltips on hover for DND, LAN clipboard, files, calls, peers, updates, developer, and more.
+- **Dial dashboard** — online count, your ID, mesh size on the home dial screen.
+- **Theme modes** — Light / Dark / Automatic (system); **color accents** (16 presets); **5 animated + 5 art** backgrounds; redesigned **City** skyline art.
+
+### Changed
+
+- **Profile** — photo first, custom status with quick preset buttons («Пусто» instead of «Сброс»).
+- **Chat** — no `#id` caption in header; empty hub shows «Нет чатов».
+- **Peers** — subtitle moved to ? hint next to title.
+- **Dial** — error when entering ID outside 1–64.
+- **About** — centered layout with app icon.
+- **Network copy** — fallback clipboard when OS API blocks copy.
+
 ## [0.7.1] — Portrait
 
 ### Added

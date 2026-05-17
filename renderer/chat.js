@@ -170,11 +170,7 @@ export function createChatView(
   const name = document.createElement('span');
   name.className = 'chat-peer-name';
   name.textContent = `BLIP-${peerId}`;
-  const idLabel = document.createElement('span');
-  idLabel.className = 'chat-peer-id';
-  idLabel.textContent = `#${peerId}`;
   meta.appendChild(name);
-  meta.appendChild(idLabel);
   header.appendChild(avatarMount);
   header.appendChild(meta);
   if (onPeerMenu) {
