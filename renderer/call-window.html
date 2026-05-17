@@ -21,6 +21,35 @@
       inset: 0 !important;
       z-index: 2;
     }
+    #call-shell.call-shell--video-fs {
+      position: fixed;
+      inset: 0;
+      z-index: 999999;
+      width: 100vw;
+      height: 100vh;
+    }
+    #call-shell.call-shell--video-fs .call-window-titlebar {
+      display: none;
+    }
+    #call-shell.call-shell--video-fs #call-root {
+      flex: 1;
+      min-height: 0;
+    }
+    #call-shell.call-shell--video-fs .call-video-wrap--fullscreen {
+      position: absolute !important;
+      inset: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      max-width: none !important;
+      max-height: none !important;
+    }
+    #call-shell.call-shell--video-fs .call-video--stage {
+      width: 100% !important;
+      height: 100% !important;
+      max-width: none !important;
+      max-height: none !important;
+      object-fit: contain;
+    }
     .call-window-titlebar {
       display: flex;
       align-items: center;

@@ -8,13 +8,14 @@ import {
   groupDisplayName,
   getGroupMessages,
   isGroupMember,
+  purgeGroupsFor,
 } from './groups.js';
 import { openGroupCreateDialog } from './group-create-dialog.js';
 import { createGroupChatView } from './group-chat.js';
 import {
   createGroupFromUi,
   handleGroupTcpMessage,
-  migrateGroupsHost,
+  migrateGroupsHostOnPeerOffline,
   sendGroupChatMessage,
   joinGroupCall,
   leaveGroup,
@@ -1183,6 +1184,15 @@ function setupGlobalShortcuts() {
           search.focus();
           search.select();
         }
+      }
+    }
+
+    if (e.key === 'Escape' && !e.ctrlKey && !e.altKey && !e.metaKey && !typing) {
+      if (state.view === 'chat' && (state.activePeer || state.activeGroup)) {
+        e.preventDefault();
+        state.activePeer = null;
+        state.activeGroup = null;
+        renderView('chat');
       }
     }
   });
@@ -3014,6 +3024,7 @@ export function initUI(config, blipApi) {
     },
   };
   initPeerTrust(config, blipApi);
+  purgeGroupsFor(config.blipId);
   setLang(config.language || localStorage.getItem('blip_lang') || 'en');
   applySoundPrefsFromConfig(config);
   applyAppearance(state.config);
@@ -3143,6 +3154,7 @@ export function updatePeers({ peers, occupiedIds }) {
     } else if (!p.online && prevOnline.has(p.blipId)) {
       logPeerEvent(p.blipId, 'offline');
       if (!state.config?.doNotDisturb) sounds.peerOffline();
+      migrateGroupsHostOnPeerOffline(p.blipId, nextOnline, api, state.config);
     }
     const chat = state.chatViews.get(p.blipId);
     if (chat) chat.setPeerName(formatPeerDisplayName(p));
@@ -3151,8 +3163,6 @@ export function updatePeers({ peers, occupiedIds }) {
   if (gridComponent) {
     gridComponent.updateOccupied(occupiedIds.filter((id) => id !== state.config.blipId));
   }
-
-  migrateGroupsHost(getGroupsFor(state.config.blipId), nextOnline, api, state.config);
 
   /* Never full re-render during active conversation (fixes scroll jump + input focus loss) */
   if (state.view === 'chat' && (state.activePeer || state.activeGroup) && mainContent) {

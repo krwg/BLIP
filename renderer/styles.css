@@ -701,10 +701,7 @@ select.blip-select:focus {
 }
 
 .chat-file-btn {
-  color: var(--blip-accent);
   min-width: 44px;
-  border: 2px solid var(--blip-accent);
-  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.65);
   image-rendering: pixelated;
 }
 

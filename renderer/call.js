@@ -284,9 +284,19 @@ export function createCallUI(config, api, options = {}) {
     return remoteVideo.srcObject ? remoteVideo : localVideo;
   }
 
-  function exitPseudoFullscreen() {
-    if (!pseudoFullscreen) return;
+  async function exitPseudoFullscreen() {
+    if (window.blip?.callWindowIsFullScreen) {
+      try {
+        if (await window.blip.callWindowIsFullScreen()) {
+          await window.blip.callWindowToggleFullScreen();
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+    if (!pseudoFullscreen && !document.fullscreenElement) return;
     pseudoFullscreen = false;
+    document.getElementById('call-shell')?.classList.remove('call-shell--video-fs');
     videoWrap.classList.remove('call-video-wrap--fullscreen');
     overlay.classList.remove('call-overlay--theater-fs');
     syncFullscreenButton();
@@ -294,6 +304,19 @@ export function createCallUI(config, api, options = {}) {
 
   async function toggleVideoFullscreen() {
     if (fsBtn.classList.contains('hidden')) return;
+    if (window.blip?.callWindowToggleFullScreen) {
+      try {
+        pseudoFullscreen = !!(await window.blip.callWindowToggleFullScreen());
+        const shell = document.getElementById('call-shell');
+        shell?.classList.toggle('call-shell--video-fs', pseudoFullscreen);
+        videoWrap.classList.toggle('call-video-wrap--fullscreen', pseudoFullscreen);
+        overlay.classList.toggle('call-overlay--theater-fs', pseudoFullscreen);
+        syncFullscreenButton();
+        return;
+      } catch (err) {
+        console.warn('[call] window fullscreen:', err.message);
+      }
+    }
     try {
       if (document.fullscreenElement) {
         await document.exitFullscreen();
@@ -316,6 +339,8 @@ export function createCallUI(config, api, options = {}) {
       console.warn('[call] native fullscreen:', err.message);
     }
     pseudoFullscreen = !pseudoFullscreen;
+    const shell = document.getElementById('call-shell');
+    shell?.classList.toggle('call-shell--video-fs', pseudoFullscreen);
     videoWrap.classList.toggle('call-video-wrap--fullscreen', pseudoFullscreen);
     overlay.classList.toggle('call-overlay--theater-fs', pseudoFullscreen);
     syncFullscreenButton();

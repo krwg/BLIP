@@ -98,6 +98,8 @@ contextBridge.exposeInMainWorld('blip', {
   callWindowMinimize: () => ipcRenderer.send('call-window-minimize'),
   callWindowMaximize: () => ipcRenderer.send('call-window-maximize'),
   callWindowClose: () => ipcRenderer.send('call-window-close'),
+  callWindowToggleFullScreen: () => ipcRenderer.invoke('call-window-toggle-fullscreen'),
+  callWindowIsFullScreen: () => ipcRenderer.invoke('call-window-is-fullscreen'),
   onConfigUpdated: (cb) => {
     const handler = (_, data) => cb(data);
     ipcRenderer.on('config-updated', handler);

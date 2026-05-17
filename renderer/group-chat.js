@@ -121,7 +121,7 @@ export function createGroupChatView(group, config, onSend, onBack, onGroupCall, 
 
   const fileBtn = document.createElement('button');
   fileBtn.type = 'button';
-  fileBtn.className = 'btn btn-lang chat-tool-btn chat-file-btn';
+  fileBtn.className = 'btn btn-accent chat-tool-btn chat-file-btn';
   fileBtn.title = t('chat.attach_file');
   fileBtn.dataset.i18n = 'chat.file_btn';
   fileBtn.textContent = t('chat.file_btn');

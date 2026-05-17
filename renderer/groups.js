@@ -1,7 +1,10 @@
 const STORAGE_KEY = 'blip_groups_v1';
+const DECLINED_KEY = 'blip_groups_declined_v1';
 
 /** @type {Map<string, object>} */
 const groups = new Map();
+/** @type {Set<string>} */
+const declinedInvites = new Set();
 
 function load() {
   try {
@@ -52,7 +55,54 @@ export function isGroupMember(group, blipId) {
   return group.members.some((m) => Number(m) === id);
 }
 
+function loadDeclined() {
+  try {
+    const raw = localStorage.getItem(DECLINED_KEY);
+    if (!raw) return;
+    const arr = JSON.parse(raw);
+    if (Array.isArray(arr)) arr.forEach((id) => declinedInvites.add(String(id)));
+  } catch (e) {
+    console.warn('[BLIP groups] declined load', e);
+  }
+}
+
+function persistDeclined() {
+  try {
+    localStorage.setItem(DECLINED_KEY, JSON.stringify([...declinedInvites]));
+  } catch (e) {
+    console.warn('[BLIP groups] declined persist', e);
+  }
+}
+
 load();
+loadDeclined();
+
+export function isInviteDeclined(groupId) {
+  return declinedInvites.has(String(groupId));
+}
+
+export function declineGroupInvite(groupId) {
+  declinedInvites.add(String(groupId));
+  persistDeclined();
+}
+
+export function clearDeclinedInvite(groupId) {
+  declinedInvites.delete(String(groupId));
+  persistDeclined();
+}
+
+/** Drop groups you are not a member of (stale localStorage). */
+export function purgeGroupsFor(blipId) {
+  const id = Number(blipId);
+  let changed = false;
+  for (const [gid, g] of [...groups]) {
+    if (!isGroupMember(g, id)) {
+      groups.delete(gid);
+      changed = true;
+    }
+  }
+  if (changed) persist();
+}
 
 export function generateGroupId() {
   return Math.random().toString(36).slice(2, 10);

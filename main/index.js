@@ -795,6 +795,16 @@ function setupIpc() {
   ipcMain.on('call-window-close', () => {
     if (callWindow && !callWindow.isDestroyed()) callWindow.hide();
   });
+  ipcMain.handle('call-window-toggle-fullscreen', () => {
+    if (!callWindow || callWindow.isDestroyed()) return false;
+    const next = !callWindow.isFullScreen();
+    callWindow.setFullScreen(next);
+    return next;
+  });
+  ipcMain.handle('call-window-is-fullscreen', () => {
+    if (!callWindow || callWindow.isDestroyed()) return false;
+    return callWindow.isFullScreen();
+  });
 }
 
 function showFatalPortDialog(err) {

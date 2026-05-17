@@ -1,5 +1,12 @@
 import { t, applyI18n } from './i18n.js';
-import { getGroup, saveGroup, isGroupMember, normalizeMemberIds, groupDisplayName } from './groups.js';
+import {
+  getGroup,
+  saveGroup,
+  isGroupMember,
+  normalizeMemberIds,
+  groupDisplayName,
+  isInviteDeclined,
+} from './groups.js';
 import { sounds } from './audio.js';
 import { showAppToast } from './toasts.js';
 import { createAvatarElement } from './avatar.js';
@@ -898,19 +905,9 @@ export async function handleGroupCallSignal(msg, api) {
 }
 
 export async function handleGroupCallState(msg, api) {
-  let group = getGroup(msg.groupId);
-  if (!group && msg.members?.length) {
-    group = {
-      id: msg.groupId,
-      name: t('group.unnamed'),
-      hostId: Number(msg.host),
-      members: normalizeMemberIds(msg.members),
-      messages: [],
-    };
-    saveGroup(group);
-  }
+  const group = getGroup(msg.groupId);
   const myId = myBlipId(api);
-  if (!group || !isGroupMember(group, myId)) return;
+  if (!group || !isGroupMember(group, myId) || isInviteDeclined(msg.groupId)) return;
 
   const participants = (msg.participants || []).map(peerNum).filter(Number.isFinite);
 
@@ -935,19 +932,9 @@ export async function handleGroupCallState(msg, api) {
 }
 
 export async function handleGroupCallStart(msg, api) {
-  let group = getGroup(msg.groupId);
-  if (!group && Array.isArray(msg.members) && msg.members.length) {
-    group = {
-      id: msg.groupId,
-      name: t('group.unnamed'),
-      hostId: Number(msg.host),
-      members: normalizeMemberIds(msg.members),
-      messages: [],
-    };
-    saveGroup(group);
-  }
+  const group = getGroup(msg.groupId);
   const myId = myBlipId(api);
-  if (!group || !isGroupMember(group, myId)) return;
+  if (!group || !isGroupMember(group, myId) || isInviteDeclined(msg.groupId)) return;
 
   const starter = wireFrom(msg);
   const prev = getOngoingGroupCall(msg.groupId).participants;
@@ -967,19 +954,6 @@ export async function handleGroupCallStart(msg, api) {
   pendingInvite = { groupId: msg.groupId, api: { ...api, config: callConfig(api) } };
   shell.showIncoming();
   sounds.groupCallInvite();
-
-  showAppToast({
-    title: t('group.call_invite'),
-    body: t('group.call_invite_body').replace('{id}', String(starter)),
-    actions: [
-      {
-        label: t('group.join_call'),
-        primary: true,
-        onClick: () => void joinGroupCall(msg.groupId, api, { skipInvite: true }),
-      },
-    ],
-    durationMs: 15000,
-  });
 }
 
 export async function handleGroupCallEnd(msg) {

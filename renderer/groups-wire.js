@@ -1,6 +1,7 @@
 import { t } from './i18n.js';
 import {
   getGroup,
+  getGroupsFor,
   saveGroup,
   deleteGroup,
   amHost,
@@ -11,6 +12,10 @@ import {
   removeMemberFromGroup,
   isGroupMember,
   normalizeMemberIds,
+  isInviteDeclined,
+  declineGroupInvite,
+  clearDeclinedInvite,
+  purgeGroupsFor,
 } from './groups.js';
 import { showAppToast } from './toasts.js';
 import { sounds } from './audio.js';
@@ -37,6 +42,12 @@ function onlineMemberIds(statePeers) {
 
 function wireFrom(msg) {
   return Number(msg.from);
+}
+
+function resolveGroupHost(msg) {
+  const h = Number(msg.host);
+  if (Number.isFinite(h) && h > 0) return h;
+  return wireFrom(msg);
 }
 
 /** Original author (TCP `from` is always the socket peer after Handshake). */
@@ -178,13 +189,16 @@ export async function createGroupFromUi(api, config, memberIds, name, seedPeerId
   return group;
 }
 
-export function migrateGroupsHost(groups, onlineIds, api, config) {
+/** Host failover only when the current host peer goes offline (not on every mesh pulse). */
+export function migrateGroupsHostOnPeerOffline(offlinePeerId, onlineIds, api, config) {
   const myId = Number(config.blipId);
-  for (const group of groups) {
-    if (!isGroupMember(group, myId)) continue;
-    if (onlineIds.has(Number(group.hostId))) continue;
+  const offline = Number(offlinePeerId);
+  if (!Number.isFinite(offline)) return;
+
+  for (const group of getGroupsFor(myId)) {
+    if (Number(group.hostId) !== offline) continue;
     const next = pickNextHost(group.hostId, group.members, onlineIds);
-    if (!next) continue;
+    if (!next || next === group.hostId) continue;
     group.hostId = next;
     saveGroup(group);
     if (next === myId) {
@@ -236,37 +250,48 @@ export async function handleGroupTcpMessage(msg, ctx) {
   const tcpPeer = wireFrom(msg);
 
   if (type === 'group-invite') {
+    if (isInviteDeclined(msg.groupId)) return true;
     if (!config.doNotDisturb) sounds.groupInvite();
+    const hostId = resolveGroupHost(msg);
     const ok = await openConfirmDialog({
       title: t('group.invite_title'),
       body: t('group.invite_body')
         .replace('{name}', msg.name || t('group.unnamed'))
-        .replace('{host}', String(msg.host)),
+        .replace('{host}', String(hostId)),
       confirmLabel: t('group.invite_join'),
+      cancelLabel: t('group.invite_decline'),
     });
     if (ok) {
+      clearDeclinedInvite(msg.groupId);
       const group = {
         id: msg.groupId,
         name: msg.name || t('group.unnamed'),
-        hostId: Number(msg.host),
+        hostId,
         members: normalizeMemberIds(msg.members || []),
         messages: [],
       };
       saveGroup(group);
       await safeSendTcp(api, {
         type: 'group-invite-ack',
-        to: msg.host,
+        to: hostId,
         groupId: msg.groupId,
-        host: msg.host,
+        host: hostId,
         accept: true,
       });
       showAppToast({ title: t('group.joined'), body: group.name, durationMs: 4000 });
     } else {
+      declineGroupInvite(msg.groupId);
+      const ghost = getGroup(msg.groupId);
+      if (ghost && isGroupMember(ghost, myId)) {
+        removeMemberFromGroup(msg.groupId, myId);
+      } else if (ghost) {
+        deleteGroup(msg.groupId);
+      }
       await safeSendTcp(api, {
         type: 'group-invite-ack',
-        to: msg.host,
+        to: hostId,
         groupId: msg.groupId,
-        host: msg.host,
+        host: hostId,
         accept: false,
       });
     }
@@ -274,13 +299,24 @@ export async function handleGroupTcpMessage(msg, ctx) {
   }
 
   if (type === 'group-invite-ack') {
+    const group = getGroup(msg.groupId);
+    if (!group) return true;
+    const peer = wireFrom(msg);
+    if (msg.accept === false) {
+      if (isGroupMember(group, peer)) removeMemberFromGroup(msg.groupId, peer);
+      return true;
+    }
+    if (!isGroupMember(group, peer)) {
+      group.members = normalizeMemberIds([...group.members, peer]);
+      saveGroup(group);
+    }
     return true;
   }
 
   if (type === 'group-host' || type === 'group-sync') {
     const group = getGroup(msg.groupId);
     if (!group) return true;
-    group.hostId = Number(msg.host);
+    group.hostId = resolveGroupHost(msg);
     if (msg.members) group.members = normalizeMemberIds(msg.members);
     saveGroup(group);
     getGroupChatView(msg.groupId)?.updateGroup?.(group);
@@ -288,26 +324,18 @@ export async function handleGroupTcpMessage(msg, ctx) {
   }
 
   if (type === 'group-msg') {
-    let group = getGroup(msg.groupId);
+    const group = getGroup(msg.groupId);
     const author = messageAuthor(msg);
 
-    if (msg.members?.length) {
-      if (!group) {
-        group = {
-          id: msg.groupId,
-          name: t('group.unnamed'),
-          hostId: Number(msg.host) || author,
-          members: normalizeMemberIds(msg.members),
-          messages: [],
-        };
-        saveGroup(group);
-      } else {
-        group.members = normalizeMemberIds(msg.members);
-        saveGroup(group);
-      }
-    }
-
     if (!group || !isGroupMember(group, myId)) return true;
+    if (isInviteDeclined(msg.groupId)) return true;
+
+    if (msg.members?.length) {
+      group.members = normalizeMemberIds(msg.members);
+      const host = resolveGroupHost(msg);
+      if (Number.isFinite(host)) group.hostId = host;
+      saveGroup(group);
+    }
     if (tcpPeer !== author || !isGroupMember(group, author)) return true;
     if (author === myId) return true;
 
