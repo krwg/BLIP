@@ -1,4 +1,5 @@
 <div align="center">
+<img width="256" height="256" alt="icon" src="https://github.com/user-attachments/assets/70532fe9-aca7-4d3f-9a67-8ddd4a4562ba" />
 
 # BLIP
 
