@@ -6,6 +6,7 @@ import {
   navigateToView,
   toggleDoNotDisturb,
 } from './ui.js';
+import { initMediaViewer } from './media-viewer.js';
 
 const api = {
   saveConfig: (data) => window.blip.saveConfig(data),
@@ -52,6 +53,7 @@ async function boot() {
   setLang(lang);
 
   initUI(config, api);
+  initMediaViewer();
 
   const { peers, occupiedIds } = await window.blip.getPeers();
   updatePeers({ peers, occupiedIds });

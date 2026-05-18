@@ -1,7 +1,8 @@
 import { t } from './i18n.js';
 import { formatFileSize } from './file-transfer.js';
+import { formatTransferSpeed } from './file-transfer-speed.js';
 
-/** @type {Map<string, { id: string, peerId: number, transferId: string, name: string, direction: string, progress: number, size: number, cancellable?: boolean, onCancel?: () => void }>} */
+/** @type {Map<string, { id: string, peerId: number, transferId: string, name: string, direction: string, progress: number, size: number, speedBps?: number, startedAt?: number, cancellable?: boolean, onCancel?: () => void }>} */
 const active = new Map();
 let rootEl = null;
 let listEl = null;
@@ -56,7 +57,11 @@ function render() {
       job.direction === 'in'
         ? t('transfer.hub_in').replace('{id}', String(job.peerId))
         : t('transfer.hub_out').replace('{id}', String(job.peerId));
-    sub.textContent = `${dir} · ${formatFileSize(job.size)} · ${job.progress}%`;
+    const speedPart =
+      job.speedBps && job.progress > 0 && job.progress < 100
+        ? ` · ${formatTransferSpeed(job.speedBps)}`
+        : '';
+    sub.textContent = `${dir} · ${formatFileSize(job.size)}${speedPart} · ${job.progress}%`;
     meta.appendChild(name);
     meta.appendChild(sub);
 
@@ -97,6 +102,8 @@ export function trackTransferStart(peerId, transferId, meta = {}) {
     direction: meta.direction || 'out',
     progress: 0,
     size: meta.size || 0,
+    startedAt: Date.now(),
+    speedBps: 0,
     cancellable: meta.cancellable !== false && meta.direction === 'out',
     onCancel: meta.onCancel,
   });
@@ -114,6 +121,11 @@ export function trackTransferProgress(peerId, transferId, progress, meta = {}) {
   job.progress = Math.min(100, Math.max(0, Math.round(progress)));
   if (meta.name) job.name = meta.name;
   if (meta.size) job.size = meta.size;
+  if (meta.speedBps) job.speedBps = meta.speedBps;
+  else if (job.size && job.startedAt) {
+    const elapsed = Math.max(0.001, (Date.now() - job.startedAt) / 1000);
+    job.speedBps = ((job.size * job.progress) / 100) / elapsed;
+  }
   render();
 }
 

@@ -1,6 +1,6 @@
 {
   "name": "blip",
-  "version": "0.7.2",
+  "version": "0.7.3",
   "description": "P2P messenger for local networks — no cloud, no servers",
   "author": "krwg",
   "repository": {
@@ -29,6 +29,7 @@
     "electron:build:dir": "npm run build && npm run build:icons && electron-builder --win --dir"
   },
   "devDependencies": {
+    "@fontsource/press-start-2p": "^5.2.7",
     "concurrently": "^9.1.2",
     "electron": "^35.1.2",
     "electron-builder": "^25.1.8",

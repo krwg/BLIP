@@ -11,22 +11,28 @@ let melodyPackId = 'mesh';
 let incomingRingTimer = null;
 let outgoingRingTimer = null;
 
-export const SOUND_PACK_IDS = ['signal', 'pulse'];
-export const MELODY_PACK_IDS = ['mesh', 'grid'];
+export const SOUND_PACK_IDS = ['signal', 'pulse', 'wire', 'static'];
+export const MELODY_PACK_IDS = ['mesh', 'grid', 'beacon', 'chime'];
 
-export const PREVIEW_KEYS = [
+export const SOUND_PREVIEW_KEYS = [
   'messageReceived',
   'messageSent',
   'notify',
-  'incomingCall',
-  'outgoingCall',
-  'callConnected',
-  'callEnd',
   'peerOnline',
   'groupInvite',
   'groupCallInvite',
   'meshPing',
 ];
+
+export const MELODY_PREVIEW_KEYS = [
+  'incomingCall',
+  'outgoingCall',
+  'callConnected',
+  'callEnd',
+];
+
+/** @deprecated use SOUND_PREVIEW_KEYS / MELODY_PREVIEW_KEYS */
+export const PREVIEW_KEYS = [...SOUND_PREVIEW_KEYS, ...MELODY_PREVIEW_KEYS];
 
 const N = {
   G3: 196.0,
@@ -91,6 +97,47 @@ const MELODIES = {
     ],
     endSweep: { from: N.E5, to: N.A3, dur: 200 },
     endTail: { f: N.G3, d: 140, t: 'square' },
+  },
+  beacon: {
+    ring: [
+      { f: N.G4, d: 100, g: 0.1, t: 'sine' },
+      { f: N.C5, d: 100, g: 0.11, gap: 30 },
+      { f: N.E5, d: 140, g: 0.12, gap: 200 },
+    ],
+    dial: [
+      { f: N.C4, d: 90, g: 0.08, t: 'sine' },
+      { f: N.E4, d: 90, g: 0.08, gap: 120 },
+      { f: N.G4, d: 110, g: 0.09, gap: 450 },
+    ],
+    connected: [
+      { f: N.A4, d: 70, g: 0.1, t: 'sine' },
+      { f: N.C5, d: 80, g: 0.11, gap: 20 },
+      { f: N.E5, d: 160, g: 0.12, gap: 30 },
+    ],
+    endSweep: { from: N.E5, to: N.C4, dur: 240 },
+    endTail: { f: N.A3, d: 150, t: 'sine' },
+  },
+  chime: {
+    ring: [
+      { f: N.E5, d: 80, g: 0.09 },
+      { f: N.G5, d: 80, g: 0.09, gap: 15 },
+      { f: N.C6, d: 120, g: 0.1, gap: 15 },
+      { f: N.E5, d: 100, g: 0.08, gap: 250 },
+    ],
+    dial: [
+      { f: N.C5, d: 70, g: 0.08 },
+      { f: N.E5, d: 70, g: 0.08, gap: 70 },
+      { f: N.G5, d: 70, g: 0.08, gap: 70 },
+      { f: N.C6, d: 90, g: 0.07, gap: 500 },
+    ],
+    connected: [
+      { f: N.C5, d: 55, g: 0.09 },
+      { f: N.E5, d: 55, g: 0.09, gap: 12 },
+      { f: N.G5, d: 55, g: 0.09, gap: 12 },
+      { f: N.C6, d: 180, g: 0.11, gap: 18 },
+    ],
+    endSweep: { from: N.C6, to: N.G3, dur: 210 },
+    endTail: { f: N.C4, d: 130, t: 'triangle' },
   },
 };
 
@@ -178,6 +225,84 @@ const FX = {
       { f: N.C4, d: 150, g: 0.07, gap: 25 },
     ],
     uiClick: { f: N.E5, d: 30, t: 'triangle', g: 0.05 },
+  },
+  wire: {
+    messageSent: [
+      { f: N.G4, d: 35, g: 0.07, t: 'triangle' },
+      { f: N.C5, d: 45, g: 0.08, gap: 12 },
+    ],
+    messageReceived: [
+      { f: N.A3, d: 40, g: 0.08, t: 'triangle' },
+      { f: N.D4, d: 50, g: 0.09, gap: 18 },
+    ],
+    notify: [
+      { f: N.C4, d: 50, g: 0.08 },
+      { f: N.G4, d: 60, g: 0.09, gap: 22 },
+    ],
+    peerOnlineSweep: { from: N.A3, to: N.C5, dur: 220, type: 'triangle' },
+    peerOnlineTail: [{ f: N.G4, d: 90, g: 0.08, gap: 30 }],
+    peerOffline: [
+      { f: N.E4, d: 70, g: 0.06, t: 'triangle' },
+      { f: N.A3, d: 120, g: 0.05, gap: 20 },
+    ],
+    groupInvite: [
+      { f: N.D4, d: 55, g: 0.09 },
+      { f: N.G4, d: 65, g: 0.1, gap: 28 },
+    ],
+    groupCallInvite: [
+      { f: N.C4, d: 60, g: 0.09 },
+      { f: N.E4, d: 60, g: 0.09, gap: 30 },
+      { f: N.G4, d: 100, g: 0.1, gap: 40 },
+    ],
+    groupCallNoise: true,
+    meshPing: [
+      { f: N.G4, d: 28, g: 0.06, t: 'sine' },
+      { f: N.C5, d: 40, g: 0.07, gap: 10 },
+    ],
+    error: [
+      { f: N.A3, d: 80, g: 0.09, t: 'sawtooth' },
+      { f: N.G3, d: 130, g: 0.07, gap: 25 },
+    ],
+    uiClick: { f: N.G4, d: 28, t: 'triangle', g: 0.04 },
+  },
+  static: {
+    messageSent: [
+      { f: N.C5, d: 25, g: 0.12, t: 'square' },
+      { f: N.C5, d: 20, g: 0.1, gap: 40 },
+    ],
+    messageReceived: [
+      { f: N.E5, d: 30, g: 0.11, t: 'square' },
+      { f: N.C5, d: 25, g: 0.1, gap: 35 },
+    ],
+    notify: [
+      { f: N.G5, d: 40, g: 0.1, t: 'square' },
+      { f: N.E5, d: 35, g: 0.09, gap: 50 },
+    ],
+    peerOnlineSweep: { from: N.C4, to: N.G5, dur: 180, type: 'square' },
+    peerOnlineTail: [{ f: N.C5, d: 70, g: 0.1, gap: 25 }],
+    peerOffline: [
+      { f: N.G5, d: 50, g: 0.08, t: 'square' },
+      { f: N.C4, d: 100, g: 0.06, gap: 15 },
+    ],
+    groupInvite: [
+      { f: N.E5, d: 45, g: 0.1, t: 'square' },
+      { f: N.G5, d: 55, g: 0.1, gap: 20 },
+    ],
+    groupCallInvite: [
+      { f: N.C5, d: 50, g: 0.1, t: 'square' },
+      { f: N.E5, d: 50, g: 0.1, gap: 25 },
+      { f: N.G5, d: 80, g: 0.11, gap: 35 },
+    ],
+    groupCallNoise: false,
+    meshPing: [
+      { f: N.C6, d: 20, g: 0.1, t: 'square' },
+      { f: N.C6, d: 20, g: 0.08, gap: 60 },
+    ],
+    error: [
+      { f: N.G3, d: 60, g: 0.12, t: 'square' },
+      { f: N.C4, d: 100, g: 0.08, gap: 20 },
+    ],
+    uiClick: { f: N.C5, d: 22, t: 'square', g: 0.06 },
   },
 };
 

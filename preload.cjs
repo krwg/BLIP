@@ -8,6 +8,8 @@ contextBridge.exposeInMainWorld('blip', {
   getConfig: () => ipcRenderer.invoke('get-config'),
   saveConfig: (config) => ipcRenderer.invoke('save-config', config),
   getAppMetadata: () => ipcRenderer.invoke('get-app-metadata'),
+  getAppIconUrl: () => ipcRenderer.invoke('get-app-icon-url'),
+  isVoiceCallActive: () => ipcRenderer.invoke('is-voice-call-active'),
   getAvatarDataUrl: () => ipcRenderer.invoke('get-avatar-data-url'),
   saveAvatar: (dataUrl) => ipcRenderer.invoke('save-avatar', dataUrl),
   clearAvatar: () => ipcRenderer.invoke('clear-avatar'),

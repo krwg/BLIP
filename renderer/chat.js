@@ -129,7 +129,7 @@ export function exportPeerChat(peerId, displayName) {
 
 export function createChatView(
   peerId,
-  config,
+  getConfig,
   onSend,
   onBack,
   onTyping,
@@ -161,7 +161,7 @@ export function createChatView(
   function mountHeaderAvatar() {
     avatarMount.innerHTML = '';
     avatarMount.appendChild(
-      createAvatarElement(peerId, 3, { selfBlipId: config?.blipId ?? null })
+      createAvatarElement(peerId, 3, { selfBlipId: getConfig()?.blipId ?? null })
     );
   }
   mountHeaderAvatar();
@@ -413,7 +413,7 @@ export function createChatView(
     if (!m?.id) return;
     pendingReply = {
       id: m.id,
-      from: m.outgoing ? config.blipId : peerId,
+      from: m.outgoing ? getConfig().blipId : peerId,
       fromLabel: m.outgoing ? t('chat.reply_you') : formatReplyFromLabel(peerId, name.textContent),
       preview: buildReplyPreview(m, peerId),
       text: m.text || '',
@@ -428,7 +428,7 @@ export function createChatView(
   async function sendPayload(payload) {
     const msg = {
       id: payload.id || createMessageId(),
-      from: config.blipId,
+      from: getConfig().blipId,
       to: peerId,
       text: payload.text || '',
       timestamp: payload.timestamp || Date.now(),
@@ -501,13 +501,13 @@ export function createChatView(
     }
     if (!onSendFile) return;
     try {
-      validateChatFile(file, config);
+      validateChatFile(file, getConfig());
     } catch (err) {
       const limitKey =
         err?.message === 'file_too_big' ? 'chat.file_too_big_dynamic' : 'chat.attach_failed';
       alert(
         err?.message === 'file_too_big'
-          ? t(limitKey).replace('{limit}', formatFileLimitLabelForChat(config))
+          ? t(limitKey).replace('{limit}', formatFileLimitLabelForChat(getConfig()))
           : t('chat.attach_failed')
       );
       return;
@@ -529,8 +529,9 @@ export function createChatView(
     addMessage(peerId, pendingMsg);
     renderMessages();
     try {
-      const result = await onSendFile(peerId, file, (pct) => {
+      const result = await onSendFile(peerId, file, (pct, extra) => {
         pendingMsg.attachment.progress = pct;
+        if (extra?.speedBps) pendingMsg.attachment.speedBps = extra.speedBps;
         renderMessages();
       });
       const attachment = result.attachment;
@@ -615,6 +616,7 @@ export function createChatView(
   function buildReactionRow(m) {
     const row = document.createElement('div');
     row.className = 'chat-reactions';
+    const config = getConfig();
     const selfId = config?.blipId;
 
     const chips = Object.entries(m.reactions || {}).filter(([, ids]) => ids?.length);
@@ -635,7 +637,7 @@ export function createChatView(
 
     const addBtn = document.createElement('button');
     addBtn.type = 'button';
-    addBtn.className = 'chat-reaction-add chat-reaction-add--plus';
+    addBtn.className = 'chat-reaction-add';
     addBtn.title = t('chat.react');
     addBtn.textContent = getDefaultReactionEmoji(config);
     addBtn.addEventListener('click', () => {

@@ -238,6 +238,11 @@ function ensureRoot() {
   return root;
 }
 
+/** Mount viewer DOM once at boot so first play/open is instant. */
+export function initMediaViewer() {
+  ensureRoot();
+}
+
 export function openMediaViewer(payload) {
   const el = ensureRoot();
   el._open(payload);

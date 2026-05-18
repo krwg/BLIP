@@ -29,6 +29,23 @@ export function buildMicTestPanel(config, saveConfig) {
   });
   wrap.appendChild(nsToggle.el);
 
+  const actions = document.createElement('div');
+  actions.className = 'mic-test-actions';
+  const testBtn = document.createElement('button');
+  testBtn.type = 'button';
+  testBtn.className = 'btn btn-accent';
+  testBtn.dataset.i18n = 'settings.mic_test_start';
+  testBtn.textContent = t('settings.mic_test_start');
+  actions.appendChild(testBtn);
+  wrap.appendChild(actions);
+
+  const meter = document.createElement('div');
+  meter.className = 'mic-test-meter';
+  const meterFill = document.createElement('div');
+  meterFill.className = 'mic-test-meter-fill';
+  meter.appendChild(meterFill);
+  wrap.appendChild(meter);
+
   const gainLabel = document.createElement('label');
   gainLabel.className = 'settings-field-label';
   gainLabel.dataset.i18n = 'settings.mic_input_volume';
@@ -47,23 +64,6 @@ export function buildMicTestPanel(config, saveConfig) {
   gainRow.appendChild(gainVal);
   wrap.appendChild(gainLabel);
   wrap.appendChild(gainRow);
-
-  const meter = document.createElement('div');
-  meter.className = 'mic-test-meter';
-  const meterFill = document.createElement('div');
-  meterFill.className = 'mic-test-meter-fill';
-  meter.appendChild(meterFill);
-  wrap.appendChild(meter);
-
-  const actions = document.createElement('div');
-  actions.className = 'mic-test-actions';
-  const testBtn = document.createElement('button');
-  testBtn.type = 'button';
-  testBtn.className = 'btn btn-accent';
-  testBtn.dataset.i18n = 'settings.mic_test_start';
-  testBtn.textContent = t('settings.mic_test_start');
-  actions.appendChild(testBtn);
-  wrap.appendChild(actions);
 
   let testStream = null;
   let testCtx = null;

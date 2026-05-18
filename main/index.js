@@ -1,5 +1,6 @@
 import { app, BrowserWindow, dialog, ipcMain, nativeImage, shell, Notification, session } from 'electron';
 import { join, dirname } from 'path';
+import { pathToFileURL } from 'url';
 import { fileURLToPath } from 'url';
 import { existsSync, readFileSync } from 'fs';
 import { Discovery } from './discovery.js';
@@ -969,6 +970,16 @@ function setupIpc() {
     ...loadAppMetadata(),
     isPackaged: app.isPackaged,
   }));
+
+  ipcMain.handle('get-app-icon-url', () => {
+    const iconPath = resolveBuildAsset('icon.png');
+    if (!existsSync(iconPath)) return '';
+    return pathToFileURL(iconPath).href;
+  });
+
+  ipcMain.handle('is-voice-call-active', () => {
+    return !!(callWindow && !callWindow.isDestroyed());
+  });
 
   ipcMain.handle('get-avatar-data-url', () => getCustomAvatarDataUrl());
 

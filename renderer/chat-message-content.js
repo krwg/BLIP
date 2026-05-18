@@ -4,6 +4,7 @@
 import { t } from './i18n.js';
 import { appendLinkifiedText } from './linkify.js';
 import { formatFileSize } from './file-transfer.js';
+import { formatTransferSpeed } from './file-transfer-speed.js';
 import { isImageAttachment, isVideoAttachment, isMediaPlaceholderText } from './chat-attachments.js';
 import { appendYoutubeEmbed, findYoutubeInText, parseYoutubeUrl } from './link-embed.js';
 import {
@@ -39,7 +40,12 @@ function appendFileCard(block, attachment) {
   label.textContent = attachment.name || 'file';
   const meta = document.createElement('span');
   meta.className = 'chat-file-meta';
-  meta.textContent = formatFileSize(attachment.size);
+  const sizeStr = formatFileSize(attachment.size);
+  const speedStr =
+    attachment.speedBps && attachment.pending
+      ? ` · ${formatTransferSpeed(attachment.speedBps)}`
+      : '';
+  meta.textContent = `${sizeStr}${speedStr}`;
   card.appendChild(label);
   card.appendChild(meta);
   if (attachment.dataUrl) {

@@ -5,8 +5,25 @@ import {
   validateChatFile,
   inferAttachmentKind,
 } from './chat-attachments.js';
+import { getChunkDelayMs } from './file-transfer-speed.js';
 
 const CHUNK_RAW_BYTES = 48 * 1024;
+
+function delay(ms) {
+  return ms > 0 ? new Promise((r) => setTimeout(r, ms)) : Promise.resolve();
+}
+
+async function isCallActive() {
+  try {
+    if (window.blip?.isVoiceCallActive) {
+      if (await window.blip.isVoiceCallActive()) return true;
+    }
+    if (window.blip?.isGroupCallActiveSync?.()) return true;
+  } catch {
+    /* ignore */
+  }
+  return false;
+}
 
 /** @type {Map<string, { meta: object, chunks: string[], received: number, peerId: number }>} */
 const incoming = new Map();
@@ -117,6 +134,11 @@ export async function sendChatFile(api, config, peerId, file, onProgress, opts =
     chunkCount,
   });
 
+  const callActive = await isCallActive();
+  const chunkDelay = getChunkDelayMs(config, callActive);
+  const startedAt = Date.now();
+  let bytesSent = 0;
+
   for (let i = 0; i < chunkCount; i++) {
     if (cancelRequested.has(key)) {
       await abortFileTransfer(api, config, peerId, transferId);
@@ -131,7 +153,11 @@ export async function sendChatFile(api, config, peerId, file, onProgress, opts =
       index: i,
       data,
     });
-    onProgress?.(Math.round(((i + 1) / chunkCount) * 100));
+    bytesSent = end;
+    const elapsed = Math.max(0.001, (Date.now() - startedAt) / 1000);
+    const speedBps = bytesSent / elapsed;
+    onProgress?.(Math.round(((i + 1) / chunkCount) * 100), { speedBps, bytesSent });
+    await delay(chunkDelay);
   }
 
   if (cancelRequested.has(key)) {

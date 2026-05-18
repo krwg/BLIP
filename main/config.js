@@ -58,6 +58,10 @@ const DEFAULT_CONFIG = {
   blockedPeerIds: [],
   /** Max LAN file transfer size: 1 | 10 | 50 | 100 (GB) */
   maxFileTransferGb: 10,
+  /** Chunk pacing: fast | normal | slow (extra throttle while a call is active). */
+  fileTransferSpeed: 'normal',
+  /** Log every TCP frame type to the network panel (developer). */
+  devMeshTrace: false,
   /** Stream quality: low | hd | fhd | max */
   streamQuality: 'fhd',
   /** Fullscreen video target: low | hd | fhd | max (defaults to streamQuality) */

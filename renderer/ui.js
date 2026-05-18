@@ -35,16 +35,17 @@ import { showSignalLost } from './call.js';
 import {
   createAvatarElement,
   regenerateAvatar,
-  fileToAvatarDataUrl,
   loadSelfAvatarFromMain,
   setSelfAvatarCache,
   setPeerAvatarDataUrl,
   getSelfAvatarCache,
 } from './avatar.js';
+import { openAvatarCropDialog } from './avatar-crop-dialog.js';
 import {
   sounds,
   setSoundPrefs,
-  PREVIEW_KEYS,
+  SOUND_PREVIEW_KEYS,
+  MELODY_PREVIEW_KEYS,
   SOUND_PACK_IDS,
   MELODY_PACK_IDS,
 } from './audio.js';
@@ -64,6 +65,10 @@ import {
   normalizeFileLimitGb,
   formatFileLimitLabel,
 } from './file-transfer-limits.js';
+import {
+  FILE_TRANSFER_SPEED_IDS,
+  normalizeFileTransferSpeed,
+} from './file-transfer-speed.js';
 import {
   trackTransferStart,
   trackTransferProgress,
@@ -246,7 +251,6 @@ function createTitleBar() {
   bar.className = 'title-bar';
   bar.innerHTML = `
     <span class="title-logo" data-i18n="app.title">${t('app.title')}</span>
-    <span class="title-slogan" data-i18n="app.slogan">${t('app.slogan')}</span>
     <span class="title-spacer"></span>
     <button type="button" class="win-btn" id="btn-min" aria-label="Minimize">—</button>
     <button type="button" class="win-btn" id="btn-max" aria-label="Maximize">□</button>
@@ -352,7 +356,7 @@ function ensureChatView(peerId) {
     const peer = state.peers.find((p) => p.blipId === peerId);
     const chat = createChatView(
       peerId,
-      state.config,
+      () => state.config,
       (to, msg) =>
         api.sendTcpMessage({
           to,
@@ -396,15 +400,16 @@ function ensureChatView(peerId) {
             state.config,
             to,
             file,
-            (pct) => {
+            (pct, extra) => {
               trackTransferProgress(to, tid, pct, {
                 name: file.name,
                 size: file.size,
                 direction: 'out',
+                speedBps: extra?.speedBps,
                 cancellable: true,
                 onCancel: () => void abortFileTransfer(api, state.config, to, tid),
               });
-              onProgress?.(pct);
+              onProgress?.(pct, extra);
             },
             { transferId: tid }
           );
@@ -614,28 +619,7 @@ function renderDialView() {
   dialBody.appendChild(dialError);
   dialBody.appendChild(actions);
 
-  const stats = document.createElement('div');
-  stats.className = 'dial-stats glass';
-  const onlineN = state.peers.filter((p) => p.online && !isBlocked(p.blipId)).length;
-  for (const [val, key] of [
-    [String(onlineN), 'dial.stat_online'],
-    [`#${state.config.blipId ?? '—'}`, 'dial.stat_you'],
-    ['64', 'dial.stat_mesh'],
-  ]) {
-    const cell = document.createElement('div');
-    cell.className = 'dial-stat';
-    const strong = document.createElement('strong');
-    strong.textContent = val;
-    const span = document.createElement('span');
-    span.dataset.i18n = key;
-    span.textContent = t(key);
-    cell.appendChild(strong);
-    cell.appendChild(span);
-    stats.appendChild(cell);
-  }
-
   center.appendChild(title);
-  center.appendChild(stats);
   center.appendChild(dialBody);
   wrap.appendChild(center);
   return wrap;
@@ -1039,7 +1023,8 @@ function buildAvatarSettingsSection() {
     fileInput.value = '';
     if (!file) return;
     try {
-      const dataUrl = await fileToAvatarDataUrl(file);
+      const dataUrl = await openAvatarCropDialog(file);
+      if (!dataUrl) return;
       const r = await window.blip.saveAvatar?.(dataUrl);
       if (!r?.ok) throw new Error(r?.error || 'save_failed');
       setSelfAvatarCache(dataUrl);
@@ -1233,7 +1218,7 @@ function buildAppearanceSection() {
 
   const reactionInput = document.createElement('input');
   reactionInput.type = 'text';
-  reactionInput.className = 'settings-text-input';
+  reactionInput.className = 'settings-text-input settings-reaction-input';
   reactionInput.maxLength = 8;
   reactionInput.value = getDefaultReactionEmoji(state.config);
   reactionInput.placeholder = '➕';
@@ -1840,6 +1825,8 @@ function buildSettingsSoundPanel() {
     [
       { value: 'signal', label: t('settings.sound_pack_signal') },
       { value: 'pulse', label: t('settings.sound_pack_pulse') },
+      { value: 'wire', label: t('settings.sound_pack_wire') },
+      { value: 'static', label: t('settings.sound_pack_static') },
     ],
     SOUND_PACK_IDS.includes(state.config.uiSoundPack) ? state.config.uiSoundPack : 'signal',
     async (id) => {
@@ -1854,6 +1841,8 @@ function buildSettingsSoundPanel() {
     [
       { value: 'mesh', label: t('settings.melody_pack_mesh') },
       { value: 'grid', label: t('settings.melody_pack_grid') },
+      { value: 'beacon', label: t('settings.melody_pack_beacon') },
+      { value: 'chime', label: t('settings.melody_pack_chime') },
     ],
     MELODY_PACK_IDS.includes(state.config.uiMelodyPack) ? state.config.uiMelodyPack : 'mesh',
     async (id) => {
@@ -1861,14 +1850,6 @@ function buildSettingsSoundPanel() {
       applySoundPrefsFromConfig(state.config);
     }
   );
-
-  const previewTitle = document.createElement('h3');
-  previewTitle.className = 'section-subtitle';
-  previewTitle.dataset.i18n = 'settings.sound_preview';
-  previewTitle.textContent = t('settings.sound_preview');
-
-  const previewGrid = document.createElement('div');
-  previewGrid.className = 'settings-sound-preview-grid';
 
   const previewLabels = {
     messageReceived: 'settings.sound_prev_message',
@@ -1884,33 +1865,55 @@ function buildSettingsSoundPanel() {
     meshPing: 'settings.sound_prev_ping',
   };
 
-  PREVIEW_KEYS.forEach((key) => {
-    const labelKey = previewLabels[key];
-    if (!labelKey) return;
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'btn btn-lang settings-sound-preview-btn';
-    btn.dataset.i18n = labelKey;
-    btn.textContent = t(labelKey);
-    btn.addEventListener('click', async () => {
-      setSoundPrefs({
-        enabled: true,
-        volume: Number(volRange.value) / 100,
-        soundPack: state.config.uiSoundPack,
-        melodyPack: state.config.uiMelodyPack,
+  function buildPreviewSection(titleKey, keys) {
+    const sub = document.createElement('h3');
+    sub.className = 'section-subtitle';
+    sub.dataset.i18n = titleKey;
+    sub.textContent = t(titleKey);
+    const grid = document.createElement('div');
+    grid.className = 'settings-sound-preview-grid';
+    keys.forEach((key) => {
+      const labelKey = previewLabels[key];
+      if (!labelKey) return;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn btn-lang settings-sound-preview-btn';
+      btn.dataset.i18n = labelKey;
+      btn.textContent = t(labelKey);
+      btn.addEventListener('click', async () => {
+        setSoundPrefs({
+          enabled: true,
+          volume: Number(volRange.value) / 100,
+          soundPack: state.config.uiSoundPack,
+          melodyPack: state.config.uiMelodyPack,
+        });
+        await sounds.preview(key);
       });
-      await sounds.preview(key);
+      grid.appendChild(btn);
     });
-    previewGrid.appendChild(btn);
-  });
+    return { sub, grid };
+  }
+
+  const fxPreview = buildPreviewSection('settings.sound_preview_fx', SOUND_PREVIEW_KEYS);
+  const melodyPreview = buildPreviewSection(
+    'settings.sound_preview_melody',
+    MELODY_PREVIEW_KEYS
+  );
 
   frag.appendChild(enableToggle.el);
   frag.appendChild(volLabel);
   frag.appendChild(volRow);
   frag.appendChild(buildSettingsField('settings.sound_pack', soundPackSelect));
   frag.appendChild(buildSettingsField('settings.melody_pack', melodyPackSelect));
+  const previewTitle = document.createElement('h3');
+  previewTitle.className = 'section-subtitle';
+  previewTitle.dataset.i18n = 'settings.sound_preview';
+  previewTitle.textContent = t('settings.sound_preview');
   frag.appendChild(previewTitle);
-  frag.appendChild(previewGrid);
+  frag.appendChild(fxPreview.sub);
+  frag.appendChild(fxPreview.grid);
+  frag.appendChild(melodyPreview.sub);
+  frag.appendChild(melodyPreview.grid);
   return frag;
 }
 
@@ -1965,8 +1968,24 @@ function buildSettingsTransferPanel() {
       state.config = await api.saveConfig({ maxFileTransferGb: Number(val) });
     }
   );
+  const speedSelect = buildThemedSelect();
+  const speedOpts = FILE_TRANSFER_SPEED_IDS.map((id) => ({
+    value: id,
+    label: t(`settings.file_speed_${id}`),
+  }));
+  fillSettingsDropdown(
+    speedSelect,
+    speedOpts,
+    normalizeFileTransferSpeed(state.config.fileTransferSpeed),
+    async (val) => {
+      state.config = await api.saveConfig({ fileTransferSpeed: val });
+    }
+  );
   frag.appendChild(
     buildSettingsFieldWithHint('settings.file_limit', 'settings.transfer_hint', limitSelect)
+  );
+  frag.appendChild(
+    buildSettingsFieldWithHint('settings.file_speed', 'settings.file_speed_hint', speedSelect)
   );
   return frag;
 }
@@ -1975,15 +1994,15 @@ function buildSettingsCallPanel() {
   const frag = document.createElement('div');
   frag.className = 'settings-panel';
 
+  const titleRow = document.createElement('div');
+  titleRow.className = 'settings-panel-title-row';
   const h = document.createElement('h2');
   h.className = 'settings-panel-title';
   h.dataset.i18n = 'settings.section_call';
   h.textContent = t('settings.section_call');
-  frag.appendChild(h);
-
-  const callHead = buildSettingsLabelRow('settings.section_call', 'settings.call_hint');
-  callHead.classList.add('settings-panel-subhead');
-  frag.appendChild(callHead);
+  titleRow.appendChild(h);
+  titleRow.appendChild(createPixelHintIcon('settings.call_hint'));
+  frag.appendChild(titleRow);
 
   const micTest = buildMicTestPanel(state.config, async (patch) => {
     state.config = await api.saveConfig(patch);
@@ -2285,12 +2304,6 @@ function buildSettingsNetworkPanel() {
 
     bodyHost.appendChild(list);
 
-    const envHint = document.createElement('p');
-    envHint.className = 'hint settings-network-env';
-    envHint.dataset.i18n = 'settings.network_env_hint';
-    envHint.textContent = t('settings.network_env_hint');
-    bodyHost.appendChild(envHint);
-
     const logTitle = document.createElement('h3');
     logTitle.className = 'section-subtitle';
     logTitle.dataset.i18n = 'settings.network_log';
@@ -2464,16 +2477,8 @@ function buildSettingsDeveloperPanel() {
   h.textContent = t('settings.section_developer');
   frag.appendChild(h);
 
-  const devHintRow = document.createElement('div');
-  devHintRow.className = 'settings-label-row';
-  const devSub = document.createElement('h3');
-  devSub.className = 'section-subtitle';
-  devSub.dataset.i18n = 'settings.dev_beta_updates';
-  devSub.textContent = t('settings.dev_beta_updates');
-  devHintRow.appendChild(devSub);
-  devHintRow.appendChild(createPixelHintIcon('settings.dev_hint'));
-  frag.appendChild(devHintRow);
-
+  const betaRow = document.createElement('div');
+  betaRow.className = 'settings-toggle-with-hint';
   const betaToggle = createPixelToggle({
     checked: !!state.config?.receiveBetaUpdates,
     labelKey: 'settings.dev_beta_updates',
@@ -2485,7 +2490,59 @@ function buildSettingsDeveloperPanel() {
       });
     },
   });
-  frag.appendChild(betaToggle.el);
+  betaRow.appendChild(betaToggle.el);
+  betaRow.appendChild(createPixelHintIcon('settings.dev_hint'));
+  frag.appendChild(betaRow);
+
+  const traceRow = document.createElement('div');
+  traceRow.className = 'settings-toggle-with-hint';
+  const traceToggle = createPixelToggle({
+    checked: !!state.config?.devMeshTrace,
+    labelKey: 'settings.dev_mesh_trace',
+    onChange: async (checked) => {
+      state.config = await api.saveConfig({ devMeshTrace: checked });
+      showAppToast({
+        title: checked ? t('settings.dev_mesh_trace_on') : t('settings.dev_mesh_trace_off'),
+        durationMs: 3200,
+      });
+    },
+  });
+  traceRow.appendChild(traceToggle.el);
+  traceRow.appendChild(createPixelHintIcon('settings.dev_mesh_trace_hint'));
+  frag.appendChild(traceRow);
+
+  const exportBtn = document.createElement('button');
+  exportBtn.type = 'button';
+  exportBtn.className = 'btn btn-lang';
+  exportBtn.dataset.i18n = 'settings.dev_export';
+  exportBtn.textContent = t('settings.dev_export');
+  exportBtn.addEventListener('click', async () => {
+    let net = null;
+    try {
+      net = await window.blip.getNetworkDiagnostics?.();
+    } catch {
+      /* ignore */
+    }
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      version: (await window.blip.getAppMetadata?.())?.version,
+      blipId: state.config.blipId,
+      network: net,
+      peers: state.peers.map((p) => ({
+        id: p.blipId,
+        online: p.online,
+        name: p.displayName,
+      })),
+      networkLog: getNetworkLogEntries(),
+    };
+    const ok = await copyTextToClipboard(JSON.stringify(payload, null, 2));
+    showAppToast({
+      title: ok ? t('settings.dev_export_done') : t('settings.dev_export_fail'),
+      durationMs: 4000,
+      variant: ok ? undefined : 'danger',
+    });
+  });
+  frag.appendChild(exportBtn);
 
   return frag;
 }
@@ -2499,11 +2556,14 @@ function buildSettingsAboutPanel() {
   const icon = document.createElement('img');
   icon.className = 'settings-about-icon';
   icon.alt = 'BLIP';
-  try {
-    icon.src = new URL('../../build/icon.png', import.meta.url).href;
-  } catch {
-    /* ignore */
-  }
+  void (async () => {
+    try {
+      const url = await window.blip.getAppIconUrl?.();
+      if (url) icon.src = url;
+    } catch {
+      /* ignore */
+    }
+  })();
   hero.appendChild(icon);
 
   const aboutLine = document.createElement('p');
@@ -2523,9 +2583,9 @@ function buildSettingsAboutPanel() {
 
   window.blip.getAppMetadata?.().then((meta) => {
     const name = meta?.displayName || 'BLIP';
+    aboutLine.textContent = name;
     const code = meta?.codename ? ` · ${meta.codename}` : '';
-    aboutLine.textContent = `${name}${code}`;
-    aboutVersion.textContent = `v${formatAppVersion(meta)}`;
+    aboutVersion.textContent = `v${formatAppVersion(meta)}${code}`;
     if (meta?.githubUrl) {
       githubBtn.addEventListener('click', () => window.blip.openExternal?.(meta.githubUrl));
     } else {
@@ -2628,7 +2688,7 @@ function formatUpdateStatusText() {
 
 function buildSettingsUpdatesPanel() {
   const frag = document.createElement('div');
-  frag.className = 'settings-panel';
+  frag.className = 'settings-panel settings-panel--updates';
 
   const h = document.createElement('h2');
   h.className = 'settings-panel-title';
@@ -3587,6 +3647,10 @@ function handleTypingTcp(msg) {
 }
 
 export function handleTcpMessage(msg) {
+  if (state.config?.devMeshTrace && msg.type) {
+    const peerId = Number(msg.from === state.config.blipId ? msg.to : msg.from);
+    if (Number.isFinite(peerId)) logPeerEvent(peerId, `tcp:${msg.type}`);
+  }
   if (msg.type === 'avatar-share') {
     const from = Number(msg.from);
     if (!Number.isFinite(from) || isBlocked(from)) return;
