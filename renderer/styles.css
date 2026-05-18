@@ -3852,17 +3852,41 @@ body.media-viewer-open {
   min-height: 0;
   padding: 8px;
 }
+.proj-tool--pad .proj-pad-editor,
+.projects-main .proj-pad-editor {
+  max-width: none;
+  width: 100%;
+}
+
 .proj-pad-editor {
   flex: 1 1 auto;
   width: 100%;
+  max-width: none;
   min-height: 0;
   height: 100%;
   resize: none;
   box-sizing: border-box;
+  padding: 10px 12px;
+  border: 2px solid var(--blip-glass-border);
+  background: #0d0d0d;
+  color: var(--blip-text);
   font-family: 'BlipPixel', 'Minecraft', monospace;
   font-size: 11px;
-  background: #0d0d0d;
-  border-color: var(--blip-glass-border);
+  outline: none;
+  caret-color: var(--blip-caret);
+}
+
+.proj-pad-editor:focus {
+  border-color: var(--blip-accent);
+  box-shadow: 0 0 0 1px var(--blip-accent);
+}
+
+.projects-main .proj-tool--pad.glass {
+  align-self: stretch;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  max-width: none;
 }
 .proj-status-bar {
   display: flex;
