@@ -5,6 +5,7 @@ import {
   getTextChannels,
   getVoiceChannels,
   formatChannelLabel,
+  saveGroup,
 } from './groups.js';
 import { getVoiceChannelRoster } from './voice-channel-roster.js';
 import {
@@ -15,6 +16,13 @@ import {
 } from './voice-channel.js';
 import { createVoiceStage } from './voice-channel-ui.js';
 import { createGroupChatView } from './group-chat.js';
+import { channelIcon } from './group-projects-store.js';
+import {
+  createGroupAvatarElement,
+  setGroupAvatarDataUrl,
+} from './group-avatar.js';
+import { openAvatarCropDialog } from './avatar-crop-dialog.js';
+import { showAppToast } from './toasts.js';
 
 /**
  * Group layout: channel sidebar (left) + text chat + voice stage.
@@ -36,6 +44,7 @@ export function createGroupCommunityView(
 
   const sideHead = document.createElement('div');
   sideHead.className = 'group-sidebar-head';
+
   if (onBack) {
     const backBtn = document.createElement('button');
     backBtn.type = 'button';
@@ -44,17 +53,80 @@ export function createGroupCommunityView(
     backBtn.addEventListener('click', onBack);
     sideHead.appendChild(backBtn);
   }
-  const sideTitle = document.createElement('span');
-  sideTitle.className = 'group-sidebar-title';
+
+  const avatarFile = document.createElement('input');
+  avatarFile.type = 'file';
+  avatarFile.accept = 'image/png,image/jpeg,image/webp';
+  avatarFile.className = 'group-sidebar-avatar-file';
+  avatarFile.hidden = true;
+
+  const avatarBtn = document.createElement('button');
+  avatarBtn.type = 'button';
+  avatarBtn.className = 'group-sidebar-avatar-btn';
+  avatarBtn.title = t('group.avatar_change');
+  avatarBtn.appendChild(createGroupAvatarElement(group.id, 3));
+  avatarBtn.addEventListener('click', () => avatarFile.click());
+
+  avatarFile.addEventListener('change', async () => {
+    const file = avatarFile.files?.[0];
+    avatarFile.value = '';
+    if (!file) return;
+    const dataUrl = await openAvatarCropDialog(file);
+    if (!dataUrl) return;
+    setGroupAvatarDataUrl(group.id, dataUrl);
+    avatarBtn.innerHTML = '';
+    avatarBtn.appendChild(createGroupAvatarElement(group.id, 3));
+  });
+
+  const headText = document.createElement('div');
+  headText.className = 'group-sidebar-head-text';
+  const sideTitle = document.createElement('button');
+  sideTitle.type = 'button';
+  sideTitle.className = 'group-sidebar-title group-sidebar-title-btn';
   sideTitle.textContent = groupDisplayName(group);
+  sideTitle.title = t('group.rename_hint');
+  sideTitle.addEventListener('click', () => {
+    const val = prompt(t('group.rename_prompt'), group.name || groupDisplayName(group));
+    if (val === null) return;
+    const trimmed = val.trim();
+    group.name = trimmed || undefined;
+    saveGroup(group);
+    sideTitle.textContent = groupDisplayName(group);
+    showAppToast({ title: t('group.rename_done'), durationMs: 2800 });
+  });
   const sideMeta = document.createElement('span');
   sideMeta.className = 'group-sidebar-meta';
   sideMeta.textContent = amHost(group, config.blipId)
     ? t('group.you_host')
     : t('group.host_line').replace('{id}', String(group.hostId));
-  sideHead.appendChild(sideTitle);
-  sideHead.appendChild(sideMeta);
+  headText.appendChild(sideTitle);
+  headText.appendChild(sideMeta);
+
+  sideHead.appendChild(avatarFile);
+  sideHead.appendChild(avatarBtn);
+  sideHead.appendChild(headText);
   sidebar.appendChild(sideHead);
+
+  const unstable = document.createElement('div');
+  unstable.className = 'group-unstable-banner';
+  const unstableHelp = document.createElement('button');
+  unstableHelp.type = 'button';
+  unstableHelp.className = 'group-unstable-help btn btn-lang';
+  unstableHelp.textContent = '?';
+  unstableHelp.title = t('group.unstable_title');
+  unstableHelp.addEventListener('click', () => {
+    showAppToast({
+      title: t('group.unstable_title'),
+      body: t('group.unstable_body'),
+      durationMs: 14000,
+    });
+  });
+  const unstableText = document.createElement('span');
+  unstableText.className = 'group-unstable-text';
+  unstableText.textContent = t('group.unstable_short');
+  unstable.appendChild(unstableHelp);
+  unstable.appendChild(unstableText);
+  sidebar.appendChild(unstable);
 
   const textLabel = document.createElement('div');
   textLabel.className = 'group-sidebar-section';
@@ -94,11 +166,8 @@ export function createGroupCommunityView(
     onSendFile
   );
   chat.el.classList.add('group-community-chat');
-  if (chat.el.querySelector('.group-call-ongoing')) {
-    chat.el.querySelector('.group-call-ongoing')?.remove();
-  }
-  const callBtn = chat.el.querySelector('.chat-header .btn-accent');
-  callBtn?.remove();
+  chat.el.querySelector('.group-call-ongoing')?.remove();
+  chat.el.querySelector('.chat-header .btn-accent')?.remove();
 
   body.appendChild(chat.el);
   root.appendChild(sidebar);
@@ -122,7 +191,7 @@ export function createGroupCommunityView(
       btn.type = 'button';
       btn.className = 'group-channel-btn';
       if (ch.id === activeTextId) btn.classList.add('group-channel-btn--active');
-      btn.innerHTML = `<span class="group-channel-icon">#</span><span class="group-channel-name">${formatChannelLabel(ch)}</span>`;
+      btn.innerHTML = `<span class="group-channel-icon">${channelIcon(ch)}</span><span class="group-channel-name">${formatChannelLabel(ch)}</span>`;
       btn.addEventListener('click', () => {
         activeTextId = ch.id;
         refreshSidebar();
@@ -140,7 +209,7 @@ export function createGroupCommunityView(
       if (inCh) btn.classList.add('group-channel-btn--live');
       const snap = getVoiceChannelRoster(group.id, ch.id);
       const count = snap.count || 0;
-      btn.innerHTML = `<span class="group-channel-icon">◇</span><span class="group-channel-name">${formatChannelLabel(ch)}</span><span class="group-channel-badge">${count}</span>`;
+      btn.innerHTML = `<span class="group-channel-icon">${channelIcon(ch)}</span><span class="group-channel-name">${formatChannelLabel(ch)}</span><span class="group-channel-badge">${count}</span>`;
       btn.addEventListener('click', () => {
         void toggleVoice(ch.id);
       });
@@ -165,7 +234,14 @@ export function createGroupCommunityView(
   }
 
   const onVoiceState = () => refreshSidebar();
+  const onAvatarChange = (e) => {
+    if (String(e.detail?.groupId) !== String(group.id)) return;
+    avatarBtn.innerHTML = '';
+    avatarBtn.appendChild(createGroupAvatarElement(group.id, 3));
+  };
+
   window.addEventListener('blip-voice-channel-state', onVoiceState);
+  window.addEventListener('blip-group-avatar-changed', onAvatarChange);
 
   refreshSidebar();
 
@@ -176,13 +252,16 @@ export function createGroupCommunityView(
     updateGroup(next) {
       group.hostId = next.hostId;
       group.members = next.members;
+      if (next.name != null) group.name = next.name;
       if (next.channels) group.channels = next.channels;
+      sideTitle.textContent = groupDisplayName(group);
       chat.updateGroup(next);
       refreshSidebar();
     },
     refreshChannels: refreshSidebar,
     destroy() {
       window.removeEventListener('blip-voice-channel-state', onVoiceState);
+      window.removeEventListener('blip-group-avatar-changed', onAvatarChange);
       chat.destroy?.();
       voiceStages.forEach((s) => s.destroy());
       voiceStages.clear();

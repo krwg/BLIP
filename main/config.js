@@ -62,6 +62,8 @@ const DEFAULT_CONFIG = {
   fileTransferSpeed: 'normal',
   /** Log every TCP frame type to the network panel (developer). */
   devMeshTrace: false,
+  /** Projects hub + group project channels (pad, board, canvas, clipboard). */
+  devProjectsEnabled: false,
   /** Stream quality: low | hd | fhd | max */
   streamQuality: 'fhd',
   /** Fullscreen video target: low | hd | fhd | max (defaults to streamQuality) */

@@ -64,21 +64,23 @@ function ensureRoot() {
 
   const rewindBtn = document.createElement('button');
   rewindBtn.type = 'button';
-  rewindBtn.className = 'btn btn-accent media-viewer-ctrl';
-  rewindBtn.textContent = '◀◀';
+  rewindBtn.className = 'btn btn-accent media-viewer-ctrl media-viewer-ctrl--pixel';
   rewindBtn.title = t('media.rewind');
+  rewindBtn.innerHTML =
+    '<span class="pixel-tri pixel-tri--left"></span><span class="pixel-tri pixel-tri--left"></span>';
 
   const playBtn = document.createElement('button');
   playBtn.type = 'button';
-  playBtn.className = 'btn btn-accent media-viewer-ctrl media-viewer-ctrl--main';
-  playBtn.textContent = '▶';
+  playBtn.className = 'btn btn-accent media-viewer-ctrl media-viewer-ctrl--main media-viewer-ctrl--pixel';
   playBtn.title = t('media.play');
+  playBtn.innerHTML = '<span class="pixel-tri pixel-tri--right"></span>';
 
   const forwardBtn = document.createElement('button');
   forwardBtn.type = 'button';
-  forwardBtn.className = 'btn btn-accent media-viewer-ctrl';
-  forwardBtn.textContent = '▶▶';
+  forwardBtn.className = 'btn btn-accent media-viewer-ctrl media-viewer-ctrl--pixel';
   forwardBtn.title = t('media.forward');
+  forwardBtn.innerHTML =
+    '<span class="pixel-tri pixel-tri--right"></span><span class="pixel-tri pixel-tri--right"></span>';
 
   const seekBar = document.createElement('div');
   seekBar.className = 'media-viewer-seek';

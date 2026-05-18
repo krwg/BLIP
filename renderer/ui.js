@@ -9,7 +9,11 @@ import {
   getGroupMessages,
   isGroupMember,
   purgeGroupsFor,
+  saveGroup,
 } from './groups.js';
+import { createGroupAvatarElement } from './group-avatar.js';
+import { createProjectsView } from './projects-view.js';
+import { handleMeshProjectTcp } from './projects-mesh-wire.js';
 import { openGroupCreateDialog } from './group-create-dialog.js';
 import { createGroupCommunityView } from './group-community-view.js';
 import {
@@ -351,6 +355,24 @@ function openGroupChat(groupId) {
   else render();
 }
 
+/** @type {ReturnType<typeof createProjectsView> | null} */
+let projectsViewInstance = null;
+
+function ensureProjectsView() {
+  if (!projectsViewInstance || !projectsViewInstance.el?.parentElement) {
+    projectsViewInstance?.destroy?.();
+    projectsViewInstance = createProjectsView(
+      state.config,
+      api,
+      () =>
+        state.peers
+          .filter((p) => p.online && !isBlocked(p.blipId))
+          .map((p) => p.blipId)
+    );
+  }
+  return projectsViewInstance;
+}
+
 function ensureChatView(peerId) {
   if (!state.chatViews.has(peerId)) {
     const peer = state.peers.find((p) => p.blipId === peerId);
@@ -494,10 +516,17 @@ function updateNavActive() {
   updateNavUnreadBadge();
 }
 
+function getNavKeys() {
+  const keys = ['dial', 'peers', 'chat'];
+  if (state.config?.devProjectsEnabled) keys.push('projects');
+  keys.push('settings');
+  return keys;
+}
+
 function createNav(onNavigate) {
   const nav = document.createElement('nav');
   nav.className = 'side-nav glass';
-  ['dial', 'peers', 'chat', 'settings'].forEach((key) => {
+  getNavKeys().forEach((key) => {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'nav-btn';
@@ -677,13 +706,7 @@ function renderPeersView() {
         name.appendChild(star);
       }
       name.appendChild(document.createTextNode(formatPeerDisplayName(peer)));
-      if (peer.meshVerified) {
-        const hs = document.createElement('span');
-        hs.className = 'peer-handshake-badge';
-        hs.title = t('peers.handshake_ok');
-        hs.textContent = t('peers.badge_hs');
-        name.appendChild(hs);
-      } else if (peer.meshLegacy) {
+      if (peer.meshLegacy) {
         const leg = document.createElement('span');
         leg.className = 'peer-handshake-badge peer-handshake-badge--legacy';
         leg.title = t('peers.handshake_legacy');
@@ -817,6 +840,20 @@ function showGroupContextMenu(e, group) {
   openItem.textContent = t('group.menu_open');
   bindItem(openItem, () => openGroupChat(group.id));
 
+  const renameItem = document.createElement('button');
+  renameItem.type = 'button';
+  renameItem.textContent = t('group.menu_rename');
+  bindItem(renameItem, () => {
+    const val = prompt(t('group.rename_prompt'), group.name || groupDisplayName(group));
+    if (val === null) return;
+    const trimmed = val.trim();
+    group.name = trimmed || undefined;
+    saveGroup(group);
+    state.groupChatViews.get(group.id)?.updateGroup?.(getGroup(group.id));
+    if (state.view === 'chat') renderView('chat');
+    showAppToast({ title: t('group.rename_done'), durationMs: 2800 });
+  });
+
   const callItem = document.createElement('button');
   callItem.type = 'button';
   callItem.textContent = t('group.call');
@@ -861,6 +898,7 @@ function showGroupContextMenu(e, group) {
   });
 
   menu.appendChild(openItem);
+  menu.appendChild(renameItem);
   menu.appendChild(callItem);
   menu.appendChild(leaveItem);
   document.body.appendChild(menu);
@@ -1559,24 +1597,25 @@ function buildSettingsProfilePanel() {
   const presetsWrap = document.createElement('div');
   presetsWrap.className = 'status-preset-buttons';
   const presetDefs = [
-    { value: '', key: 'settings.status_empty' },
-    { value: 'In game', key: 'settings.status_game' },
-    { value: 'AFK', key: 'settings.status_afk' },
-    { value: 'Working', key: 'settings.status_work' },
-    { value: 'Streaming', key: 'settings.status_stream' },
-    { value: 'Listening', key: 'settings.status_listen' },
-    { value: 'Coding', key: 'settings.status_code' },
-    { value: 'Away', key: 'settings.status_away_short' },
+    'settings.status_empty',
+    'settings.status_game',
+    'settings.status_afk',
+    'settings.status_work',
+    'settings.status_stream',
+    'settings.status_listen',
+    'settings.status_code',
+    'settings.status_away_short',
   ];
-  for (const def of presetDefs) {
+  for (const key of presetDefs) {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'btn btn-lang status-preset-btn';
-    btn.dataset.i18n = def.key;
-    btn.textContent = t(def.key);
+    btn.dataset.i18n = key;
+    btn.textContent = t(key);
     btn.addEventListener('click', async () => {
-      statusInput.value = def.value;
-      state.config = await api.saveConfig({ presenceText: def.value });
+      const text = key === 'settings.status_empty' ? '' : t(key);
+      statusInput.value = text;
+      state.config = await api.saveConfig({ presenceText: text });
     });
     presetsWrap.appendChild(btn);
   }
@@ -2511,6 +2550,28 @@ function buildSettingsDeveloperPanel() {
   traceRow.appendChild(createPixelHintIcon('settings.dev_mesh_trace_hint'));
   frag.appendChild(traceRow);
 
+  const projRow = document.createElement('div');
+  projRow.className = 'settings-toggle-with-hint';
+  const projToggle = createPixelToggle({
+    checked: !!state.config?.devProjectsEnabled,
+    labelKey: 'settings.dev_projects',
+    onChange: async (checked) => {
+      state.config = await api.saveConfig({ devProjectsEnabled: checked });
+      if (!checked) {
+        projectsViewInstance?.destroy?.();
+        projectsViewInstance = null;
+      }
+      showAppToast({
+        title: checked ? t('settings.dev_projects_on') : t('settings.dev_projects_off'),
+        durationMs: 4200,
+      });
+      render();
+    },
+  });
+  projRow.appendChild(projToggle.el);
+  projRow.appendChild(createPixelHintIcon('settings.dev_projects_hint'));
+  frag.appendChild(projRow);
+
   const exportBtn = document.createElement('button');
   exportBtn.type = 'button';
   exportBtn.className = 'btn btn-lang';
@@ -3142,6 +3203,12 @@ async function openChat(peerId) {
   }
 }
 
+function renderProjectsView() {
+  const view = ensureProjectsView().el;
+  view.classList.add('view', 'projects-workspace-view');
+  return view;
+}
+
 function renderChatHubView() {
   clearInviteUnread();
   const wrap = document.createElement('div');
@@ -3219,6 +3286,7 @@ function renderChatHubView() {
     const item = document.createElement('button');
     item.type = 'button';
     item.className = 'chat-hub-row glass chat-hub-row--group online';
+    const avatar = createGroupAvatarElement(group.id, 2);
     const info = document.createElement('div');
     info.className = 'chat-hub-info';
     const name = document.createElement('span');
@@ -3237,23 +3305,17 @@ function renderChatHubView() {
       preview.textContent = (last.text || '').slice(0, 48);
       info.appendChild(preview);
     }
-    const badge = document.createElement('span');
-    badge.className = 'chat-hub-group-tag';
-    badge.textContent = t('group.badge_grp');
-    item.appendChild(badge);
     let voiceCount = 0;
     for (const ch of getVoiceChannels(group)) {
       const snap = getVoiceChannelRoster(group.id, ch.id);
       if (snap.count > voiceCount) voiceCount = snap.count;
     }
-    if (voiceCount > 0) {
-      const live = document.createElement('span');
-      live.className = 'chat-hub-voice-live';
-      live.title = t('group.call_ongoing_hub');
-      live.textContent = t('group.badge_voice');
-      item.appendChild(live);
-    }
+    const dot = document.createElement('span');
+    dot.className = voiceCount > 0 ? 'status-dot online' : 'status-dot offline';
+    dot.title = voiceCount > 0 ? t('group.call_ongoing_hub') : '';
+    item.appendChild(avatar);
     item.appendChild(info);
+    item.appendChild(dot);
     const unread = unreadByGroup.get(group.id) || 0;
     if (unread > 0) {
       const ub = document.createElement('span');
@@ -3380,6 +3442,9 @@ function renderView(viewName) {
     case 'settings':
       view = renderSettingsView();
       break;
+    case 'projects':
+      view = renderProjectsView();
+      break;
     case 'chat': {
       if (state.activeGroup) {
         const gchat = ensureGroupChatView(state.activeGroup);
@@ -3428,6 +3493,10 @@ function render() {
     }
     if (view === 'settings') {
       state.settingsSection = null;
+    }
+    if (view === 'projects') {
+      state.activePeer = null;
+      state.activeGroup = null;
     }
     renderView(view);
   });
@@ -3669,6 +3738,8 @@ export function handleTcpMessage(msg) {
     if (state.view === 'peers' || state.view === 'chat') renderView(state.view);
     return;
   }
+
+  if (handleMeshProjectTcp(msg, state.config)) return;
 
   if (msg.type === 'clipboard-push') {
     if (isBlocked(Number(msg.from))) return;

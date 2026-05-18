@@ -11,6 +11,28 @@ Release **version numbers** track [`app-metadata.json`](app-metadata.json) (sync
 
 _Nothing yet._
 
+## [0.7.6] — Signal Corps
+
+### Added
+
+- **Projects (Signal Corps)** — standalone workspace in nav (Developer toggle): shared **Pad** syncs over the mesh to online peers; board, canvas, clipboard marked *in development*.
+- **Group rename** — click the group title in the sidebar or use the context menu.
+- **Group custom avatar** — upload from the sidebar (unchanged, documented).
+
+### Changed
+
+- **Localization (RU)** — Сигнал Корпс, ЛАН, МЕШ, АЙДИ, БЕТА-релизы; quick status presets save translated text.
+- **Peers** — removed HS handshake badge from the name row.
+- **Projects** — no longer tied to groups (groups remain beta/unstable separately).
+
+### Fixed
+
+- **Clicks & context menus** — disabled `backdrop-filter` on `.glass` panels app-wide (Electron hit-testing); restored pointer events on chat controls, sliders, emoji, and peer menus.
+
+## [0.7.5] — Signal Corps (preview)
+
+- Initial Projects hub tied to groups; pixel media controls; group hub UX. Superseded by 0.7.6 standalone Projects.
+
 ## [0.7.2] — Syscall
 
 ### Added

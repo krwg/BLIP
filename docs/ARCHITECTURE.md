@@ -13,7 +13,7 @@ High-level map of how pieces fit together. For build and contribution workflow s
           │
 ┌─────────┴─────────────────────────────────────────────────────────┐
 │ Renderer (Vite bundles)                                             │
-│  renderer/main.js · ui.js · chat.js · call.js · call-media.js …  │
+│  renderer/main.js · ui.js · chat.js · projects-view.js · …        │
 │  renderer/call-window.html + call-window-main.js (1:1 call)      │
 │  renderer/group-call-window.html + group-call-window-main.js     │
 │  renderer/group-call-client.js — main-window IPC bridge          │
@@ -62,6 +62,7 @@ Environment overrides: `BLIP_UDP_PORT`, `BLIP_TCP_PORT`. Separate user data dirs
 | `group-call-start` / `group-call-state` / `group-call-signal` / `group-call-end` | Mesh | Group voice mesh (signals peer-to-peer; state broadcast) |
 | `file-offer` / `file-chunk` / `file-done` / `file-abort` | Peer ↔ peer | Chunked large files |
 | `clipboard-push` | Peer ↔ peer | LAN clipboard text (mode-gated in renderer) |
+| `mesh-proj-pad` | Mesh (online peers) | Signal Corps shared Pad (LWW text, debounced) — not group-scoped |
 
 ## Persistence
 
@@ -71,7 +72,8 @@ Environment overrides: `BLIP_UDP_PORT`, `BLIP_TCP_PORT`. Separate user data dirs
 | Chat history | Renderer `localStorage` key `blip_chat_v1`. |
 | Favorite peer IDs | Renderer `localStorage` key `blip_favorites_v1`. |
 | Avatar seeds (per BLIP ID) | Renderer `localStorage` key `blip_avatar_seed_v1` (`avatar.js`). |
-| Release metadata | `app-metadata.json` (version **0.6.1**, codename **Portrait**, repo URL). |
+| Release metadata | `app-metadata.json` (version **0.7.6**, codename **Signal Corps**, repo URL). |
+| Group avatars | Renderer `localStorage` `blip_group_avatar_v1` |
 
 ## Security posture (today)
 

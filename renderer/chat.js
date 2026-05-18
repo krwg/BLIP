@@ -398,7 +398,7 @@ export function createChatView(
   replyPreview.className = 'chat-reply-preview';
   const replyCancel = document.createElement('button');
   replyCancel.type = 'button';
-  replyCancel.className = 'chat-reply-cancel';
+  replyCancel.className = 'btn btn-lang chat-reply-cancel chat-reply-btn--pixel';
   replyCancel.textContent = '×';
   replyBar.appendChild(replyLabel);
   replyBar.appendChild(replyPreview);
@@ -689,9 +689,9 @@ export function createChatView(
       if (m.id) {
         const replyBtn = document.createElement('button');
         replyBtn.type = 'button';
-        replyBtn.className = 'chat-reply-btn';
+        replyBtn.className = 'btn btn-lang chat-reply-btn chat-reply-btn--pixel';
         replyBtn.title = t('chat.reply');
-        replyBtn.textContent = '↩';
+        replyBtn.innerHTML = '<span class="pixel-glyph pixel-glyph--reply"></span>';
         replyBtn.addEventListener('click', (e) => {
           e.stopPropagation();
           setReplyTarget(m);

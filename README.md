@@ -58,7 +58,7 @@ Quick VM flow: host runs BLIP (ID **1**), VM runs BLIP (ID **2**), same subnet v
 | | |
 |---|---|
 | **What** | Desktop app: text, voice, and video over LAN / Hamachi / Radmin VPN |
-| **Release** | **0.6.1 — Portrait** (see [`CHANGELOG.md`](CHANGELOG.md)) |
+| **Release** | **0.7.6 — Signal Corps** (see [`CHANGELOG.md`](CHANGELOG.md)) |
 | **Identity** | BLIP ID **1–64** (8×8 grid, Minecraft-style chunk metaphor) |
 | **Servers** | None — UDP broadcast, TCP, and WebRTC peer-to-peer only |
 | **Sign-up** | None |
@@ -71,7 +71,8 @@ Quick VM flow: host runs BLIP (ID **1**), VM runs BLIP (ID **2**), same subnet v
 | **BLIP ID** | Pick a number on the 8×8 grid; conflicts resolved via TCP ping |
 | **Discovery** | UDP `42069` + mDNS fallback |
 | **Chat** | TCP messages, receipts (✓/✓✓), reactions, LAN images, linkify, emoji picker, **Ctrl+F** search, export, typing, unread |
-| **Groups** | Group chat (host relay), invites, host failover, **group voice** with join-anytime bar and **VOICE** badge in hub |
+| **Groups** | Group chat (beta), custom name & avatar, voice channels; host relay and invites |
+| **Projects (Signal Corps)** | Developer toggle: standalone **Pad** (mesh-synced notes); board / canvas / clipboard coming soon |
 | **Favorites** | Star peers locally; sorted first on Peers and Chat |
 | **Presence** | Online / Away / Busy in Profile (UDP announce) |
 | **Calls** | Separate **1:1** and **group** call windows; WebRTC voice/video (LAN, no STUN/TURN) |
@@ -331,7 +332,7 @@ The **Minecraft** font is licensed separately under [MIT](https://github.com/bs-
 | | |
 |---|---|
 | **Что это** | Desktop-приложение: текст, голос и видео по LAN / Hamachi / Radmin VPN |
-| **Релиз** | **0.6.1 — Portrait** (см. [`CHANGELOG.md`](CHANGELOG.md)) |
+| **Релиз** | **0.7.6 — Signal Corps** (см. [`CHANGELOG.md`](CHANGELOG.md)) |
 | **Идентификация** | BLIP ID **1–64** (сетка 8×8) |
 | **Серверы** | Нет — только UDP broadcast, TCP и WebRTC между пирами |
 | **Регистрация** | Нет |
