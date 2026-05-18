@@ -23,6 +23,7 @@
 | Testing (one PC) | [Testing](#en-testing) | [Тестирование](#ru-testing) |
 | Overview | [Overview](#en-overview) | [Обзор](#ru-overview) |
 | Features | [Features](#en-features) | [Возможности](#ru-features) |
+| Signal Corps | [Signal Corps](#en-signal-corps) | [Сигнал Корпс](#ru-signal-corps) |
 | Architecture | [Architecture](#en-architecture) | [Архитектура](#ru-architecture) |
 | Stack | [Stack](#en-stack) | [Стек](#ru-stack) |
 | Quick start | [Quick start](#en-quick-start) | [Быстрый старт](#ru-quick-start) |
@@ -72,7 +73,6 @@ Quick VM flow: host runs BLIP (ID **1**), VM runs BLIP (ID **2**), same subnet v
 | **Discovery** | UDP `42069` + mDNS fallback |
 | **Chat** | TCP messages, receipts (✓/✓✓), reactions, LAN images, linkify, emoji picker, **Ctrl+F** search, export, typing, unread |
 | **Groups** | Group chat (beta), custom name & avatar, voice channels; host relay and invites |
-| **Projects (Signal Corps)** | Developer toggle: standalone **Pad** (mesh-synced notes); board / canvas / clipboard coming soon |
 | **Favorites** | Star peers locally; sorted first on Peers and Chat |
 | **Presence** | Online / Away / Busy in Profile (UDP announce) |
 | **Calls** | Separate **1:1** and **group** call windows; WebRTC voice/video (LAN, no STUN/TURN) |
@@ -91,6 +91,19 @@ Quick VM flow: host runs BLIP (ID **1**), VM runs BLIP (ID **2**), same subnet v
 | **Settings** | Profile, privacy/block list, appearance, network, shortcuts, call devices, transfers |
 | **Window** | Custom title bar, system tray, close-to-tray (Windows), **launch at login** (Windows) |
 | **Updates** | Auto-check on startup (packaged builds) |
+
+<h3 id="en-signal-corps">Signal Corps — the must-have mesh workspace</h3>
+
+**Signal Corps** is BLIP’s flagship feature for anyone who builds on the LAN: a dedicated **PROJECTS** section (enable in **Settings → Developer**) that is **not tied to groups** — groups stay experimental; Signal Corps is the stable war room.
+
+| Why it matters | What you get |
+|----------------|--------------|
+| **Pair programming without the cloud** | Shared **Pad** — one notepad synced over TCP to every **online peer** on your mesh (LWW, 300 ms debounce). |
+| **Built for dev crews** | Left rail of tools (pixel symbols, no emoji clutter): **✦ Pad** live today; **▦ Board**, **◻ Canvas**, **⧉ Clipboard** on the roadmap. |
+| **LAN-native** | Same philosophy as BLIP chat and calls — no servers, no accounts, no upload to someone else’s SaaS. |
+| **Off until you opt in** | Hidden by default so casual users stay on dial / chat; flip one toggle and **PROJECTS** appears in the nav — teams that try it tend to keep it open. |
+
+If you ship one BLIP feature to your squad this quarter, make it **Signal Corps**.
 
 <h3 id="en-architecture">Architecture</h3>
 
@@ -345,7 +358,7 @@ The **Minecraft** font is licensed separately under [MIT](https://github.com/bs-
 | **BLIP ID** | Выбор номера на сетке 8×8, конфликты через TCP ping |
 | **Discovery** | UDP `42069` + mDNS fallback |
 | **Чат** | TCP: доставка/прочтение (✓/✓✓), реакции, фото по LAN, ссылки, эмодзи, **Ctrl+F** поиск, экспорт, «печатает…», непрочитанное |
-| **Группы** | Групповой чат (релей хоста), приглашения, смена хоста, **голос** с полосой «войти в любой момент» и бейджем **ГОЛОС** в hub |
+| **Группы** | Групповой чат (бета), имя и аватар, голосовые каналы |
 | **Избранное** | Звёздочка в меню абонента; сортировка вверху на Peers и в Chat |
 | **Статус** | В сети / Отошёл / Занят в профиле (UDP announce) |
 | **Звонки** | Отдельные окна **1:1** и **группового** звонка; WebRTC (LAN, без STUN/TURN) |
@@ -364,6 +377,19 @@ The **Minecraft** font is licensed separately under [MIT](https://github.com/bs-
 | **Настройки** | Профиль, конфиденциальность/блок, вид, сеть, горячие клавиши, звонок, передачи |
 | **Окно** | Свой title bar, трей, в трей (Windows), **автозапуск при входе в Windows** |
 | **Обновления** | Проверка при запуске (собранные сборки) |
+
+<h3 id="ru-signal-corps">Сигнал Корпс — главная фича для разработки в МЕШе</h3>
+
+**Сигнал Корпс** — флагман BLIP для команд на ЛАН: отдельный раздел **ПРОЕКТЫ** (Настройки → Разработчик), **без привязки к группам**. Группы остаются бета; рабочий стол для девов — здесь.
+
+| Зачем | Что внутри |
+|-------|------------|
+| **Парное кодирование без облака** | **Блокнот (Pad)** — общие заметки по TCP всем **онлайн**-абонентам (LWW, debounce 300 мс). |
+| **Инструменты в стиле BLIP** | Слева каналы: **✦ Блокнот** уже работает; **▦ Доска**, **◻ Холст**, **⧉ Буфер** — в разработке. |
+| **Только ЛАН** | Как чат и звонки — без серверов и чужих аккаунтов. |
+| **Вкл. по желанию** | По умолчанию скрыто; один переключатель — и **ПРОЕКТЫ** в меню. Команды, которые попробуют, обычно не выключают. |
+
+Если внедрять одну фичу BLIP в команду — начните с **Сигнал Корпс**.
 
 <h3 id="ru-architecture">Архитектура</h3>
 

@@ -1,4 +1,5 @@
 import { t } from './i18n.js';
+import { createPixelHintIcon } from './settings-ui.js';
 import { createPadToolView } from './project-tools-ui.js';
 import { MESH_PROJECT_SCOPE } from './projects-mesh-wire.js';
 
@@ -19,28 +20,14 @@ export function createProjectsView(config, api, getOnlinePeerIds) {
   const root = document.createElement('div');
   root.className = 'projects-workspace';
 
-  const intro = document.createElement('div');
-  intro.className = 'projects-intro';
-  const introTitle = document.createElement('h2');
-  introTitle.className = 'section-title';
-  introTitle.dataset.i18n = 'projects.hub_title';
-  introTitle.textContent = t('projects.hub_title');
-  const p1 = document.createElement('p');
-  p1.className = 'projects-intro-p';
-  p1.dataset.i18n = 'projects.intro_p1';
-  p1.textContent = t('projects.intro_p1');
-  const p2 = document.createElement('p');
-  p2.className = 'projects-intro-p';
-  p2.dataset.i18n = 'projects.intro_p2';
-  p2.textContent = t('projects.intro_p2');
-  const p3 = document.createElement('p');
-  p3.className = 'projects-intro-p projects-intro-p--accent';
-  p3.dataset.i18n = 'projects.intro_p3';
-  p3.textContent = t('projects.intro_p3');
-  intro.appendChild(introTitle);
-  intro.appendChild(p1);
-  intro.appendChild(p2);
-  intro.appendChild(p3);
+  const titleRow = document.createElement('div');
+  titleRow.className = 'section-title-row';
+  const title = document.createElement('h2');
+  title.className = 'section-title';
+  title.dataset.i18n = 'projects.hub_title';
+  title.textContent = t('projects.hub_title');
+  titleRow.appendChild(title);
+  titleRow.appendChild(createPixelHintIcon('projects.hub_hint'));
 
   const body = document.createElement('div');
   body.className = 'projects-workspace-body';
@@ -61,7 +48,6 @@ export function createProjectsView(config, api, getOnlinePeerIds) {
 
   let activeTool = 'pad';
   let padView = null;
-  let stubEl = null;
 
   function destroyPad() {
     padView?.destroy?.();
@@ -71,28 +57,27 @@ export function createProjectsView(config, api, getOnlinePeerIds) {
   function showStub(toolId) {
     destroyPad();
     main.innerHTML = '';
-    stubEl = document.createElement('div');
+    const stubEl = document.createElement('div');
     stubEl.className = 'projects-stub glass';
     const icon = document.createElement('span');
     icon.className = 'projects-stub-icon';
     const def = TOOLS.find((x) => x.id === toolId);
     icon.textContent = def?.icon || '·';
-    const title = document.createElement('h3');
-    title.className = 'projects-stub-title';
-    title.textContent = def ? t(def.labelKey) : toolId;
+    const stubTitle = document.createElement('h3');
+    stubTitle.className = 'projects-stub-title';
+    stubTitle.textContent = def ? t(def.labelKey) : toolId;
     const hint = document.createElement('p');
     hint.className = 'hint projects-stub-hint';
     hint.dataset.i18n = 'projects.tool_soon';
     hint.textContent = t('projects.tool_soon');
     stubEl.appendChild(icon);
-    stubEl.appendChild(title);
+    stubEl.appendChild(stubTitle);
     stubEl.appendChild(hint);
     main.appendChild(stubEl);
   }
 
   function showPad() {
     main.innerHTML = '';
-    stubEl = null;
     destroyPad();
     padView = createPadToolView(
       { id: MESH_PROJECT_SCOPE, members: getOnlinePeerIds() },
@@ -103,6 +88,7 @@ export function createProjectsView(config, api, getOnlinePeerIds) {
         getBroadcastTargets: getOnlinePeerIds,
       }
     );
+    padView.el.classList.add('glass');
     main.appendChild(padView.el);
   }
 
@@ -121,7 +107,14 @@ export function createProjectsView(config, api, getOnlinePeerIds) {
     btn.type = 'button';
     btn.className = 'projects-tool-btn';
     btn.dataset.tool = tool.id;
-    btn.innerHTML = `<span class="projects-tool-icon">${tool.icon}</span><span>${t(tool.labelKey)}</span>`;
+    btn.dataset.i18n = tool.labelKey;
+    const label = document.createElement('span');
+    label.textContent = t(tool.labelKey);
+    const iconSpan = document.createElement('span');
+    iconSpan.className = 'projects-tool-icon';
+    iconSpan.textContent = tool.icon;
+    btn.appendChild(iconSpan);
+    btn.appendChild(label);
     if (!tool.ready) btn.classList.add('projects-tool-btn--soon');
     btn.addEventListener('click', () => selectTool(tool.id));
     toolList.appendChild(btn);
@@ -132,7 +125,7 @@ export function createProjectsView(config, api, getOnlinePeerIds) {
   body.appendChild(sidebar);
   body.appendChild(main);
 
-  root.appendChild(intro);
+  root.appendChild(titleRow);
   root.appendChild(body);
 
   selectTool('pad');
@@ -143,9 +136,7 @@ export function createProjectsView(config, api, getOnlinePeerIds) {
       destroyPad();
     },
     refreshPeers() {
-      if (activeTool === 'pad' && padView) {
-        /* pad reads getOnlinePeerIds on each broadcast */
-      }
+      /* pad reads getOnlinePeerIds on each broadcast */
     },
   };
 }

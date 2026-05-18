@@ -214,7 +214,8 @@ textarea {
 }
 
 .main-content > .view,
-.main-content > .chat-view {
+.main-content > .chat-view,
+.main-content > .projects-workspace-view {
   flex: 1;
   min-height: 0;
   display: flex;
@@ -2971,24 +2972,10 @@ select.blip-select:focus {
 .projects-workspace {
   flex: 1;
   min-height: 0;
+  height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-}
-
-.projects-intro {
-  max-width: 720px;
-}
-
-.projects-intro-p {
-  font-size: 11px;
-  line-height: 1.55;
-  color: var(--blip-text-muted);
-  margin: 6px 0;
-}
-
-.projects-intro-p--accent {
-  color: var(--blip-accent);
+  gap: 8px;
 }
 
 .projects-workspace-body {
@@ -2996,6 +2983,7 @@ select.blip-select:focus {
   min-height: 0;
   display: flex;
   gap: 8px;
+  overflow: hidden;
 }
 
 .projects-sidebar {
@@ -3058,6 +3046,21 @@ select.blip-select:focus {
   min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+}
+
+.projects-main > .proj-tool,
+.projects-main > .projects-stub {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+
+.proj-tool--pad {
+  min-height: 0;
+  height: 100%;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .projects-stub {
@@ -3850,9 +3853,12 @@ body.media-viewer-open {
   padding: 8px;
 }
 .proj-pad-editor {
-  flex: 1;
-  min-height: 200px;
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 0;
+  height: 100%;
   resize: none;
+  box-sizing: border-box;
   font-family: 'BlipPixel', 'Minecraft', monospace;
   font-size: 11px;
   background: #0d0d0d;

@@ -64,6 +64,19 @@ Environment overrides: `BLIP_UDP_PORT`, `BLIP_TCP_PORT`. Separate user data dirs
 | `clipboard-push` | Peer ↔ peer | LAN clipboard text (mode-gated in renderer) |
 | `mesh-proj-pad` | Mesh (online peers) | Signal Corps shared Pad (LWW text, debounced) — not group-scoped |
 
+## Signal Corps (Projects)
+
+**Signal Corps** is BLIP’s flagship builder workspace — the feature teams should enable first on a dev LAN. It lives in the main renderer (`projects-view.js`, `project-tools-ui.js`, `projects-mesh-wire.js`), gated by `devProjectsEnabled` in config.
+
+| Piece | Role |
+|--------|------|
+| **Nav entry** | `PROJECTS` between Chat and Settings when the developer toggle is on. |
+| **Pad (✦)** | Full-height shared textarea; `mesh-proj-pad` broadcasts LWW updates to all **online** peers (not group-scoped). |
+| **Board / Canvas / Clipboard** | UI stubs; TCP types reserved for future drops. |
+| **UX** | Tool list in a 140px sidebar; page title uses the standard **?** hint (`projects.hub_hint`) like Peers and Settings. |
+
+Groups (`groups.js`, voice channels) are intentionally separate and remain beta; do not route Signal Corps traffic through group relays.
+
 ## Persistence
 
 | Data | Location |

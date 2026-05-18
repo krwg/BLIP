@@ -9,7 +9,14 @@ Release **version numbers** track [`app-metadata.json`](app-metadata.json) (sync
 
 ## [Unreleased]
 
-_Nothing yet._
+### Changed
+
+- **Projects Pad** — editor stretches to full workspace height (adaptive layout).
+- **Projects UI** — description moved to **?** hint; tool names localized (RU).
+
+### Documentation
+
+- **Signal Corps** documented as BLIP’s flagship builder workspace (must-have on the mesh).
 
 ## [0.7.6] — Signal Corps
 
