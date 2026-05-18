@@ -85,8 +85,12 @@ Groups (`groups.js`, voice channels) are intentionally separate and remain beta;
 | Chat history | Renderer `localStorage` key `blip_chat_v1`. |
 | Favorite peer IDs | Renderer `localStorage` key `blip_favorites_v1`. |
 | Avatar seeds (per BLIP ID) | Renderer `localStorage` key `blip_avatar_seed_v1` (`avatar.js`). |
+<<<<<<< HEAD
 | Release metadata | `app-metadata.json` (version **0.7.6**, codename **Signal Corps**, repo URL). |
 | Group avatars | Renderer `localStorage` `blip_group_avatar_v1` |
+=======
+| Release metadata | `app-metadata.json` (version **0.7.4**, codename **Signal**, repo URL). |
+>>>>>>> 3ae1d92 (update /docs)
 
 ## Security posture (today)
 
@@ -159,7 +163,34 @@ Config `clipboardSyncMode`: `off` | `active` (open 1:1 chat) | `trusted`. Render
 
 ## Avatars
 
-`renderer/avatar.js` draws symmetric 8×8 pixel art from a per-`blipId` seed (`blip_avatar_seed_v1`). **Regenerate** picks a new seed locally. No photo upload or LAN sync (removed in 0.6.1).
+| Mode | Module | Notes |
+|------|--------|-------|
+| **8×8 pixel** | `renderer/avatar.js` | Symmetric art from per-`blipId` seed (`blip_avatar_seed_v1`); **Regenerate** in Settings. |
+| **Profile photo** | `renderer/avatar-share.js` | Upload/remove; JPEG resized; synced to online peers via TCP `avatar-share` / `avatar-share-req`. |
+
+Peers show whichever the remote has advertised; fallback to pixel art when no photo.
+
+## Appearance (0.7.2+)
+
+`renderer/appearance.js` drives `html[data-theme]` (light / dark / auto) and `html[data-accent]` (16 presets including **slate** `#94a3b8`).
+
+| Piece | Role |
+|--------|------|
+| `renderer/themes.css` | Palette tokens (`--blip-accent`, glass, chat bubbles) per theme + accent. |
+| `renderer/wallpaper-art.css` | Static art backgrounds (skyline, bloom, horizon, …). |
+| Animated BG | `beacon`, `depths`, `signal`, `ember`, `rift` in `themes.css`. |
+
+Legacy theme IDs (e.g. `dark-void`) map to mode + accent (`dark-void` → dark + **slate**). **Settings → Appearance** — mode, accent grid, background picker, reduce motion, reactive wallpaper (mic pulse in calls).
+
+## Chat media & quotes (0.7.1+)
+
+| Feature | Module |
+|---------|--------|
+| In-chat viewer | Fullscreen photo/video with pixel transport controls, share/download. |
+| YouTube | Link cards → in-app embed viewer. |
+| Quote replies | `quote` field on `message`; ↩ UI in `chat.js`. |
+
+Images use `chat-attachments.js` (JPEG resize); large files use chunked `file-*` wire types (see File transfer).
 
 ## Call window IPC (0.6.1)
 
@@ -168,6 +199,19 @@ Secondary windows (`call-window.html`, `group-call-window.html`) call `reportCal
 ## Presence text (0.4.8)
 
 UDP/mDNS announce includes optional `presenceText` (max 48 chars, sanitized). Shown on the **Peers** list instead of pulse line when the peer is online. Config key: `presenceText`.
+
+## Voice channels (0.7.0+)
+
+Persistent voice rooms inside a group (Discord-style), separate from the legacy **group call window**.
+
+| Piece | Role |
+|--------|------|
+| `renderer/voice-channel.js` | WebRTC mesh / SFU-style audio routing, screen share renegotiation, reconnect signals. |
+| `renderer/voice-channel-ui.js` | Channel bar, join/leave, mute/deafen, screen picker. |
+| `renderer/voice-channel-roster.js` | Live roster in group hub. |
+| `groups-wire.js` | Routes `voice-ch-*` TCP types; `handleVoiceChSignal`. |
+
+Wire types include `voice-ch-join`, `voice-ch-leave`, `voice-ch-state`, `voice-ch-signal` (see `groups-wire.js`).
 
 ## Group mesh
 
@@ -202,9 +246,13 @@ While the app is running with a BLIP ID, the renderer pings every **online, non-
 - URLs in text are linkified in the renderer; `openExternal` opens http(s) only.
 - Favorite peers (`renderer/peer-favorites.js`) are local-only sort hints.
 
-## i18n (0.6.0)
+## i18n
 
-All user-visible chrome in `renderer/i18n.js` (EN + RU), including group call window title, link/voice badges, host line (`group.you_host`), and settings labels. `applyI18n` runs on language change in each window.
+All user-visible chrome in `renderer/i18n.js` (**EN + RU**), including group call window, voice channel labels, appearance accent names (e.g. **Slate** / **Сланец**), dial dashboard, and settings ? hints. `applyI18n` runs on language change in each window.
+
+## Landing (GitHub Pages)
+
+Static showcase: [`docs/index.html`](index.html) → [krwg.github.io/BLIP](https://krwg.github.io/BLIP/). Uses the **Slate** accent (`#94a3b8`) to match the app; deploy via **Settings → Pages → branch `main`, folder `/docs`**.
 
 ## Future seams
 

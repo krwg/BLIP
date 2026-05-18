@@ -6,7 +6,7 @@
     <title>BLIP — GitHub</title>
     <meta
       name="description"
-      content="BLIP 0.6.1 Portrait — P2P LAN messenger: chat, group voice, pixel avatars. Electron + Vite, WebRTC. krwg/BLIP."
+      content="BLIP 0.7.4 Signal — P2P LAN messenger: chat, voice channels, custom avatars, themes (Slate accent). Electron + Vite, WebRTC. krwg/BLIP."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -16,14 +16,15 @@
     />
     <style>
       :root {
-        --bg0: #050506;
-        --bg1: #0a0a0a;
-        --glass: rgba(0, 255, 200, 0.06);
-        --border: rgba(0, 255, 200, 0.18);
-        --text: rgba(255, 255, 255, 0.93);
-        --muted: rgba(255, 255, 255, 0.52);
-        --accent: #00ffc8;
-        --accent2: #66ffe0;
+        --bg0: #050508;
+        --bg1: #0a0a0c;
+        --glass: rgba(148, 163, 184, 0.07);
+        --border: rgba(148, 163, 184, 0.22);
+        --text: rgba(212, 228, 255, 0.94);
+        --muted: rgba(148, 163, 184, 0.62);
+        --accent: #94a3b8;
+        --accent2: #cbd5e1;
+        --on-accent: #050508;
         --ease: cubic-bezier(0.4, 0, 0.2, 1);
         --font-pixel: 'Press Start 2P', ui-monospace, monospace;
       }
@@ -46,9 +47,9 @@
         position: fixed;
         inset: 0 0 auto 0;
         z-index: 50;
-        background: rgba(10, 10, 10, 0.55);
-        backdrop-filter: blur(24px) saturate(180%);
-        -webkit-backdrop-filter: blur(24px) saturate(180%);
+        background: rgba(10, 10, 12, 0.58);
+        backdrop-filter: blur(24px) saturate(160%);
+        -webkit-backdrop-filter: blur(24px) saturate(160%);
         border-bottom: 1px solid var(--border);
       }
       .header-inner {
@@ -93,7 +94,7 @@
         color: var(--text);
       }
       .lang button[aria-pressed='true'] {
-        background: rgba(0, 255, 200, 0.15);
+        background: rgba(148, 163, 184, 0.18);
         color: var(--accent2);
       }
       .nav-link {
@@ -126,7 +127,7 @@
         margin-bottom: 20px;
         letter-spacing: 0.06em;
         text-transform: uppercase;
-        max-width: 36rem;
+        max-width: 40rem;
         line-height: 1.6;
       }
       .hero-title {
@@ -134,13 +135,13 @@
         line-height: 1.55;
         max-width: 22em;
         margin-bottom: 18px;
-        text-shadow: 0 2px 24px rgba(0, 255, 200, 0.12);
+        text-shadow: 0 2px 24px rgba(148, 163, 184, 0.14);
       }
       .hero-sub {
         font-size: clamp(9px, 1.7vw, 11px);
         line-height: 1.65;
         color: var(--muted);
-        max-width: 42rem;
+        max-width: 44rem;
         margin-bottom: 32px;
       }
       .code-box {
@@ -182,8 +183,8 @@
         border-color: var(--accent);
       }
       .copy-btn.copied {
-        color: #34c759;
-        border-color: rgba(52, 199, 89, 0.5);
+        color: var(--accent2);
+        border-color: rgba(148, 163, 184, 0.55);
       }
       .cta-row {
         display: flex;
@@ -205,8 +206,8 @@
       }
       .btn-primary {
         background: var(--accent);
-        color: #050506;
-        border-color: rgba(0, 255, 200, 0.45);
+        color: var(--on-accent);
+        border-color: rgba(148, 163, 184, 0.5);
         box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.28);
       }
       .btn-primary:hover {
@@ -233,7 +234,7 @@
       }
       .feature {
         border: 1px solid var(--border);
-        background: rgba(0, 0, 0, 0.22);
+        background: rgba(8, 10, 16, 0.45);
         padding: 20px;
         text-align: left;
       }
@@ -306,11 +307,11 @@
 
     <main>
       <section class="hero">
-        <div class="hero-badge" data-i18n="badge">v0.6.1 Portrait · Open source · LAN · GPLv3</div>
+        <div class="hero-badge" data-i18n="badge">v0.7.4 Signal · Slate · LAN · GPLv3</div>
         <h1 class="hero-title" data-i18n="title">Ты в сети. Ты сигнал.</h1>
         <p class="hero-sub" data-i18n="sub">
-          Десктоп-мессенджер для локальной сети: чат и звонки без облака и без серверов. UDP + TCP discovery, WebRTC.
-          Electron + Vite, BLIP ID 1–64.
+          Десктоп-мессенджер для LAN / Hamachi / Radmin VPN: чат, группы, голосовые каналы, звонки 1:1 и
+          групповые — без облака. UDP + TCP + WebRTC, BLIP ID 1–64.
         </p>
 
         <div class="code-box">
@@ -342,8 +343,8 @@
         </div>
 
         <p class="joke" data-i18n="joke">
-          Эта страница — статическая витрина для GitHub Pages. Само приложение собирается в Electron; для разработки см.
-          CONTRIBUTING в репозитории.
+          Статическая витрина GitHub Pages в акценте «Сланец» (#94a3b8), как в приложении. Сборка — Electron;
+          разработка — CONTRIBUTING в репозитории.
         </p>
         <p class="arch-link">
           <a href="https://github.com/krwg/BLIP/blob/main/docs/ARCHITECTURE.md" data-i18n="arch">Архитектура · Architecture</a>
@@ -353,19 +354,27 @@
       <section class="features">
         <article class="feature">
           <h3 data-i18n="f1h">P2P LAN</h3>
-          <p data-i18n="f1p">Нет аккаунтов в облаке: узнаём соседей по UDP broadcast и mDNS, сообщения по TCP между пирами.</p>
+          <p data-i18n="f1p">UDP broadcast + mDNS, TCP между пирами, Mesh Handshake (Ed25519). Без регистрации и без серверов.</p>
         </article>
         <article class="feature">
           <h3 data-i18n="f2h">Звонки</h3>
-          <p data-i18n="f2p">Отдельные окна 1:1 и группового звонка; WebRTC по TCP; chiptune UI (СИГНАЛ / ПУЛЬС, MESH / СЕТКА).</p>
+          <p data-i18n="f2p">Окна 1:1 и группового звонка, голосовые каналы в группах, демонстрация экрана 720p+, chiptune СИГНАЛ / ПУЛЬС.</p>
         </article>
         <article class="feature">
-          <h3 data-i18n="f3h">Portrait</h3>
-          <p data-i18n="f3p">Пиксельные аватары 8×8, полный RU/EN, автозапуск Windows, поиск Ctrl+F, файлы до 100 ГБ, буфер обмена по LAN.</p>
+          <h3 data-i18n="f3h">Чат</h3>
+          <p data-i18n="f3p">Цитаты, медиа-просмотр и YouTube в чате, реакции, Ctrl+F, файлы до 100 ГБ, буфер обмена по LAN.</p>
         </article>
         <article class="feature">
-          <h3 data-i18n="f4h">Стек</h3>
-          <p data-i18n="f4p">Electron 35, Vite 6, vanilla JS. Windows — основная цель сборки NSIS/portable.</p>
+          <h3 data-i18n="f4h">Облик</h3>
+          <p data-i18n="f4p">Свет / тьма / авто, 16 акцентов (Сланец), арт-обои, своё фото профиля по LAN, пиксельные переключатели.</p>
+        </article>
+        <article class="feature">
+          <h3 data-i18n="f5h">Mesh Pulse</h3>
+          <p data-i18n="f5p">Пинг раз в минуту, задержка под абонентом, статус-текст в LAN, избранные и блокировка в настройках.</p>
+        </article>
+        <article class="feature">
+          <h3 data-i18n="f6h">Стек</h3>
+          <p data-i18n="f6p">Electron 35, Vite 6, vanilla JS/CSS. Windows — NSIS и portable; полный интерфейс EN / RU.</p>
         </article>
       </section>
     </main>
@@ -383,25 +392,28 @@
       (function () {
         var STR = {
           ru: {
-            badge: 'v0.6.1 Portrait · Open source · LAN · GPLv3',
+            badge: 'v0.7.4 Signal · Сланец · LAN · GPLv3',
             title: 'Ты в сети. Ты сигнал.',
             sub:
-              'Десктоп-мессенджер для LAN: чат, группы, отдельное окно группового звонка, синхронизация аватаров. Без облака — UDP + TCP + WebRTC. BLIP ID 1–64.',
+              'Десктоп-мессенджер для LAN / Hamachi / Radmin VPN: чат, группы, голосовые каналы, звонки 1:1 и групповые — без облака. UDP + TCP + WebRTC, BLIP ID 1–64.',
             star: 'Star на GitHub',
             releases: 'Релизы',
             joke:
-              'Эта страница — статическая витрина для GitHub Pages. Само приложение собирается в Electron; для разработки см. CONTRIBUTING в репозитории.',
+              'Статическая витрина GitHub Pages в акценте «Сланец» (#94a3b8), как в приложении. Сборка — Electron; разработка — CONTRIBUTING в репозитории.',
             arch: 'Архитектура →',
             f1h: 'P2P LAN',
-            f1p: 'Нет аккаунтов в облаке: узнаём соседей по UDP broadcast и mDNS, сообщения по TCP между пирами.',
+            f1p: 'UDP broadcast + mDNS, TCP между пирами, Mesh Handshake (Ed25519). Без регистрации и без серверов.',
             f2h: 'Звонки',
             f2p:
-              'Отдельные окна 1:1 и группового звонка; WebRTC по TCP; chiptune UI (СИГНАЛ / ПУЛЬС, MESH / СЕТКА).',
-            f3h: 'Portrait',
-            f3p:
-              'Пиксельные аватары 8×8, полный RU/EN, автозапуск Windows, поиск Ctrl+F, файлы до 100 ГБ, буфер обмена по LAN.',
-            f4h: 'Стек',
-            f4p: 'Electron 35, Vite 6, vanilla JS. Windows — основная цель сборки NSIS/portable.',
+              'Окна 1:1 и группового звонка, голосовые каналы в группах, демонстрация экрана 720p+, chiptune СИГНАЛ / ПУЛЬС.',
+            f3h: 'Чат',
+            f3p: 'Цитаты, медиа-просмотр и YouTube в чате, реакции, Ctrl+F, файлы до 100 ГБ, буфер обмена по LAN.',
+            f4h: 'Облик',
+            f4p: 'Свет / тьма / авто, 16 акцентов (Сланец), арт-обои, своё фото профиля по LAN, пиксельные переключатели.',
+            f5h: 'Mesh Pulse',
+            f5p: 'Пинг раз в минуту, задержка под абонентом, статус-текст в LAN, избранные и блокировка в настройках.',
+            f6h: 'Стек',
+            f6p: 'Electron 35, Vite 6, vanilla JS/CSS. Windows — NSIS и portable; полный интерфейс EN / RU.',
             foot1: 'Код:',
             foot2: ' · из docs/index.html · ',
             copy: 'Копир.',
@@ -410,25 +422,28 @@
             navIssues: 'Issues',
           },
           en: {
-            badge: 'v0.6.1 Portrait · Open source · LAN · GPLv3',
+            badge: 'v0.7.4 Signal · Slate · LAN · GPLv3',
             title: "You're on the grid. You're the signal.",
             sub:
-              'Desktop LAN messenger: chat, groups, dedicated group-call window, 8×8 avatars. No cloud — UDP + TCP + WebRTC. BLIP IDs 1–64.',
+              'Desktop messenger for LAN / Hamachi / Radmin VPN: chat, groups, voice channels, 1:1 and group calls — no cloud. UDP + TCP + WebRTC, BLIP IDs 1–64.',
             star: 'Star on GitHub',
             releases: 'Releases',
             joke:
-              'This page is a static GitHub Pages showcase. The app is built with Electron; see CONTRIBUTING in the repo for dev setup.',
+              'Static GitHub Pages showcase using the Slate accent (#94a3b8), matching the app. Built with Electron; dev setup in CONTRIBUTING.',
             arch: 'Architecture →',
             f1h: 'P2P LAN',
-            f1p: 'No cloud accounts: discover peers via UDP broadcast + mDNS; messages over TCP peer-to-peer.',
+            f1p: 'UDP broadcast + mDNS, peer TCP, Mesh Handshake (Ed25519). No sign-up, no servers.',
             f2h: 'Calls',
             f2p:
-              'Separate 1:1 and group call windows; WebRTC over TCP; chiptune UI (SIGNAL/PULSE, MESH/GRID melodies).',
-            f3h: 'Portrait',
-            f3p:
-              '8×8 pixel avatars, full EN/RU UI, Windows autostart, Ctrl+F chat search, files up to 100 GB, optional clipboard sync.',
-            f4h: 'Stack',
-            f4p: 'Electron 35, Vite 6, vanilla JS. Windows is the primary NSIS/portable build target.',
+              'Separate 1:1 and group call windows, group voice channels, 720p+ screen share, chiptune SIGNAL / PULSE packs.',
+            f3h: 'Chat',
+            f3p: 'Quote replies, in-chat media + YouTube viewer, reactions, Ctrl+F search, files up to 100 GB, optional LAN clipboard.',
+            f4h: 'Look',
+            f4p: 'Light / dark / auto, 16 color accents (Slate), art wallpapers, LAN profile photos, pixel toggles.',
+            f5h: 'Mesh Pulse',
+            f5p: 'Minute heartbeat ping, latency under each peer, custom status line, favorites and block list.',
+            f6h: 'Stack',
+            f6p: 'Electron 35, Vite 6, vanilla JS/CSS. Windows NSIS + portable; full EN / RU UI.',
             foot1: 'Code:',
             foot2: ' · from docs/index.html · ',
             copy: 'Copy',
@@ -477,13 +492,15 @@
         }
 
         var ruBtn = document.getElementById('lang-ru');
-        if (ruBtn) ruBtn.addEventListener('click', function () {
-          setLang('ru');
-        });
+        if (ruBtn)
+          ruBtn.addEventListener('click', function () {
+            setLang('ru');
+          });
         var enBtn = document.getElementById('lang-en');
-        if (enBtn) enBtn.addEventListener('click', function () {
-          setLang('en');
-        });
+        if (enBtn)
+          enBtn.addEventListener('click', function () {
+            setLang('en');
+          });
 
         apply(getLang());
 
