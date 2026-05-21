@@ -64,10 +64,10 @@ const DEFAULT_CONFIG = {
   devMeshTrace: false,
   /** Projects hub + group project channels (pad, board, canvas, clipboard). */
   devProjectsEnabled: false,
-  /** Stream quality: low | hd | fhd | max */
-  streamQuality: 'fhd',
-  /** Fullscreen video target: low | hd | fhd | max (defaults to streamQuality) */
-  fullscreenQuality: 'fhd',
+  /** Stream quality: low | hd | fhd | max | qhd | uhd */
+  streamQuality: 'max',
+  /** Fullscreen video target: low | hd | fhd | max | qhd | uhd */
+  fullscreenQuality: 'max',
   /** LAN clipboard: off | active (open 1:1 chat) | trusted */
   clipboardSyncMode: 'off',
   /** TOFU: blipId string → meshPublicKey */

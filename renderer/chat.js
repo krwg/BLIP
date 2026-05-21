@@ -603,6 +603,16 @@ export function createChatView(
       }
       sounds.messageSent();
     } catch (err) {
+      if (err?.message === 'cancelled') {
+        const m = findMessage(peerId, pendingId);
+        if (m?.attachment) {
+          m.attachment.pending = false;
+          m.attachment.cancelled = true;
+          persist();
+        }
+        renderMessages();
+        return;
+      }
       const list = getMessages(peerId);
       const idx = list.findIndex((m) => m.id === pendingId);
       if (idx >= 0) list.splice(idx, 1);
@@ -959,6 +969,7 @@ export function createChatView(
   renderMessages();
 
   return {
+    apiVersion: 2,
     el: wrap,
     renderMessages,
     scrollToBottom,
@@ -984,7 +995,9 @@ export function createChatView(
         editedAt: msg.editedAt,
       };
       addMessage(peerId, incoming);
+      stickToBottom = true;
       renderMessages();
+      scrollToBottom();
       flashNew();
       sounds.messageReceived();
     },

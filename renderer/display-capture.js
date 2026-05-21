@@ -11,14 +11,11 @@ export async function captureDisplayStream(sourceId, config, { withAudio = false
   }
 
   const chromeMediaSource = sourceId.startsWith('window:') ? 'window' : 'desktop';
+  const size = getScreenCaptureMandatory(config);
   const videoMandatory = {
     chromeMediaSource,
     chromeMediaSourceId: sourceId,
-    minWidth: 1920,
-    maxWidth: 1920,
-    minHeight: 1080,
-    maxHeight: 1080,
-    maxFrameRate: 30,
+    ...size,
   };
   const audioConstraint = withAudio
     ? {

@@ -1819,10 +1819,10 @@ select.blip-select:focus {
 }
 
 .call-video-wrap--stage .call-video.local.call-video--stage {
-  width: min(22vw, 200px);
+  width: min(28vw, 280px);
   height: auto;
   aspect-ratio: 16 / 9;
-  max-height: 112px;
+  max-height: 158px;
 }
 
 .call-video-fs-btn {
@@ -1999,10 +1999,10 @@ select.blip-select:focus {
 .call-video-wrap--remote-primary.call-video-wrap--stage .call-video.local.call-video--stage {
   display: block;
   position: absolute;
-  width: min(22vw, 200px);
+  width: min(28vw, 280px);
   height: auto;
   aspect-ratio: 16 / 9;
-  max-height: 112px;
+  max-height: 158px;
   bottom: 8px;
   right: 8px;
   z-index: 2;
@@ -2550,6 +2550,11 @@ select.blip-select:focus {
   border: 2px solid var(--blip-accent);
   border-radius: 6px;
   box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.65);
+  pointer-events: auto;
+}
+
+.transfer-hub button {
+  pointer-events: auto;
 }
 
 .transfer-hub.hidden {
