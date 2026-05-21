@@ -63,6 +63,11 @@ export function setCanvasPixel(groupId, x, y, color) {
   emit(groupId, 'canvas');
 }
 
+/** After bulk canvas edits (e.g. fill). */
+export function notifyCanvasChanged(groupId) {
+  emit(groupId, 'canvas');
+}
+
 export function getClipState(groupId) {
   const k = padKey(groupId);
   if (!clips.has(k)) clips.set(k, { entries: [] });
@@ -74,6 +79,20 @@ export function pushClipEntry(groupId, entry, maxEntries = CLIP_MAX_FREE) {
   const cap = Math.max(1, maxEntries);
   st.entries = [entry, ...st.entries].slice(0, cap);
   emit(groupId, 'clipboard');
+}
+
+/**
+ * @param {string} groupId
+ * @param {string} entryId
+ * @returns {boolean}
+ */
+export function removeClipEntry(groupId, entryId) {
+  const st = getClipState(groupId);
+  const before = st.entries.length;
+  st.entries = st.entries.filter((e) => e.id !== entryId);
+  if (st.entries.length === before) return false;
+  emit(groupId, 'clipboard');
+  return true;
 }
 
 export function mergeClipEntries(groupId, entries, maxEntries = CLIP_MAX_FREE) {

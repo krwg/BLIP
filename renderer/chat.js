@@ -23,11 +23,12 @@ import { createMessageId } from './message-id.js';
 import { getPinnedMessageId, setPinnedMessageId } from './chat-pins.js';
 import { exportPeerChatJson, exportPeerChatPdf, exportPeerChatHtml } from './chat-export.js';
 import { isMeshPlusActive, showMeshPlusLockedToast } from './mesh-plus.js';
+import { openAlertDialog, openConfirmDialog } from './confirm-dialog.js';
 import { recordMessageSent } from './session-stats.js';
 
 const STORAGE_KEY = 'blip_chat_v1';
 const MAX_PER_PEER = 500;
-const DEFAULT_REACTION = '➕';
+const DEFAULT_REACTION = '❤️';
 
 export function getDefaultReactionEmoji(config) {
   const e = config?.defaultReactionEmoji;
@@ -276,7 +277,7 @@ export function createChatView(
   exportPdfThemedItem.type = 'button';
   exportPdfThemedItem.className = 'chat-menu-item';
   exportPdfThemedItem.dataset.i18n = 'chat.export_pdf_themed';
-  exportPdfThemedItem.textContent = `${t('chat.export_pdf_themed')}${isMeshPlusActive(getConfig()) ? '' : ' ◆'}`;
+  exportPdfThemedItem.textContent = t('chat.export_pdf_themed');
   exportPdfThemedItem.addEventListener('click', () => {
     menu.classList.add('hidden');
     if (!isMeshPlusActive(getConfig())) {
@@ -290,7 +291,7 @@ export function createChatView(
   exportHtmlItem.type = 'button';
   exportHtmlItem.className = 'chat-menu-item';
   exportHtmlItem.dataset.i18n = 'chat.export_html_themed';
-  exportHtmlItem.textContent = `${t('chat.export_html_themed')}${isMeshPlusActive(getConfig()) ? '' : ' ◆'}`;
+  exportHtmlItem.textContent = t('chat.export_html_themed');
   exportHtmlItem.addEventListener('click', () => {
     menu.classList.add('hidden');
     if (!isMeshPlusActive(getConfig())) {
@@ -305,9 +306,15 @@ export function createChatView(
   clearItem.className = 'chat-menu-item chat-menu-item--danger';
   clearItem.dataset.i18n = 'chat.clear';
   clearItem.textContent = t('chat.clear');
-  clearItem.addEventListener('click', () => {
+  clearItem.addEventListener('click', async () => {
     menu.classList.add('hidden');
-    if (!confirm(t('chat.clear_confirm'))) return;
+    const ok = await openConfirmDialog({
+      title: t('chat.clear'),
+      body: t('chat.clear_confirm'),
+      danger: true,
+      confirmLabel: t('chat.clear'),
+    });
+    if (!ok) return;
     clearPeerMessages(peerId);
     renderMessages();
   });
@@ -590,7 +597,7 @@ export function createChatView(
       await sendPayload({ text: '', attachment });
     } catch (err) {
       const key = err?.message === 'file_too_big' ? 'chat.attach_too_big' : 'chat.attach_failed';
-      alert(t(key));
+      void openAlertDialog({ title: t(key) });
     }
   }
 
@@ -606,11 +613,12 @@ export function createChatView(
     } catch (err) {
       const limitKey =
         err?.message === 'file_too_big' ? 'chat.file_too_big_dynamic' : 'chat.attach_failed';
-      alert(
-        err?.message === 'file_too_big'
-          ? t(limitKey).replace('{limit}', formatFileLimitLabelForChat(getConfig()))
-          : t('chat.attach_failed')
-      );
+      void openAlertDialog({
+        title:
+          err?.message === 'file_too_big'
+            ? t(limitKey).replace('{limit}', formatFileLimitLabelForChat(getConfig()))
+            : t('chat.attach_failed'),
+      });
       return;
     }
     const pendingId = createMessageId();
@@ -665,7 +673,7 @@ export function createChatView(
       if (idx >= 0) list.splice(idx, 1);
       persist();
       renderMessages();
-      alert(t('chat.attach_failed'));
+      void openAlertDialog({ title: t('chat.attach_failed') });
     }
   }
 

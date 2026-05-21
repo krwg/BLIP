@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" fill="none" shape-rendering="crispEdges">
+  <defs>
+    <filter id="g2" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="4" result="blur"/><feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+  <!-- Премиум-ромб -->
+  <path d="M64 16 L104 64 L64 112 L24 64 Z" fill="#0f172a" stroke="#00ffc8" stroke-width="4" stroke-linejoin="miter"/>
+  <!-- Внутренний кристалл -->
+  <path d="M64 28 L92 64 L64 100 L36 64 Z" fill="#00ffc8" opacity="0.2"/>
+  <path d="M64 28 L64 100 M36 64 L92 64" stroke="#00ffc8" stroke-width="2" opacity="0.6"/>
+  <!-- Плюс -->
+  <path d="M58 58 L70 58 M64 52 L64 76" stroke="#ffffff" stroke-width="4" stroke-linecap="round"/>
+  <!-- Сияние -->
+  <circle cx="64" cy="64" r="48" fill="none" stroke="#00ffc8" stroke-width="2" stroke-dasharray="4 6" opacity="0.5" filter="url(#g2)"/>
+  <rect x="60" y="12" width="8" height="8" fill="#00ffc8"/>
+  <rect x="60" y="108" width="8" height="8" fill="#00ffc8"/>
+  <rect x="12" y="60" width="8" height="8" fill="#00ffc8"/>
+  <rect x="108" y="60" width="8" height="8" fill="#00ffc8"/>
+</svg>

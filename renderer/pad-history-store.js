@@ -66,3 +66,19 @@ export function getPadSnapshotById(scopeId, snapshotId) {
   if (!hit) return null;
   return { text: hit.text, updatedAt: hit.updatedAt, from: hit.from };
 }
+
+/**
+ * @param {string} scopeId
+ * @param {string} snapshotId
+ * @returns {boolean}
+ */
+export function deletePadSnapshot(scopeId, snapshotId) {
+  const key = String(scopeId);
+  const all = readAll();
+  const prev = Array.isArray(all[key]) ? all[key] : [];
+  const next = prev.filter((e) => e.id !== snapshotId);
+  if (next.length === prev.length) return false;
+  all[key] = next;
+  writeAll(all);
+  return true;
+}

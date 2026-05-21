@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" fill="none" shape-rendering="crispEdges">
+  <!-- Трубка -->
+  <path d="M36 44 L36 72 L52 72 L52 44 Z" fill="#0f172a" stroke="#00ffc8" stroke-width="4"/>
+  <path d="M92 44 L92 72 L76 72 L76 44 Z" fill="#0f172a" stroke="#00ffc8" stroke-width="4"/>
+  <path d="M52 58 L76 58" stroke="#00ffc8" stroke-width="6" stroke-linecap="round"/>
+  <!-- Волны звука -->
+  <path d="M64 24 L64 32" stroke="#00ffc8" stroke-width="3"/>
+  <path d="M56 28 L56 36" stroke="#00ffc8" stroke-width="3"/>
+  <path d="M72 28 L72 36" stroke="#00ffc8" stroke-width="3"/>
+  <!-- ON AIR -->
+  <rect x="44" y="84" width="40" height="12" fill="#0f172a" stroke="#00ffc8" stroke-width="2"/>
+  <path d="M48 87 L52 87 L52 93 L48 93 Z M56 87 L60 87 L60 93 L56 93 Z M64 87 L68 87 L68 93 L64 93 Z" fill="#ffffff"/>
+  <path d="M72 87 L76 87 L76 93 L72 93 Z" fill="#ffffff"/>
+</svg>

@@ -9,7 +9,47 @@ Release **version numbers** track [`app-metadata.json`](app-metadata.json) (sync
 
 ## [Unreleased]
 
-_Nothing yet._
+## [1.0.0] — Mesh Plus — 2026-05-21
+
+First **1.x** stable line. Codename **Mesh Plus**. Builds on everything since the last public GitHub release **[v0.7.7](https://github.com/krwg/BLIP/releases/tag/v0.7.7)** (pin/edit messages, export). Intermediate versions **0.7.8–0.10.1** were developed on `main` and are summarized here.
+
+### Added
+
+- **MESH+ licensing** (0.7.9+) — Ed25519 keys, activation UI, benefits carousel, premium wallpapers/sounds/icons, theme editor (`#RRGGBB`), status GIF cloud, peer badge.
+- **Signal Corps / Projects** (0.7.6+) — standalone **PROJECTS** nav (`devProjectsEnabled`): shared **Pad**, **Board** (kanban), **Canvas** (32×16, brush/fill/palette), **Clipboard** mesh history; pad snapshots (MESH+); board card context menu (delete, move column).
+- **Settings → Achievements** — optional, off by default; **Unlocked** / **Not yet unlocked** sections; custom SVG icons in [`ach-icons/`](ach-icons/); locked icons hidden until unlock (click **?** slot for hint).
+- **Settings → Network** — session stats + activity bars; **Signal Corps clipboard** toggle (off by default, confirm on enable).
+- **Settings → Developer** — **Groups (conferences)** beta toggle (off by default); Projects hint on toggle (no separate Signal Corps prose block).
+- **Peer profile page** (0.8+) — in-app full profile; settings preview polish.
+- **In-app dialogs** — `openConfirmDialog` / `openAlertDialog` / `openTextPromptDialog` replace native `confirm`/`alert`/`prompt` in key flows.
+- **Achievement unlock toasts** with icon; **BLIP-styled color picker** (`blip-color-input.js`) for appearance + canvas.
+- **8 achievement SVGs** — `ach-icons/*.svg`, bundled via `renderer/achievements-icons.js`.
+
+### Changed
+
+- **Version & branding:** `1.0.0`, codename **Mesh Plus** (`app-metadata.json` / `package.json`).
+- **Settings shell** — grouped sidebar (Account / App / Connection / System); opens **Profile** first; more transparent panels; appearance backgrounds visible again.
+- **UI copy** — section labels use **ALL CAPS** (EN/RU) via stylesheet; inputs/chat unchanged.
+- **Dial** — title, ID field, **Message** / **Call** aligned in one column.
+- **Default reaction** — **❤️** only; custom reaction field removed.
+- **Hotkeys panel** — no vertical squeeze; shortcuts list scrolls horizontally.
+- **Updates panel** — release feed fills remaining height in fullscreen.
+- **MESH+ carousel** — theme editor, app icons, export slides; relay slide marked planned-only.
+- **Projects** — removed mesh online strip and tier legend; MESH+ lock uses toast + CTA; clipboard gated in Network settings.
+- **Profile preview** — GIF cloud position fix; no black bar over avatar when GIF is set.
+
+### Removed
+
+- **Mesh identity** settings (ID color, status icons, ID bookmarks).
+- **Custom default reaction** emoji field.
+- **Native `confirm`/`alert`** in achievements reset, chat clear, group flows (replaced by modals).
+
+### Fixed
+
+- **Canvas** — `setCanvasPixel` import; painting, flood fill, eraser; full-area grid; tools/palette dock bottom-right.
+- **Board** — card create via in-app prompt (Electron `prompt` was broken).
+- **Achievements** — icon glyphs no longer show `{}`; reset only clears unlock storage.
+- **Groups** — create menu hidden unless `devGroupsEnabled`.
 
 ## [0.10.1] — Achievements, Network stats, polish
 

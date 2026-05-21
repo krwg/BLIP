@@ -15,6 +15,7 @@ import { createMessageId } from './message-id.js';
 import { addGroupMessage, getGroupMessages, groupDisplayName, amHost } from './groups.js';
 import { getOngoingGroupCall } from './group-call-roster.js';
 import { isInGroupCall, getActiveGroupCallId } from './group-call-client.js';
+import { openAlertDialog } from './confirm-dialog.js';
 
 function formatChatTime(ts) {
   try {
@@ -171,11 +172,12 @@ export function createGroupChatView(
           err?.message === 'file_too_big'
             ? 'chat.file_too_big_dynamic'
             : 'chat.attach_failed';
-        alert(
-          err?.message === 'file_too_big'
-            ? t(key).replace('{limit}', formatGroupFileLimit(config))
-            : t('chat.attach_failed')
-        );
+        void openAlertDialog({
+          title:
+            err?.message === 'file_too_big'
+              ? t(key).replace('{limit}', formatGroupFileLimit(config))
+              : t('chat.attach_failed'),
+        });
       }
       return;
     }
@@ -203,11 +205,12 @@ export function createGroupChatView(
         err?.message === 'file_too_big'
           ? 'chat.file_too_big_dynamic'
           : 'chat.attach_failed';
-      alert(
-        err?.message === 'file_too_big'
-          ? t(key).replace('{limit}', formatGroupFileLimit(config))
-          : t('chat.attach_failed')
-      );
+      void openAlertDialog({
+        title:
+          err?.message === 'file_too_big'
+            ? t(key).replace('{limit}', formatGroupFileLimit(config))
+            : t('chat.attach_failed'),
+      });
     }
   }
 

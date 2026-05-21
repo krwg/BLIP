@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" fill="none" shape-rendering="crispEdges">
+  <!-- Соединительные линии (звезда/пентагон) -->
+  <path d="M64 20 L96 46 L84 84 L44 84 L32 46 Z" stroke="#334155" stroke-width="3" fill="#0f172a"/>
+  <path d="M64 20 L44 84 M96 46 L32 46 M84 84 L64 20 M44 84 L96 46 M32 46 L84 84" stroke="#1e293b" stroke-width="2"/>
+  <!-- Узлы -->
+  <rect x="60" y="16" width="8" height="8" fill="#00ffc8"/>
+  <rect x="92" y="42" width="8" height="8" fill="#00ffc8"/>
+  <rect x="80" y="80" width="8" height="8" fill="#00ffc8"/>
+  <rect x="40" y="80" width="8" height="8" fill="#00ffc8"/>
+  <rect x="28" y="42" width="8" height="8" fill="#00ffc8"/>
+  <!-- Центральное свечение -->
+  <circle cx="64" cy="64" r="8" fill="#00ffc8" opacity="0.3"/>
+  <circle cx="64" cy="64" r="3" fill="#ffffff"/>
+</svg>

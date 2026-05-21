@@ -1,15 +1,18 @@
 import { t } from './i18n.js';
 import { isMeshPlusActive } from './mesh-plus.js';
 import { showAppToast } from './toasts.js';
-import { buildPanelTitleRow } from './settings-ui.js';
+import { buildPanelTitleRow, buildSectionSubtitleRow } from './settings-ui.js';
 
 const CAROUSEL_SLIDES = [
   { icon: '◈', titleKey: 'mesh_plus.slide_premium_bg', descKey: 'mesh_plus.slide_premium_bg_desc' },
   { icon: '♪', titleKey: 'mesh_plus.slide_sound', descKey: 'mesh_plus.slide_sound_desc' },
-  { icon: '◎', titleKey: 'mesh_plus.slide_relay', descKey: 'mesh_plus.slide_relay_desc' },
+  { icon: '◇', titleKey: 'mesh_plus.slide_theme', descKey: 'mesh_plus.slide_theme_desc' },
+  { icon: '⬡', titleKey: 'mesh_plus.slide_icons', descKey: 'mesh_plus.slide_icons_desc' },
   { icon: '▦', titleKey: 'mesh_plus.slide_projects', descKey: 'mesh_plus.slide_projects_desc' },
   { icon: '⧉', titleKey: 'mesh_plus.slide_clipboard', descKey: 'mesh_plus.slide_clipboard_desc' },
   { icon: '▶', titleKey: 'mesh_plus.slide_gif', descKey: 'mesh_plus.slide_gif_desc' },
+  { icon: '⎙', titleKey: 'mesh_plus.slide_export', descKey: 'mesh_plus.slide_export_desc' },
+  { icon: '◎', titleKey: 'mesh_plus.slide_relay', descKey: 'mesh_plus.slide_relay_desc' },
 ];
 
 /**
@@ -52,6 +55,14 @@ export function buildSettingsMeshPlusPanel(state, onConfigChange) {
   carouselTop.appendChild(slideCounter);
   carousel.appendChild(carouselTop);
 
+  const carouselStage = document.createElement('div');
+  carouselStage.className = 'mesh-plus-carousel__stage';
+
+  const carouselMedia = document.createElement('div');
+  carouselMedia.className = 'mesh-plus-carousel__media';
+  carouselMedia.setAttribute('aria-hidden', 'true');
+  carouselStage.appendChild(carouselMedia);
+
   const carouselBody = document.createElement('div');
   carouselBody.className = 'mesh-plus-carousel__body';
   const prevBtn = document.createElement('button');
@@ -71,11 +82,12 @@ export function buildSettingsMeshPlusPanel(state, onConfigChange) {
   carouselBody.appendChild(prevBtn);
   carouselBody.appendChild(carouselInner);
   carouselBody.appendChild(nextBtn);
-  carousel.appendChild(carouselBody);
+  carouselStage.appendChild(carouselBody);
 
   const dots = document.createElement('div');
   dots.className = 'mesh-plus-carousel__dots';
-  carousel.appendChild(dots);
+  carouselStage.appendChild(dots);
+  carousel.appendChild(carouselStage);
   frag.appendChild(carousel);
 
   let slideIndex = 0;
@@ -136,11 +148,9 @@ export function buildSettingsMeshPlusPanel(state, onConfigChange) {
   const activationCard = document.createElement('div');
   activationCard.className = 'mesh-plus-activation settings-list-panel';
 
-  const activationTitle = document.createElement('h3');
-  activationTitle.className = 'section-subtitle';
-  activationTitle.dataset.i18n = 'mesh_plus.activation_title';
-  activationTitle.textContent = t('mesh_plus.activation_title');
-  activationCard.appendChild(activationTitle);
+  activationCard.appendChild(
+    buildSectionSubtitleRow('mesh_plus.activation_title', 'mesh_plus.activation_hint')
+  );
 
   const keyLabel = document.createElement('label');
   keyLabel.className = 'settings-field-label';
@@ -177,16 +187,10 @@ export function buildSettingsMeshPlusPanel(state, onConfigChange) {
   const feedback = document.createElement('p');
   feedback.className = 'mesh-plus-feedback hint';
 
-  const hint = document.createElement('p');
-  hint.className = 'hint mesh-plus-hint';
-  hint.dataset.i18n = 'mesh_plus.no_key_hint';
-  hint.textContent = t('mesh_plus.no_key_hint');
-
   activationCard.appendChild(keyLabel);
   activationCard.appendChild(keyInput);
   activationCard.appendChild(btnRow);
   activationCard.appendChild(feedback);
-  activationCard.appendChild(hint);
   frag.appendChild(activationCard);
 
   function syncActivationUi() {

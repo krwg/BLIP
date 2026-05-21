@@ -8,7 +8,7 @@ import {
 } from './project-tools-ui.js';
 import { clipLimitForTier } from './group-projects-store.js';
 import { MESH_PROJECT_SCOPE } from './projects-mesh-wire.js';
-import { isMeshPlusActive, showMeshPlusLockedToast, createMeshPlusBadge } from './mesh-plus.js';
+import { isMeshPlusActive, showMeshPlusLockedToast } from './mesh-plus.js';
 
 const TOOLS = [
   { id: 'pad', icon: '✦', labelKey: 'projects.tool_pad', tier: 'free' },
@@ -19,18 +19,19 @@ const TOOLS = [
 
 /**
  * Standalone Projects workspace (not tied to groups).
- * @param {object | (() => object)} configOrGetter — live config (use getter so MESH+ activation applies)
+ * @param {object | (() => object)} configOrGetter
  * @param {object} api
  * @param {() => number[]} getOnlinePeerIds
+ * @param {{ onOpenMeshPlus?: () => void }} [hooks]
  */
-export function createProjectsView(configOrGetter, api, getOnlinePeerIds) {
+export function createProjectsView(configOrGetter, api, getOnlinePeerIds, hooks = {}) {
   const getConfig =
     typeof configOrGetter === 'function' ? configOrGetter : () => configOrGetter;
   const root = document.createElement('div');
   root.className = 'projects-workspace';
 
   const titleRow = document.createElement('div');
-  titleRow.className = 'section-title-row';
+  titleRow.className = 'section-title-row projects-workspace-head';
   const title = document.createElement('h2');
   title.className = 'section-title';
   title.dataset.i18n = 'projects.hub_title';
@@ -119,7 +120,6 @@ export function createProjectsView(configOrGetter, api, getOnlinePeerIds) {
     if (opts.locked) {
       hint.dataset.i18n = 'projects.mesh_plus_required';
       hint.textContent = t('projects.mesh_plus_required');
-      stubEl.appendChild(createMeshPlusBadge());
     } else {
       hint.dataset.i18n = 'projects.tool_soon';
       hint.textContent = t('projects.tool_soon');
@@ -127,6 +127,15 @@ export function createProjectsView(configOrGetter, api, getOnlinePeerIds) {
     stubEl.appendChild(icon);
     stubEl.appendChild(stubTitle);
     stubEl.appendChild(hint);
+    if (opts.locked) {
+      const cta = document.createElement('button');
+      cta.type = 'button';
+      cta.className = 'btn btn-accent projects-stub-cta';
+      cta.dataset.i18n = 'projects.open_mesh_plus';
+      cta.textContent = t('projects.open_mesh_plus');
+      cta.addEventListener('click', () => hooks.onOpenMeshPlus?.());
+      stubEl.appendChild(cta);
+    }
     main.appendChild(stubEl);
   }
 
@@ -151,7 +160,23 @@ export function createProjectsView(configOrGetter, api, getOnlinePeerIds) {
     main.appendChild(canvasView.el);
   }
 
+  function showClipboardDisabled() {
+    clearMain();
+    const stub = document.createElement('div');
+    stub.className = 'projects-stub glass';
+    const hint = document.createElement('p');
+    hint.className = 'hint';
+    hint.dataset.i18n = 'projects.clipboard_disabled';
+    hint.textContent = t('projects.clipboard_disabled');
+    stub.appendChild(hint);
+    main.appendChild(stub);
+  }
+
   function showClipboard() {
+    if (!getConfig().projectsClipboardEnabled) {
+      showClipboardDisabled();
+      return;
+    }
     clearMain();
     clipboardView = createClipboardToolView(meshGroup(), getConfig(), api, meshOpts());
     clipboardView.el.classList.add('glass');
@@ -189,22 +214,29 @@ export function createProjectsView(configOrGetter, api, getOnlinePeerIds) {
     else showStub(id);
   }
 
+  function syncToolLockClasses() {
+    toolList.querySelectorAll('.projects-tool-btn').forEach((btn) => {
+      const def = TOOLS.find((x) => x.id === btn.dataset.tool);
+      if (!def) return;
+      const locked = def.tier === 'mesh_plus' && !isMeshPlusActive(getConfig());
+      btn.classList.toggle('projects-tool-btn--mesh-locked', locked);
+    });
+  }
+
   TOOLS.forEach((tool) => {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'projects-tool-btn';
     btn.dataset.tool = tool.id;
     btn.dataset.i18n = tool.labelKey;
-    const label = document.createElement('span');
-    label.textContent = t(tool.labelKey);
     const iconSpan = document.createElement('span');
     iconSpan.className = 'projects-tool-icon';
     iconSpan.textContent = tool.icon;
+    const label = document.createElement('span');
+    label.className = 'projects-tool-label';
+    label.textContent = t(tool.labelKey);
     btn.appendChild(iconSpan);
     btn.appendChild(label);
-    if (tool.tier === 'mesh_plus' && !isMeshPlusActive(getConfig())) {
-      btn.classList.add('projects-tool-btn--mesh-locked');
-    }
     btn.addEventListener('click', () => selectTool(tool.id));
     toolList.appendChild(btn);
   });
@@ -217,6 +249,7 @@ export function createProjectsView(configOrGetter, api, getOnlinePeerIds) {
   root.appendChild(titleRow);
   root.appendChild(body);
 
+  syncToolLockClasses();
   selectTool('pad');
 
   return {
@@ -228,16 +261,10 @@ export function createProjectsView(configOrGetter, api, getOnlinePeerIds) {
       boardView?.refresh?.();
     },
     refreshMeshPlus() {
-      toolList.querySelectorAll('.projects-tool-btn').forEach((btn) => {
-        const def = TOOLS.find((x) => x.id === btn.dataset.tool);
-        if (!def) return;
-        btn.classList.toggle(
-          'projects-tool-btn--mesh-locked',
-          def.tier === 'mesh_plus' && !isMeshPlusActive(getConfig())
-        );
-      });
-      if (activeTool !== 'pad' && !canUseTool(TOOLS.find((x) => x.id === activeTool) || {})) {
-        selectTool(activeTool);
+      syncToolLockClasses();
+      if (activeTool !== 'pad') {
+        const def = TOOLS.find((x) => x.id === activeTool);
+        if (def && !canUseTool(def)) selectTool(activeTool);
       }
     },
   };
