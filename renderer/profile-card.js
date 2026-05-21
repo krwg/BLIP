@@ -6,8 +6,8 @@ import { getPeerProfileGifDataUrl } from './peer-gif-cache.js';
 import { appendMeshPlusBadgeToNameRow } from './mesh-plus.js';
 import { computeGifFramePx } from './gif-frame-size.js';
 
-const CLOUD_MAX_W = 168;
-const CLOUD_MAX_H = 95;
+const CLOUD_MAX_W = 88;
+const CLOUD_MAX_H = 50;
 
 function applyGifCloudSize(cloudEl, imgEl) {
   const nw = imgEl.naturalWidth || 160;
@@ -52,6 +52,8 @@ export function buildProfileCard(peerInput, hooks = {}) {
     banner.className = 'peer-profile-banner';
     if (peer.meshPlus) banner.classList.add('peer-profile-banner--mesh-plus');
     if (peer.online) banner.classList.add('peer-profile-banner--online');
+    banner.title = t('peers.profile_banner_future');
+    banner.dataset.i18nTitle = 'peers.profile_banner_future';
     card.appendChild(banner);
   }
 
@@ -82,8 +84,8 @@ export function buildProfileCard(peerInput, hooks = {}) {
 
   const asideStack = document.createElement('div');
   asideStack.className = 'peer-profile-aside-stack';
-  asideStack.appendChild(avatarWrap);
   asideStack.appendChild(cloudWrap);
+  asideStack.appendChild(avatarWrap);
   aside.appendChild(asideStack);
 
   const main = document.createElement('div');

@@ -94,14 +94,6 @@ export function appendAppIconPickerSections(block, state, saveConfig) {
 
     btn.appendChild(img);
 
-    if (tier === 'mesh_plus' && !isMeshPlusActive(state.config)) {
-      const lock = document.createElement('span');
-      lock.className = 'settings-app-icon-tile__lock';
-      lock.textContent = '◆';
-      lock.title = t('settings.app_icon_mesh_locked');
-      btn.appendChild(lock);
-    }
-
     btn.addEventListener('contextmenu', (e) => {
       e.preventDefault();
       if (meta?.previewUrl) openAppIconPreview(meta.previewUrl, id);

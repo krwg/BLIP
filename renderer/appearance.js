@@ -30,7 +30,7 @@ export const ACCENT_IDS = [
 export const ANIMATED_BACKGROUNDS = ['none', 'beacon', 'depths', 'signal', 'ember', 'rift'];
 
 /** Art layers (wallpaper-art.css). */
-export const STATIC_ART_BACKGROUNDS = ['skyline', 'bloom', 'horizon', 'void', 'dusk'];
+export const STATIC_ART_BACKGROUNDS = ['none', 'skyline', 'bloom', 'horizon', 'void', 'dusk'];
 
 export const ALL_BACKGROUNDS = [...ANIMATED_BACKGROUNDS, ...STATIC_ART_BACKGROUNDS.filter((id) => id !== 'none')];
 

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" fill="none" shape-rendering="crispEdges">
+  <!-- Пузырь чата -->
+  <path d="M28 32 L92 32 L92 76 L64 76 L48 92 L48 76 L28 76 Z" fill="#0f172a" stroke="#00ffc8" stroke-width="4" stroke-linejoin="miter"/>
+  <!-- Текст 50 -->
+  <path d="M44 48 L52 48 L52 56 L44 56 Z M48 60 L52 60 L52 68 L48 68 Z" fill="#ffffff"/>
+  <path d="M56 48 L64 48 L64 56 L56 56 Z M56 60 L64 60 L64 68 L56 68 Z" fill="#ffffff"/>
+  <!-- Счётчик-рамка -->
+  <rect x="36" y="44" width="32" height="28" fill="none" stroke="#00ffc8" stroke-width="2" opacity="0.6"/>
+  <!-- Хвостик сигнал -->
+  <rect x="76" y="40" width="8" height="8" fill="#00ffc8" opacity="0.8"/>
+  <rect x="84" y="48" width="8" height="8" fill="#00ffc8" opacity="0.6"/>
+  <rect x="92" y="56" width="8" height="8" fill="#00ffc8" opacity="0.4"/>
+</svg>

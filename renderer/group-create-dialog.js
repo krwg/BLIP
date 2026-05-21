@@ -1,5 +1,6 @@
 import { t } from './i18n.js';
 import { generateGroupId } from './groups.js';
+import { openAlertDialog } from './confirm-dialog.js';
 
 /**
  * @param {{ selfId: number, peers: Array<{ blipId: number, displayName?: string, online?: boolean }>, seedPeerId?: number }} opts
@@ -83,10 +84,10 @@ export function openGroupCreateDialog(opts) {
     }
 
     cancelBtn.addEventListener('click', () => finish(null));
-    okBtn.addEventListener('click', () => {
+    okBtn.addEventListener('click', async () => {
       const memberIds = [...selected];
       if (memberIds.length === 0) {
-        alert(t('group.pick_one'));
+        await openAlertDialog({ title: t('group.pick_one') });
         return;
       }
       finish({ name: nameInput.value.trim() || t('group.unnamed'), memberIds });

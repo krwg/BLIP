@@ -168,6 +168,10 @@ export async function dissolveGroup(api, config, groupId) {
 }
 
 export async function createGroupFromUi(api, config, memberIds, name, seedPeerId) {
+  if (!config?.devGroupsEnabled) {
+    showAppToast({ title: t('settings.dev_groups_off'), durationMs: 4000 });
+    return null;
+  }
   const myId = Number(config.blipId);
   const groupId = generateGroupId();
   const members = normalizeMemberIds([myId, ...memberIds.filter((id) => Number(id) !== myId)]);

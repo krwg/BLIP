@@ -28,7 +28,7 @@ const DEFAULT_CONFIG = {
   /** Pulse animated wallpaper from mic level (voice / 1:1 call). */
   reactiveBackground: false,
   /** Default emoji for the chat reaction (+) button. */
-  defaultReactionEmoji: '➕',
+  defaultReactionEmoji: '❤️',
   /** When true, the main window close button hides to tray instead of exiting (Windows default on). */
   closeToTray: process.platform === 'win32',
   /** Launch BLIP when the user signs in to the OS. */
@@ -70,6 +70,10 @@ const DEFAULT_CONFIG = {
   devMeshTrace: false,
   /** Projects hub + group project channels (pad, board, canvas, clipboard). */
   devProjectsEnabled: false,
+  /** Signal Corps shared clipboard (LAN mesh). Off by default. */
+  projectsClipboardEnabled: false,
+  /** Groups / conferences beta — off by default. */
+  devGroupsEnabled: false,
   /** Stream quality: low | hd | fhd | max | qhd | uhd */
   streamQuality: 'max',
   /** Fullscreen video target: low | hd | fhd | max | qhd | uhd */

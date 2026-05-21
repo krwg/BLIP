@@ -1,6 +1,6 @@
 import { t, setLang, getLang, applyLangChange, onLangChange, applyI18n } from './i18n.js';
 import { createIdGrid } from './grid.js';
-import { createChatView, getMessages, getDefaultReactionEmoji } from './chat.js';
+import { createChatView, getMessages } from './chat.js';
 import { isFavorite, toggleFavorite, comparePeersFavoriteFirst } from './peer-favorites.js';
 import {
   getGroup,
@@ -89,6 +89,8 @@ import {
   fillSettingsDropdown,
   buildSettingsField,
   buildSettingsFieldWithHint,
+  buildPanelTitleRow,
+  buildSectionSubtitleRow,
   buildSettingsLabelRow,
   createPixelToggle,
   createPixelHintIcon,
@@ -125,6 +127,7 @@ import { showAppToast } from './toasts.js';
 import { openConfirmDialog } from './confirm-dialog.js';
 import { buildPeerProfilePage } from './peer-profile.js';
 import { buildSettingsProfilePanel as buildSettingsProfilePanelView } from './settings-profile-panel.js';
+import { renderSettingsNavAside as renderSettingsNavGroups } from './settings-nav.js';
 import { setPeerProfileGifDataUrl } from './peer-gif-cache.js';
 import {
   initPeerTrust,
@@ -415,6 +418,9 @@ function openGroupChat(groupId) {
 /** @type {ReturnType<typeof createProjectsView> | null} */
 let projectsViewInstance = null;
 
+/** @type {(() => void) | null} */
+let settingsPanelCleanup = null;
+
 function ensureProjectsView() {
   if (!projectsViewInstance || !projectsViewInstance.el?.parentElement) {
     projectsViewInstance?.destroy?.();
@@ -424,7 +430,13 @@ function ensureProjectsView() {
       () =>
         state.peers
           .filter((p) => p.online && !isBlocked(p.blipId))
-          .map((p) => p.blipId)
+          .map((p) => p.blipId),
+      {
+        onOpenMeshPlus: () => {
+          state.settingsSection = 'mesh_plus';
+          renderView('settings');
+        },
+      }
     );
   }
   return projectsViewInstance;
@@ -1177,6 +1189,7 @@ function showPeerContextMenu(e, peerOrId, options = {}) {
       });
       if (!result) return;
       const g = await createGroupFromUi(api, state.config, result.memberIds, result.name);
+      if (!g) return;
       openGroupChat(g.id);
     })();
   });
@@ -1217,7 +1230,7 @@ function showPeerContextMenu(e, peerOrId, options = {}) {
   menu.appendChild(labelItem);
   menu.appendChild(pingItem);
   menu.appendChild(copyIdItem);
-  menu.appendChild(groupItem);
+  if (state.config?.devGroupsEnabled) menu.appendChild(groupItem);
   menu.appendChild(favItem);
   menu.appendChild(blockItem);
   document.body.appendChild(menu);
@@ -1378,6 +1391,13 @@ function buildCloseToTraySection() {
   return block;
 }
 
+function appendAppearanceControl(parent, controlEl) {
+  const wrap = document.createElement('div');
+  wrap.className = 'settings-appearance-control';
+  wrap.appendChild(controlEl);
+  parent.appendChild(wrap);
+}
+
 function buildAppearanceSection() {
   const block = document.createElement('div');
   block.className = 'settings-appearance-wrap';
@@ -1385,13 +1405,18 @@ function buildAppearanceSection() {
   const curAccent = normalizeAccentId(state.config.accentId, state.config.themeId);
   const curBg = normalizeBgId(state.config.animatedBgId);
 
+  block.appendChild(buildSectionSubtitleRow('settings.appearance_theme'));
   const modeOpts = THEME_MODES.map((id) => ({ value: id, label: labelThemeMode(id) }));
   const modeSelect = buildThemedSelect();
   fillSettingsDropdown(modeSelect, modeOpts, curMode, async (id) => {
     state.config = await api.saveConfig({ themeMode: id });
     applyAppearance(state.config);
   });
-  block.appendChild(buildSettingsField('settings.appearance_theme', modeSelect));
+  appendAppearanceControl(block, modeSelect);
+
+  const accentGroup = document.createElement('div');
+  accentGroup.className = 'settings-appearance-accent-group settings-list-panel';
+  accentGroup.appendChild(buildSectionSubtitleRow('settings.appearance_accent'));
 
   const accentOpts = ACCENT_IDS.map((id) => ({ value: id, label: labelAccent(id) }));
   const accentSelect = buildThemedSelect();
@@ -1399,13 +1424,17 @@ function buildAppearanceSection() {
     state.config = await api.saveConfig({ accentId: id });
     applyAppearance(state.config);
   });
-  block.appendChild(buildSettingsField('settings.appearance_accent', accentSelect));
+  appendAppearanceControl(accentGroup, accentSelect);
 
-  appendThemeEditorSection(block, () => state.config, async (patch) => {
+  appendThemeEditorSection(accentGroup, () => state.config, async (patch) => {
     state.config = await api.saveConfig(patch);
     return state.config;
   });
+  block.appendChild(accentGroup);
 
+  block.appendChild(
+    buildSectionSubtitleRow('settings.bg_animated', 'settings.bg_animated_mesh_hint')
+  );
   const animOpts = markMeshPlusGatedOptions(
     ANIMATED_BACKGROUNDS.map((id) => ({ value: id, label: labelBg(id) })),
     MESH_PLUS_FEATURES.animated_bg,
@@ -1424,23 +1453,18 @@ function buildAppearanceSection() {
       applyReactiveWallpaperConfig(state.config);
     }
   );
-  block.appendChild(
-    buildSettingsFieldWithHint('settings.bg_animated', 'settings.bg_animated_mesh_hint', animSelect)
-  );
+  appendAppearanceControl(block, animSelect);
 
+  block.appendChild(buildSectionSubtitleRow('settings.bg_art'));
   const artOpts = STATIC_ART_BACKGROUNDS.map((id) => ({ value: id, label: labelBg(id) }));
   const artSelect = buildThemedSelect();
-  fillSettingsDropdown(
-    artSelect,
-    artOpts,
-    STATIC_ART_BACKGROUNDS.includes(curBg) ? curBg : artOpts[0].value,
-    async (id) => {
-      state.config = await api.saveConfig({ animatedBgId: normalizeBgId(id) });
-      applyAppearance(state.config);
-      applyReactiveWallpaperConfig(state.config);
-    }
-  );
-  block.appendChild(buildSettingsField('settings.bg_art', artSelect));
+  const artCurrent = STATIC_ART_BACKGROUNDS.includes(curBg) ? curBg : 'none';
+  fillSettingsDropdown(artSelect, artOpts, artCurrent, async (id) => {
+    state.config = await api.saveConfig({ animatedBgId: normalizeBgId(id) });
+    applyAppearance(state.config);
+    applyReactiveWallpaperConfig(state.config);
+  });
+  appendAppearanceControl(block, artSelect);
 
   const reactiveToggle = createPixelToggle({
     checked: !!state.config.reactiveBackground,
@@ -1470,20 +1494,6 @@ function buildAppearanceSection() {
   motionRow.appendChild(motionToggle.el);
   motionRow.appendChild(createPixelHintIcon('settings.motion_hint'));
   block.appendChild(motionRow);
-
-  const reactionInput = document.createElement('input');
-  reactionInput.type = 'text';
-  reactionInput.className = 'settings-text-input settings-reaction-input';
-  reactionInput.maxLength = 8;
-  reactionInput.value = getDefaultReactionEmoji(state.config);
-  reactionInput.placeholder = '➕';
-  reactionInput.addEventListener('change', async () => {
-    const emoji = reactionInput.value.trim() || '➕';
-    state.config = await api.saveConfig({ defaultReactionEmoji: emoji });
-    reactionInput.value = getDefaultReactionEmoji(state.config);
-    for (const chat of state.chatViews.values()) chat.renderMessages?.();
-  });
-  block.appendChild(buildSettingsField('settings.default_reaction', reactionInput));
 
   appendAppIconPickerSections(block, state, (patch) => api.saveConfig(patch));
 
@@ -1632,7 +1642,9 @@ async function runStartupUpdateCheck() {
 
 export function navigateToView(view) {
   if (!state.config?.blipId) return;
-  if (view === 'settings') state.settingsSection = null;
+  if (view === 'settings' && state.view !== 'settings') {
+    state.settingsSection = null;
+  }
   if (view === 'chat' && state.view === 'chat' && state.activePeer) {
     state.activePeer = null;
   }
@@ -1663,7 +1675,9 @@ function setupGlobalShortcuts() {
       const next = views[e.key];
       if (next) {
         e.preventDefault();
-        if (next === 'settings') state.settingsSection = null;
+        if (next === 'settings') {
+          state.settingsSection = null;
+        }
         if (next === 'chat' && state.view === 'chat' && state.activePeer) {
           state.activePeer = null;
         }
@@ -1743,11 +1757,7 @@ function buildSettingsLanguagePanel() {
   const frag = document.createElement('div');
   frag.className = 'settings-panel';
 
-  const h = document.createElement('h2');
-  h.className = 'settings-panel-title';
-  h.dataset.i18n = 'settings.section_language';
-  h.textContent = t('settings.section_language');
-  frag.appendChild(h);
+  appendSettingsPanelHeader(frag, 'settings.section_language');
 
   const langSelect = buildThemedSelect();
   fillSettingsDropdown(
@@ -1775,11 +1785,7 @@ function buildSettingsNotificationsPanel() {
   const frag = document.createElement('div');
   frag.className = 'settings-panel';
 
-  const h = document.createElement('h2');
-  h.className = 'settings-panel-title';
-  h.dataset.i18n = 'settings.section_notifications';
-  h.textContent = t('settings.section_notifications');
-  frag.appendChild(h);
+  appendSettingsPanelHeader(frag, 'settings.section_notifications');
 
   frag.appendChild(
     createPixelToggle({
@@ -1820,21 +1826,11 @@ function buildSettingsNotificationsPanel() {
 
 function buildSettingsPrivacyPanel() {
   const frag = document.createElement('div');
-  frag.className = 'settings-panel';
+  frag.className = 'settings-panel settings-panel--privacy';
 
-  const h = document.createElement('h2');
-  h.className = 'settings-panel-title';
-  h.dataset.i18n = 'settings.section_privacy';
-  h.textContent = t('settings.section_privacy');
-  frag.appendChild(h);
+  appendSettingsPanelHeader(frag, 'settings.section_privacy', 'settings.privacy_hint');
 
-  const hint = document.createElement('p');
-  hint.className = 'hint';
-  hint.dataset.i18n = 'settings.privacy_hint';
-  hint.textContent = t('settings.privacy_hint');
-  frag.appendChild(hint);
-
-  const list = createSettingsListPanel('settings-blocked-list');
+  const list = createSettingsListPanel('settings-blocked-list settings-list-panel--stretch-x');
 
   function renderList() {
     list.innerHTML = '';
@@ -1898,11 +1894,7 @@ function buildSettingsSoundPanel() {
   const frag = document.createElement('div');
   frag.className = 'settings-panel';
 
-  const h = document.createElement('h2');
-  h.className = 'settings-panel-title';
-  h.dataset.i18n = 'settings.section_sound';
-  h.textContent = t('settings.section_sound');
-  frag.appendChild(h);
+  appendSettingsPanelHeader(frag, 'settings.section_sound');
 
   const enableToggle = createPixelToggle({
     checked: state.config.uiSoundsEnabled !== false,
@@ -2110,11 +2102,7 @@ function buildSettingsTransferPanel() {
   const frag = document.createElement('div');
   frag.className = 'settings-panel';
 
-  const h = document.createElement('h2');
-  h.className = 'settings-panel-title';
-  h.dataset.i18n = 'settings.section_transfer';
-  h.textContent = t('settings.section_transfer');
-  frag.appendChild(h);
+  appendSettingsPanelHeader(frag, 'settings.section_transfer', 'settings.transfer_hint');
 
   const limitSelect = buildThemedSelect();
   const limitOpts = FILE_LIMIT_GB_OPTIONS.map((gb) => ({
@@ -2155,15 +2143,7 @@ function buildSettingsCallPanel() {
   const frag = document.createElement('div');
   frag.className = 'settings-panel';
 
-  const titleRow = document.createElement('div');
-  titleRow.className = 'settings-panel-title-row';
-  const h = document.createElement('h2');
-  h.className = 'settings-panel-title';
-  h.dataset.i18n = 'settings.section_call';
-  h.textContent = t('settings.section_call');
-  titleRow.appendChild(h);
-  titleRow.appendChild(createPixelHintIcon('settings.call_hint'));
-  frag.appendChild(titleRow);
+  appendSettingsPanelHeader(frag, 'settings.section_call', 'settings.call_hint');
 
   const micTest = buildMicTestPanel(state.config, async (patch) => {
     state.config = await api.saveConfig(patch);
@@ -2352,11 +2332,7 @@ function buildSettingsNetworkPanel() {
   const frag = document.createElement('div');
   frag.className = 'settings-panel';
 
-  const h = document.createElement('h2');
-  h.className = 'settings-panel-title';
-  h.dataset.i18n = 'settings.section_network';
-  h.textContent = t('settings.section_network');
-  frag.appendChild(h);
+  appendSettingsPanelHeader(frag, 'settings.section_network');
 
   const clipOpts = CLIPBOARD_SYNC_MODES.map((id) => ({
     value: id,
@@ -2375,6 +2351,36 @@ function buildSettingsNetworkPanel() {
   frag.appendChild(
     buildSettingsFieldWithHint('clipboard.mode', 'clipboard.hint', clipSelect)
   );
+
+  const projClipRow = document.createElement('div');
+  projClipRow.className = 'settings-toggle-with-hint';
+  const projClipToggle = createPixelToggle({
+    checked: !!state.config?.projectsClipboardEnabled,
+    labelKey: 'settings.projects_clipboard',
+    onChange: async (checked) => {
+      if (checked) {
+        const ok = await openConfirmDialog({
+          title: t('settings.projects_clipboard'),
+          body: t('settings.projects_clipboard_enable_confirm'),
+        });
+        if (!ok) {
+          projClipToggle.input.checked = false;
+          return;
+        }
+      }
+      state.config = await api.saveConfig({ projectsClipboardEnabled: checked });
+      showAppToast({
+        title: checked
+          ? t('settings.projects_clipboard_on')
+          : t('settings.projects_clipboard_off'),
+        durationMs: 4000,
+      });
+      if (state.view === 'projects') renderView('projects');
+    },
+  });
+  projClipRow.appendChild(projClipToggle.el);
+  projClipRow.appendChild(createPixelHintIcon('settings.projects_clipboard_hint'));
+  frag.appendChild(projClipRow);
 
   const statsUi = appendSessionStatsSection(frag);
 
@@ -2559,13 +2565,9 @@ function buildSettingsNetworkPanel() {
 
 function buildSettingsShortcutsPanel() {
   const frag = document.createElement('div');
-  frag.className = 'settings-panel';
+  frag.className = 'settings-panel settings-panel--shortcuts';
 
-  const h = document.createElement('h2');
-  h.className = 'settings-panel-title';
-  h.dataset.i18n = 'settings.section_shortcuts';
-  h.textContent = t('settings.section_shortcuts');
-  frag.appendChild(h);
+  appendSettingsPanelHeader(frag, 'settings.section_shortcuts');
 
   function addShortcutBlock(scopeKey, rows) {
     const sub = document.createElement('p');
@@ -2585,7 +2587,7 @@ function buildSettingsShortcutsPanel() {
       list.appendChild(dt);
       list.appendChild(dd);
     }
-    frag.appendChild(wrapInSettingsListPanel(list, 'settings-list-panel--compact'));
+    frag.appendChild(wrapInSettingsListPanel(list, 'settings-shortcuts-panel'));
   }
 
   addShortcutBlock('settings.shortcuts_main_scope', [
@@ -2640,13 +2642,49 @@ function buildSettingsShortcutsPanel() {
 
 function buildSettingsDeveloperPanel() {
   const frag = document.createElement('div');
-  frag.className = 'settings-panel';
+  frag.className = 'settings-panel settings-panel--developer';
 
-  const h = document.createElement('h2');
-  h.className = 'settings-panel-title';
-  h.dataset.i18n = 'settings.section_developer';
-  h.textContent = t('settings.section_developer');
-  frag.appendChild(h);
+  frag.appendChild(buildPanelTitleRow('settings.section_developer', 'settings.dev_panel_hint'));
+
+  const projRow = document.createElement('div');
+  projRow.className = 'settings-toggle-with-hint';
+  const projToggle = createPixelToggle({
+    checked: !!state.config?.devProjectsEnabled,
+    labelKey: 'settings.dev_projects',
+    onChange: async (checked) => {
+      state.config = await api.saveConfig({ devProjectsEnabled: checked });
+      if (!checked) {
+        projectsViewInstance?.destroy?.();
+        projectsViewInstance = null;
+      }
+      showAppToast({
+        title: checked ? t('settings.dev_projects_on') : t('settings.dev_projects_off'),
+        durationMs: 4200,
+      });
+      render();
+    },
+  });
+  projRow.appendChild(projToggle.el);
+  projRow.appendChild(createPixelHintIcon('settings.dev_projects_hint'));
+  frag.appendChild(projRow);
+
+  const groupsRow = document.createElement('div');
+  groupsRow.className = 'settings-toggle-with-hint';
+  const groupsToggle = createPixelToggle({
+    checked: !!state.config?.devGroupsEnabled,
+    labelKey: 'settings.dev_groups',
+    onChange: async (checked) => {
+      state.config = await api.saveConfig({ devGroupsEnabled: checked });
+      showAppToast({
+        title: checked ? t('settings.dev_groups_on') : t('settings.dev_groups_off'),
+        durationMs: 4500,
+      });
+      render();
+    },
+  });
+  groupsRow.appendChild(groupsToggle.el);
+  groupsRow.appendChild(createPixelHintIcon('settings.dev_groups_hint'));
+  frag.appendChild(groupsRow);
 
   const betaRow = document.createElement('div');
   betaRow.className = 'settings-toggle-with-hint';
@@ -2681,28 +2719,6 @@ function buildSettingsDeveloperPanel() {
   traceRow.appendChild(traceToggle.el);
   traceRow.appendChild(createPixelHintIcon('settings.dev_mesh_trace_hint'));
   frag.appendChild(traceRow);
-
-  const projRow = document.createElement('div');
-  projRow.className = 'settings-toggle-with-hint';
-  const projToggle = createPixelToggle({
-    checked: !!state.config?.devProjectsEnabled,
-    labelKey: 'settings.dev_projects',
-    onChange: async (checked) => {
-      state.config = await api.saveConfig({ devProjectsEnabled: checked });
-      if (!checked) {
-        projectsViewInstance?.destroy?.();
-        projectsViewInstance = null;
-      }
-      showAppToast({
-        title: checked ? t('settings.dev_projects_on') : t('settings.dev_projects_off'),
-        durationMs: 4200,
-      });
-      render();
-    },
-  });
-  projRow.appendChild(projToggle.el);
-  projRow.appendChild(createPixelHintIcon('settings.dev_projects_hint'));
-  frag.appendChild(projRow);
 
   const exportBtn = document.createElement('button');
   exportBtn.type = 'button';
@@ -2818,8 +2834,8 @@ function buildSettingsAboutPanel() {
     }
   }).catch(() => {});
 
-  const linkRow = document.createElement('div');
-  linkRow.className = 'settings-about-links';
+  const actionsCol = document.createElement('div');
+  actionsCol.className = 'settings-about-actions';
 
   const changelogBtn = document.createElement('button');
   changelogBtn.type = 'button';
@@ -2839,11 +2855,14 @@ function buildSettingsAboutPanel() {
     window.blip.openExternal?.('https://github.com/krwg/BLIP/releases');
   });
 
+  const linkRow = document.createElement('div');
+  linkRow.className = 'settings-about-links';
   linkRow.appendChild(changelogBtn);
   linkRow.appendChild(releasesAboutBtn);
 
-  frag.appendChild(githubBtn);
-  frag.appendChild(linkRow);
+  actionsCol.appendChild(githubBtn);
+  actionsCol.appendChild(linkRow);
+  frag.appendChild(actionsCol);
   return frag;
 }
 
@@ -2851,11 +2870,7 @@ function buildSettingsSystemPanel() {
   const frag = document.createElement('div');
   frag.className = 'settings-panel';
 
-  const h = document.createElement('h2');
-  h.className = 'settings-panel-title';
-  h.dataset.i18n = 'settings.section_system';
-  h.textContent = t('settings.section_system');
-  frag.appendChild(h);
+  appendSettingsPanelHeader(frag, 'settings.section_system');
 
   const tray = buildCloseToTraySection();
   if (tray) {
@@ -2878,11 +2893,7 @@ function buildSettingsSystemPanel() {
 function buildAppearancePanelWithTitle() {
   const wrap = document.createElement('div');
   wrap.className = 'settings-panel';
-  const h = document.createElement('h2');
-  h.className = 'settings-panel-title';
-  h.dataset.i18n = 'settings.section_appearance';
-  h.textContent = t('settings.section_appearance');
-  wrap.appendChild(h);
+  appendSettingsPanelHeader(wrap, 'settings.section_appearance');
   wrap.appendChild(buildAppearanceSection());
   return wrap;
 }
@@ -2915,11 +2926,7 @@ function buildSettingsUpdatesPanel() {
   const frag = document.createElement('div');
   frag.className = 'settings-panel settings-panel--updates';
 
-  const h = document.createElement('h2');
-  h.className = 'settings-panel-title';
-  h.dataset.i18n = 'settings.section_updates';
-  h.textContent = t('settings.section_updates');
-  frag.appendChild(h);
+  appendSettingsPanelHeader(frag, 'settings.section_updates');
 
   const autoTitle = document.createElement('h3');
   autoTitle.className = 'section-subtitle';
@@ -3129,70 +3136,108 @@ function buildSettingsPlaceholderPanel() {
   return wrap;
 }
 
+function runSettingsPanelCleanup() {
+  settingsPanelCleanup?.();
+  settingsPanelCleanup = null;
+}
+
+function attachSettingsPanelCleanup(frag) {
+  const cleanups = [];
+  if (typeof frag._profileCleanup === 'function') cleanups.push(frag._profileCleanup);
+  if (typeof frag._meshPlusCleanup === 'function') cleanups.push(frag._meshPlusCleanup);
+  if (typeof frag._networkCleanup === 'function') cleanups.push(frag._networkCleanup);
+  if (cleanups.length) {
+    frag._settingsCleanup = () => cleanups.forEach((fn) => fn());
+  }
+  return frag;
+}
+
+function appendSettingsPanelHeader(frag, labelKey, hintKey) {
+  frag.appendChild(hintKey ? buildPanelTitleRow(labelKey, hintKey) : buildPanelTitleRow(labelKey));
+}
+
 function renderSettingsMainPanel() {
+  runSettingsPanelCleanup();
   if (state.settingsSection == null) {
+    settingsPanelCleanup = null;
     return buildSettingsPlaceholderPanel();
   }
-  switch (state.settingsSection) {
+  const section = state.settingsSection;
+  let frag;
+  switch (section) {
     case 'profile':
-      return buildSettingsProfilePanel();
+      frag = buildSettingsProfilePanel();
+      break;
     case 'achievements':
-      return buildSettingsAchievementsPanel(state, api);
+      frag = buildSettingsAchievementsPanel(state, api);
+      break;
     case 'mesh_plus':
-      return buildSettingsMeshPlusPanel(state, () => {
+      frag = buildSettingsMeshPlusPanel(state, () => {
         applyAppearance(state.config);
         applySoundPrefsFromConfig(state.config);
+        ensureProjectsView().refreshMeshPlus?.();
+        syncAchievements(state.config);
         if (state.view === 'peers') renderView('peers');
         if (state.view === 'settings') renderView('settings');
       });
+      break;
     case 'language':
-      return buildSettingsLanguagePanel();
+      frag = buildSettingsLanguagePanel();
+      break;
     case 'notifications':
-      return buildSettingsNotificationsPanel();
+      frag = buildSettingsNotificationsPanel();
+      break;
     case 'privacy':
-      return buildSettingsPrivacyPanel();
+      frag = buildSettingsPrivacyPanel();
+      break;
     case 'sound':
-      return buildSettingsSoundPanel();
+      frag = buildSettingsSoundPanel();
+      break;
     case 'shortcuts':
-      return buildSettingsShortcutsPanel();
+      frag = buildSettingsShortcutsPanel();
+      break;
     case 'call':
-      return buildSettingsCallPanel();
+      frag = buildSettingsCallPanel();
+      break;
     case 'transfer':
-      return buildSettingsTransferPanel();
+      frag = buildSettingsTransferPanel();
+      break;
     case 'appearance':
-      return buildAppearancePanelWithTitle();
+      frag = buildAppearancePanelWithTitle();
+      break;
     case 'network':
-      return buildSettingsNetworkPanel();
+      frag = buildSettingsNetworkPanel();
+      break;
     case 'system':
-      return buildSettingsSystemPanel();
+      frag = buildSettingsSystemPanel();
+      break;
     case 'updates':
-      return buildSettingsUpdatesPanel();
+      frag = buildSettingsUpdatesPanel();
+      break;
     case 'developer':
-      return buildSettingsDeveloperPanel();
+      frag = buildSettingsDeveloperPanel();
+      break;
     case 'about':
-      return buildSettingsAboutPanel();
+      frag = buildSettingsAboutPanel();
+      break;
     default:
       return buildSettingsPlaceholderPanel();
   }
+  attachSettingsPanelCleanup(frag);
+  settingsPanelCleanup = frag._settingsCleanup || null;
+  return frag;
 }
 
 function renderSettingsNavAside() {
-  const aside = document.createElement('aside');
-  aside.className = 'settings-shell__nav glass';
-
-  for (const id of getSettingsSectionIds()) {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = `btn settings-nav-btn${state.settingsSection === id ? ' selected' : ''}`;
-    b.dataset.i18n = `settings.section_${id}`;
-    b.textContent = t(`settings.section_${id}`);
-    b.addEventListener('click', () => {
+  return renderSettingsNavGroups(
+    state,
+    (id) => {
+      if (id === state.settingsSection) return;
       state.settingsSection = id;
       renderView('settings');
-    });
-    aside.appendChild(b);
-  }
-  return aside;
+    },
+    getSettingsSectionIds
+  );
 }
 
 function renderSettingsView() {
@@ -3648,6 +3693,10 @@ function renderView(viewName) {
       view = renderDialView();
   }
 
+  if (state.view === 'settings' && viewName !== 'settings') {
+    runSettingsPanelCleanup();
+  }
+
   const current = mainContent.firstElementChild;
   if (current === view) {
     if (viewName === 'chat') {
@@ -3912,6 +3961,9 @@ export function updatePeers({ peers, occupiedIds }) {
   }
   if (state.view === 'chat' && !state.activePeer && mainContent) {
     renderView('chat');
+  }
+  if (state.view === 'projects') {
+    projectsViewInstance?.refreshPeers?.();
   }
 }
 

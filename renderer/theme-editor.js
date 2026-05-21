@@ -1,7 +1,8 @@
 import { t } from './i18n.js';
 import { isMeshPlusActive, showMeshPlusLockedToast } from './mesh-plus.js';
 import { applyAppearance, normalizeCustomAccentHex } from './appearance.js';
-import { buildSettingsFieldWithHint } from './settings-ui.js';
+import { buildSectionSubtitleRow } from './settings-ui.js';
+import { createBlipColorInput } from './blip-color-input.js';
 
 /**
  * MESH+ custom accent (#RRGGBB).
@@ -19,10 +20,12 @@ export function appendThemeEditorSection(block, getConfig, saveConfig) {
   hexInput.placeholder = '#00ffc8';
   hexInput.dataset.i18nPlaceholder = 'appearance.custom_accent_placeholder';
 
-  const colorPick = document.createElement('input');
-  colorPick.type = 'color';
-  colorPick.className = 'settings-theme-editor-color';
-  colorPick.value = '#00ffc8';
+  const colorPickUi = createBlipColorInput({
+    value: '#00ffc8',
+    title: t('appearance.custom_accent_placeholder'),
+    className: 'settings-theme-editor-color',
+  });
+  const colorPick = colorPickUi.input;
 
   const applyBtn = document.createElement('button');
   applyBtn.type = 'button';
@@ -38,7 +41,7 @@ export function appendThemeEditorSection(block, getConfig, saveConfig) {
 
   const controls = document.createElement('div');
   controls.className = 'settings-theme-editor-controls';
-  controls.appendChild(colorPick);
+  controls.appendChild(colorPickUi.el);
   controls.appendChild(hexInput);
   controls.appendChild(applyBtn);
   controls.appendChild(clearBtn);
@@ -47,7 +50,7 @@ export function appendThemeEditorSection(block, getConfig, saveConfig) {
     const cfg = getConfig();
     const hex = normalizeCustomAccentHex(cfg?.accentCustomHex) || '#00ffc8';
     hexInput.value = cfg?.accentCustomHex ? hex : '';
-    colorPick.value = hex;
+    colorPickUi.value = hex;
   }
 
   function setDisabled(locked) {
@@ -86,12 +89,12 @@ export function appendThemeEditorSection(block, getConfig, saveConfig) {
 
   row.appendChild(controls);
   block.appendChild(
-    buildSettingsFieldWithHint(
-      'appearance.custom_accent',
-      'appearance.custom_accent_mesh_hint',
-      row
-    )
+    buildSectionSubtitleRow('appearance.custom_accent', 'appearance.custom_accent_mesh_hint')
   );
+  const customWrap = document.createElement('div');
+  customWrap.className = 'settings-appearance-control';
+  customWrap.appendChild(row);
+  block.appendChild(customWrap);
 
   syncInputsFromConfig();
   setDisabled(!isMeshPlusActive(getConfig()));

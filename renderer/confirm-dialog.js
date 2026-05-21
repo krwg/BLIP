@@ -69,3 +69,60 @@ export function openConfirmDialog(opts) {
     okBtn.focus();
   });
 }
+
+/**
+ * @param {{ title: string, body?: string, okLabel?: string }} opts
+ * @returns {Promise<void>}
+ */
+export function openAlertDialog(opts) {
+  const { title, body = '', okLabel = t('dialog.confirm') } = opts;
+
+  return new Promise((resolve) => {
+    const backdrop = document.createElement('div');
+    backdrop.className = 'blip-modal-backdrop';
+
+    const modal = document.createElement('div');
+    modal.className = 'blip-modal glass';
+    modal.setAttribute('role', 'alertdialog');
+    modal.setAttribute('aria-modal', 'true');
+
+    const h = document.createElement('h3');
+    h.className = 'blip-modal-title';
+    h.textContent = title;
+
+    const actions = document.createElement('div');
+    actions.className = 'blip-modal-actions';
+
+    const okBtn = document.createElement('button');
+    okBtn.type = 'button';
+    okBtn.className = 'btn btn-accent';
+    okBtn.textContent = okLabel;
+
+    let done = false;
+    function finish() {
+      if (done) return;
+      done = true;
+      backdrop.remove();
+      resolve();
+    }
+
+    okBtn.addEventListener('click', finish);
+    backdrop.addEventListener('click', (e) => {
+      if (e.target === backdrop) finish();
+    });
+
+    modal.appendChild(h);
+    if (body) {
+      const p = document.createElement('p');
+      p.className = 'hint blip-modal-hint';
+      p.textContent = body;
+      modal.appendChild(p);
+    }
+    actions.appendChild(okBtn);
+    modal.appendChild(actions);
+    backdrop.appendChild(modal);
+    document.body.appendChild(backdrop);
+
+    okBtn.focus();
+  });
+}

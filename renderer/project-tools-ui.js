@@ -1,5 +1,21 @@
 import { t } from './i18n.js';
-import { getPadState, setPadState, getBoardState, setBoardState, getCanvasState, getClipState, pushClipEntry, subscribeGroupProject } from './group-projects-store.js';
+import { createPixelHintIcon } from './settings-ui.js';
+import { createBlipColorInput } from './blip-color-input.js';
+import {
+  getPadState,
+  setPadState,
+  getBoardState,
+  setBoardState,
+  getCanvasState,
+  setCanvasPixel,
+  notifyCanvasChanged,
+  getClipState,
+  pushClipEntry,
+  removeClipEntry,
+  subscribeGroupProject,
+} from './group-projects-store.js';
+import { openTextPromptDialog } from './prompt-dialog.js';
+import { openConfirmDialog } from './confirm-dialog.js';
 import { broadcastProject, requestClipboardPull } from './group-projects-wire.js';
 import {
   broadcastMeshPad,
@@ -9,10 +25,34 @@ import {
   requestMeshClipboardPull,
 } from './projects-mesh-wire.js';
 import { clipLimitForTier } from './group-projects-store.js';
-import { getPadHistory, pushPadSnapshot, getPadSnapshotById } from './pad-history-store.js';
+import {
+  getPadHistory,
+  pushPadSnapshot,
+  getPadSnapshotById,
+  deletePadSnapshot,
+} from './pad-history-store.js';
 import { createMessageId } from './message-id.js';
 
-const CANVAS_COLORS = ['', '#00ffc8', '#888888', '#ff3366', '#e0e0e0', '#4488ff'];
+const CANVAS_QUICK_COLORS = [
+  '#000000',
+  '#1a1a1a',
+  '#444444',
+  '#888888',
+  '#cccccc',
+  '#ffffff',
+  '#ff3366',
+  '#ff8800',
+  '#ffee00',
+  '#88ff00',
+  '#00ffc8',
+  '#4488ff',
+  '#8844ff',
+  '#ff44cc',
+  '#8b4513',
+  '#2d5016',
+];
+
+const CANVAS_TOOLS = ['brush', 'bucket', 'eraser'];
 
 function mkStatusBar() {
   const bar = document.createElement('div');
@@ -102,10 +142,14 @@ export function createPadToolView(group, config, api, meshOpts = null) {
   if (meshOpts?.meshPlusActive) {
     const histWrap = document.createElement('div');
     histWrap.className = 'proj-pad-history';
-    const histTitle = document.createElement('div');
+    const histHead = document.createElement('div');
+    histHead.className = 'proj-pad-history-head';
+    const histTitle = document.createElement('span');
     histTitle.className = 'proj-pad-history-title';
     histTitle.dataset.i18n = 'projects.pad_history_title';
     histTitle.textContent = t('projects.pad_history_title');
+    histHead.appendChild(histTitle);
+    histHead.appendChild(createPixelHintIcon('projects.pad_history_hint'));
     const histList = document.createElement('div');
     histList.className = 'proj-pad-history-list';
     const histActions = document.createElement('div');
@@ -159,12 +203,23 @@ export function createPadToolView(group, config, api, meshOpts = null) {
           applying = false;
           pushLocal({ historyLabel: t('projects.pad_history_restore') });
         });
+        row.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+          void (async () => {
+            const ok = await openConfirmDialog({
+              title: t('projects.pad_history_delete'),
+              body: t('projects.pad_history_delete_confirm'),
+            });
+            if (!ok) return;
+            if (deletePadSnapshot(scopeId, item.id)) renderHistory();
+          })();
+        });
         histList.appendChild(row);
       }
     };
 
     histActions.appendChild(saveBtn);
-    histWrap.appendChild(histTitle);
+    histWrap.appendChild(histHead);
     histWrap.appendChild(histList);
     histWrap.appendChild(histActions);
     wrap.appendChild(ta);
@@ -202,6 +257,104 @@ export function createBoardToolView(group, config, api, meshOpts = null) {
     }
   }
 
+  async function addCard(col) {
+    const st = getBoardState(scopeId);
+    const text = await openTextPromptDialog({
+      title: t('projects.board_card_prompt'),
+      placeholder: t('projects.board_card_placeholder'),
+    });
+    if (!text) return;
+    const next = {
+      ...st,
+      cards: [
+        ...st.cards,
+        {
+          id: createMessageId(),
+          text,
+          status: col,
+          assignee: config.blipId,
+        },
+      ],
+    };
+    setBoardState(scopeId, next);
+    broadcastBoard(next.cards);
+    render();
+  }
+
+  function setCardStatus(cardId, newStatus) {
+    const st = getBoardState(scopeId);
+    const next = {
+      ...st,
+      cards: st.cards.map((c) => (c.id === cardId ? { ...c, status: newStatus } : c)),
+    };
+    setBoardState(scopeId, next);
+    broadcastBoard(next.cards);
+    render();
+  }
+
+  async function deleteCard(cardId) {
+    const ok = await openConfirmDialog({
+      title: t('projects.board_card_delete'),
+      body: t('projects.board_card_delete_confirm'),
+    });
+    if (!ok) return;
+    const st = getBoardState(scopeId);
+    const next = { ...st, cards: st.cards.filter((c) => c.id !== cardId) };
+    setBoardState(scopeId, next);
+    broadcastBoard(next.cards);
+    render();
+  }
+
+  function showBoardCardMenu(e, card) {
+    e.preventDefault();
+    const menu = document.createElement('div');
+    menu.className = 'context-menu glass';
+    menu.style.left = `${e.clientX}px`;
+    menu.style.top = `${e.clientY}px`;
+
+    function bindItem(btn, handler) {
+      btn.addEventListener('mousedown', (ev) => ev.stopPropagation());
+      btn.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        menu.remove();
+        handler();
+      });
+    }
+
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.textContent = t('projects.board_card_delete');
+    bindItem(delBtn, () => void deleteCard(card.id));
+    menu.appendChild(delBtn);
+
+    if (card.status !== 'progress') {
+      const progBtn = document.createElement('button');
+      progBtn.type = 'button';
+      progBtn.textContent = t('projects.board_move_progress');
+      bindItem(progBtn, () => setCardStatus(card.id, 'progress'));
+      menu.appendChild(progBtn);
+    }
+
+    if (card.status !== 'done') {
+      const doneBtn = document.createElement('button');
+      doneBtn.type = 'button';
+      doneBtn.textContent = t('projects.board_move_done');
+      bindItem(doneBtn, () => setCardStatus(card.id, 'done'));
+      menu.appendChild(doneBtn);
+    }
+
+    if (card.status !== 'todo') {
+      const todoBtn = document.createElement('button');
+      todoBtn.type = 'button';
+      todoBtn.textContent = t('projects.board_move_todo');
+      bindItem(todoBtn, () => setCardStatus(card.id, 'todo'));
+      menu.appendChild(todoBtn);
+    }
+    document.body.appendChild(menu);
+    const close = () => menu.remove();
+    setTimeout(() => document.addEventListener('click', close, { once: true }), 0);
+  }
+
   function render() {
     const st = getBoardState(scopeId);
     for (const col of cols) {
@@ -219,32 +372,9 @@ export function createBoardToolView(group, config, api, meshOpts = null) {
           meta.textContent = ` #${card.assignee}`;
           el.appendChild(meta);
         }
+        el.addEventListener('contextmenu', (ev) => showBoardCardMenu(ev, card));
         list.appendChild(el);
       });
-      const add = document.createElement('button');
-      add.type = 'button';
-      add.className = 'btn btn-lang proj-board-add';
-      add.textContent = '+';
-      add.addEventListener('click', () => {
-        const text = prompt(t('projects.board_card_prompt'));
-        if (!text?.trim()) return;
-        const next = {
-          ...st,
-          cards: [
-            ...st.cards,
-            {
-              id: createMessageId(),
-              text: text.trim(),
-              status: col,
-              assignee: config.blipId,
-            },
-          ],
-        };
-        setBoardState(scopeId, next);
-        broadcastBoard(next.cards);
-        render();
-      });
-      list.appendChild(add);
     }
     status.text.textContent = t('projects.board_cards').replace('{n}', String(st.cards.length));
   }
@@ -256,7 +386,17 @@ export function createBoardToolView(group, config, api, meshOpts = null) {
     colWrap.className = 'proj-board-col';
     const head = document.createElement('div');
     head.className = 'proj-board-col-head';
-    head.textContent = t(`projects.board_${col}`);
+    const headLabel = document.createElement('span');
+    headLabel.className = 'proj-board-col-title';
+    headLabel.textContent = t(`projects.board_${col}`);
+    const add = document.createElement('button');
+    add.type = 'button';
+    add.className = 'btn btn-lang proj-board-add';
+    add.setAttribute('aria-label', t('projects.board_add_card'));
+    add.textContent = '+';
+    add.addEventListener('click', () => void addCard(col));
+    head.appendChild(headLabel);
+    head.appendChild(add);
     const list = document.createElement('div');
     list.className = 'proj-board-col-list';
     colWrap.appendChild(head);
@@ -287,8 +427,10 @@ export function createCanvasToolView(group, config, api, meshOpts = null) {
   const wrap = document.createElement('div');
   wrap.className = 'proj-tool proj-tool--canvas';
 
-  let color = CANVAS_COLORS[1];
+  let color = CANVAS_QUICK_COLORS[10];
+  let tool = 'brush';
   let activePainter = null;
+  let painting = false;
 
   function broadcastCanvasPixel(x, y, c) {
     if (meshOpts?.getBroadcastTargets) {
@@ -298,50 +440,151 @@ export function createCanvasToolView(group, config, api, meshOpts = null) {
     }
   }
 
+  function paintColorAt(x, y) {
+    const c = tool === 'eraser' ? '' : color;
+    setCanvasPixel(scopeId, x, y, c);
+    broadcastCanvasPixel(x, y, c);
+    activePainter = config.blipId;
+  }
+
+  function floodFill(x, y, fillColor) {
+    const st = getCanvasState(scopeId);
+    const target = st.cells[y * st.w + x] || '';
+    const fill = fillColor || '';
+    if (target === fill) return;
+    const stack = [[x, y]];
+    const seen = new Set();
+    const updates = [];
+    while (stack.length) {
+      const [cx, cy] = stack.pop();
+      const key = `${cx},${cy}`;
+      if (seen.has(key)) continue;
+      if (cx < 0 || cy < 0 || cx >= st.w || cy >= st.h) continue;
+      const idx = cy * st.w + cx;
+      if ((st.cells[idx] || '') !== target) continue;
+      seen.add(key);
+      st.cells[idx] = fill;
+      updates.push([cx, cy]);
+      stack.push([cx + 1, cy], [cx - 1, cy], [cx, cy + 1], [cx, cy - 1]);
+    }
+    if (!updates.length) return;
+    notifyCanvasChanged(scopeId);
+    for (const [px, py] of updates) broadcastCanvasPixel(px, py, fill);
+    activePainter = config.blipId;
+    paint();
+  }
+
+  function applyToolAt(x, y) {
+    if (tool === 'bucket') {
+      floodFill(x, y, color);
+      return;
+    }
+    paintColorAt(x, y);
+    paint();
+  }
+
+  const workspace = document.createElement('div');
+  workspace.className = 'proj-canvas-workspace';
+
+  const dock = document.createElement('div');
+  dock.className = 'proj-canvas-dock';
+
+  const toolsRow = document.createElement('div');
+  toolsRow.className = 'proj-canvas-tools';
+  const toolBtns = new Map();
+  for (const id of CANVAS_TOOLS) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn-lang proj-canvas-tool-btn';
+    btn.dataset.tool = id;
+    btn.dataset.i18n = `projects.canvas_tool_${id}`;
+    btn.textContent = t(`projects.canvas_tool_${id}`);
+    btn.addEventListener('click', () => {
+      tool = id;
+      toolBtns.forEach((b, k) => b.classList.toggle('proj-canvas-tool-btn--active', k === id));
+    });
+    if (id === tool) btn.classList.add('proj-canvas-tool-btn--active');
+    toolBtns.set(id, btn);
+    toolsRow.appendChild(btn);
+  }
+
+  const customColorUi = createBlipColorInput({
+    value: color,
+    title: t('projects.canvas_custom_color'),
+    className: 'proj-canvas-color-picker',
+  });
+  customColorUi.input.addEventListener('input', () => {
+    color = customColorUi.value;
+    syncSwatches();
+  });
+
   const head = document.createElement('div');
   head.className = 'proj-canvas-head';
   const hint = document.createElement('span');
   hint.className = 'proj-canvas-hint';
   head.appendChild(hint);
 
+  const stage = document.createElement('div');
+  stage.className = 'proj-canvas-stage';
+
   const grid = document.createElement('div');
   grid.className = 'proj-canvas-grid';
   const cells = [];
 
   const st0 = getCanvasState(scopeId);
+  grid.style.setProperty('--canvas-cols', String(st0.w));
+  grid.style.setProperty('--canvas-rows', String(st0.h));
   for (let y = 0; y < st0.h; y++) {
     for (let x = 0; x < st0.w; x++) {
       const cell = document.createElement('button');
       cell.type = 'button';
       cell.className = 'proj-canvas-cell';
-      const idx = y * st0.w + x;
-      cell.addEventListener('click', () => {
-        const c = color || '#00ffc8';
-        setCanvasPixel(scopeId, x, y, c);
-        broadcastCanvasPixel(x, y, c);
-        activePainter = config.blipId;
-        paint();
+      const onPaint = () => applyToolAt(x, y);
+      cell.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        painting = true;
+        onPaint();
+      });
+      cell.addEventListener('mouseenter', () => {
+        if (painting && tool !== 'bucket') onPaint();
       });
       cells.push(cell);
       grid.appendChild(cell);
     }
   }
+  const onWindowUp = () => {
+    painting = false;
+  };
+  window.addEventListener('mouseup', onWindowUp);
 
   const palette = document.createElement('div');
   palette.className = 'proj-canvas-palette';
-  CANVAS_COLORS.filter(Boolean).forEach((c) => {
+  const swatchEls = [];
+
+  function syncSwatches() {
+    swatchEls.forEach((sw) => {
+      sw.classList.toggle('proj-canvas-swatch--active', sw.dataset.color === color);
+    });
+    customColor.value = color.startsWith('#') && color.length >= 7 ? color : '#00ffc8';
+  }
+
+  CANVAS_QUICK_COLORS.forEach((c) => {
     const sw = document.createElement('button');
     sw.type = 'button';
     sw.className = 'proj-canvas-swatch';
+    sw.dataset.color = c;
     sw.style.background = c;
-    if (c === color) sw.classList.add('proj-canvas-swatch--active');
     sw.addEventListener('click', () => {
       color = c;
-      palette.querySelectorAll('.proj-canvas-swatch').forEach((el) => el.classList.remove('proj-canvas-swatch--active'));
-      sw.classList.add('proj-canvas-swatch--active');
+      syncSwatches();
     });
+    swatchEls.push(sw);
     palette.appendChild(sw);
   });
+  palette.appendChild(customColorUi.el);
+
+  dock.appendChild(toolsRow);
+  dock.appendChild(palette);
 
   const status = mkStatusBar();
 
@@ -355,6 +598,7 @@ export function createCanvasToolView(group, config, api, meshOpts = null) {
       activePainter ? String(activePainter) : '—'
     );
     status.text.textContent = t('projects.canvas_size');
+    syncSwatches();
   }
 
   const unsub = subscribeGroupProject(scopeId, (tool) => {
@@ -362,15 +606,19 @@ export function createCanvasToolView(group, config, api, meshOpts = null) {
   });
 
   paint();
+  stage.appendChild(grid);
+  workspace.appendChild(stage);
+  workspace.appendChild(dock);
   wrap.appendChild(head);
-  wrap.appendChild(grid);
-  wrap.appendChild(palette);
+  wrap.appendChild(workspace);
   wrap.appendChild(status.bar);
 
   return {
     el: wrap,
     destroy() {
       unsub();
+      painting = false;
+      window.removeEventListener('mouseup', onWindowUp);
     },
   };
 }
@@ -417,6 +665,7 @@ export function createClipboardToolView(group, config, api, meshOpts = null) {
       copyBtn.type = 'button';
       copyBtn.className = 'btn btn-lang proj-clip-copy';
       copyBtn.textContent = '⧉';
+      copyBtn.title = t('projects.clip_copy');
       copyBtn.addEventListener('click', async () => {
         try {
           await navigator.clipboard.writeText(e.text);
@@ -424,9 +673,22 @@ export function createClipboardToolView(group, config, api, meshOpts = null) {
           /* ignore */
         }
       });
+      const delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.className = 'btn btn-danger proj-clip-del';
+      delBtn.textContent = '×';
+      delBtn.title = t('projects.clip_delete');
+      delBtn.addEventListener('click', () => {
+        if (removeClipEntry(scopeId, e.id)) render();
+      });
+      row.addEventListener('contextmenu', (ev) => {
+        ev.preventDefault();
+        delBtn.click();
+      });
       row.appendChild(txt);
       row.appendChild(meta);
       row.appendChild(copyBtn);
+      row.appendChild(delBtn);
       list.appendChild(row);
     });
     if (meshPlus) {

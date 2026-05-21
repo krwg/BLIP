@@ -10,30 +10,56 @@ import {
  * @param {HTMLElement} parent
  */
 export function appendSessionStatsSection(parent) {
-  parent.appendChild(buildSectionSubtitleRow('settings.network_stats_title', 'settings.network_stats_hint'));
+  const statsWrap = document.createElement('div');
+  statsWrap.className = 'settings-network-stats-block';
+  statsWrap.appendChild(
+    buildSectionSubtitleRow('settings.network_stats_title', 'settings.network_stats_hint')
+  );
 
   const card = document.createElement('div');
-  card.className = 'session-stats-panel settings-list-panel';
+  card.className = 'session-stats-panel settings-list-panel session-stats-panel--styled';
 
-  const summary = document.createElement('div');
-  summary.className = 'session-stats-summary';
+  const pills = document.createElement('div');
+  pills.className = 'session-stats-pills';
 
   const chartWrap = document.createElement('div');
   chartWrap.className = 'session-stats-chart';
   chartWrap.setAttribute('role', 'img');
   chartWrap.setAttribute('aria-label', t('settings.network_stats_chart'));
 
+  function formatHours() {
+    const hours = sessionOnlineHours();
+    return hours >= 1
+      ? `${hours.toFixed(1)} h`
+      : `${Math.max(1, Math.round(hours * 60))} min`;
+  }
+
   function refresh() {
     const s = getSessionStats();
-    const hours = sessionOnlineHours();
-    const hStr =
-      hours >= 1 ? `${hours.toFixed(1)} h` : `${Math.max(1, Math.round(hours * 60))} min`;
-    summary.textContent = t('settings.network_stats_summary')
-      .replace('{hours}', hStr)
-      .replace('{messages}', String(s.messagesSent || 0))
-      .replace('{files}', String(s.filesSent || 0))
-      .replace('{calls}', String(s.callsStarted || 0))
-      .replace('{peers}', String(s.peersMaxOnline || 0));
+    pills.innerHTML = '';
+    const items = [
+      { label: t('settings.network_stats_bar_minutes'), value: formatHours() },
+      { label: t('settings.network_stats_bar_messages'), value: String(s.messagesSent || 0) },
+      { label: t('settings.network_stats_bar_files'), value: String(s.filesSent || 0) },
+      { label: t('settings.network_stats_bar_calls'), value: String(s.callsStarted || 0) },
+      {
+        label: t('settings.network_stats_bar_peers'),
+        value: String(s.peersMaxOnline || 0),
+      },
+    ];
+    for (const item of items) {
+      const pill = document.createElement('div');
+      pill.className = 'session-stats-pill';
+      const val = document.createElement('span');
+      val.className = 'session-stats-pill__val';
+      val.textContent = item.value;
+      const lab = document.createElement('span');
+      lab.className = 'session-stats-pill__label';
+      lab.textContent = item.label;
+      pill.appendChild(val);
+      pill.appendChild(lab);
+      pills.appendChild(pill);
+    }
 
     chartWrap.innerHTML = '';
     const bars = getSessionStatsChartBars();
@@ -61,9 +87,10 @@ export function appendSessionStatsSection(parent) {
     }
   }
 
-  card.appendChild(summary);
+  card.appendChild(pills);
   card.appendChild(chartWrap);
-  parent.appendChild(card);
+  statsWrap.appendChild(card);
+  parent.appendChild(statsWrap);
   refresh();
 
   return { refresh };

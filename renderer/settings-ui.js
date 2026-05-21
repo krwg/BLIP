@@ -1,4 +1,5 @@
 import { t } from './i18n.js';
+import { showAppToast } from './toasts.js';
 
 export function buildThemedSelect(className = 'blip-select settings-dropdown') {
   const sel = document.createElement('select');
@@ -53,14 +54,18 @@ export function buildSettingsField(labelKey, controlEl) {
   return wrap;
 }
 
-/** Pixel ? tooltip (title on hover). */
+/** Pixel ? tooltip (title on hover + toast on click). */
 export function createPixelHintIcon(hintKey) {
   const btn = document.createElement('button');
   btn.type = 'button';
   btn.className = 'pixel-hint-btn';
-  btn.setAttribute('aria-label', t(hintKey));
-  btn.title = t(hintKey);
+  const hintText = t(hintKey);
+  btn.setAttribute('aria-label', hintText);
+  btn.title = hintText;
   btn.textContent = '?';
+  btn.addEventListener('click', () => {
+    showAppToast({ title: hintText, durationMs: 6500 });
+  });
   return btn;
 }
 

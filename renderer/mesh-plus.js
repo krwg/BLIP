@@ -61,7 +61,7 @@ export function fillMeshGatedDropdown(select, options, current, feature, cfg, on
   for (const opt of options) {
     const o = document.createElement('option');
     o.value = opt.value;
-    o.textContent = opt.meshPlus ? `${opt.label} ◆` : opt.label;
+    o.textContent = opt.label;
     if (opt.meshPlus) o.disabled = true;
     select.appendChild(o);
   }

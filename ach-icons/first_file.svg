@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" fill="none" shape-rendering="crispEdges">
+  <!-- Файл -->
+  <path d="M36 24 L68 24 L88 44 L88 100 L36 100 Z" fill="#0f172a" stroke="#00ffc8" stroke-width="4" stroke-linejoin="miter"/>
+  <path d="M68 24 L68 44 L88 44" fill="none" stroke="#00ffc8" stroke-width="3" stroke-linejoin="miter"/>
+  <!-- Стрелка вверх -->
+  <path d="M64 56 L52 72 L60 72 L60 88 L68 88 L68 72 L76 72 Z" fill="#00ffc8"/>
+  <!-- Пакет-сигнал -->
+  <rect x="44" y="88" width="8" height="4" fill="#00ffc8" opacity="0.6"/>
+  <rect x="76" y="88" width="8" height="4" fill="#00ffc8" opacity="0.6"/>
+</svg>

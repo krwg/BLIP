@@ -70,9 +70,10 @@ export function buildSettingsProfilePanel(state, api, deps = {}) {
   gifBtn.type = 'button';
   gifBtn.className = 'btn btn-lang';
   gifBtn.dataset.i18n = 'settings.profile_gif_pick';
-  gifBtn.textContent = isMeshPlusActive(state.config)
-    ? t('settings.profile_gif_pick')
-    : `${t('settings.profile_gif_pick')} ◆`;
+  gifBtn.textContent = t('settings.profile_gif_pick');
+  if (!isMeshPlusActive(state.config)) {
+    gifBtn.title = t('mesh_plus.feature_locked');
+  }
 
   avatarActions.appendChild(fileInput);
   avatarActions.appendChild(uploadLabel);
@@ -83,12 +84,14 @@ export function buildSettingsProfilePanel(state, api, deps = {}) {
   avatarRow.appendChild(avatarActions);
   editorCard.appendChild(avatarRow);
 
+  const namePresenceRow = document.createElement('div');
+  namePresenceRow.className = 'settings-profile-name-presence-row';
+
   const nameInput = document.createElement('input');
   nameInput.type = 'text';
   nameInput.className = 'input';
   nameInput.value = state.config.displayName || '';
   nameInput.placeholder = t('settings.name_placeholder');
-  editorCard.appendChild(buildSettingsField('settings.name', nameInput));
 
   const presenceSelect = buildThemedSelect();
   fillSettingsDropdown(
@@ -105,7 +108,10 @@ export function buildSettingsProfilePanel(state, api, deps = {}) {
       refreshPreview();
     }
   );
-  editorCard.appendChild(buildSettingsField('settings.presence', presenceSelect));
+
+  namePresenceRow.appendChild(buildSettingsField('settings.name', nameInput));
+  namePresenceRow.appendChild(buildSettingsField('settings.presence', presenceSelect));
+  editorCard.appendChild(namePresenceRow);
 
   const statusInput = document.createElement('input');
   statusInput.type = 'text';
@@ -113,7 +119,9 @@ export function buildSettingsProfilePanel(state, api, deps = {}) {
   statusInput.maxLength = 48;
   statusInput.placeholder = t('settings.status_placeholder');
   statusInput.value = state.config.presenceText || '';
-  editorCard.appendChild(buildSettingsField('settings.status_custom', statusInput));
+  const statusField = buildSettingsField('settings.status_custom', statusInput);
+  statusField.classList.add('settings-profile-field--full');
+  editorCard.appendChild(statusField);
 
   const presetsWrap = document.createElement('div');
   presetsWrap.className = 'status-preset-buttons';

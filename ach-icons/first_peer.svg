@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" fill="none" shape-rendering="crispEdges">
+  <defs>
+    <filter id="g1" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="3" result="blur"/><feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+  <!-- Радарный круг -->
+  <circle cx="64" cy="64" r="44" stroke="#1e293b" stroke-width="4" fill="#0f172a"/>
+  <circle cx="64" cy="64" r="44" stroke="#00ffc8" stroke-width="2" stroke-dasharray="6 4" opacity="0.6"/>
+  <!-- Перекрестие -->
+  <path d="M64 16 L64 112 M16 64 L112 64" stroke="#334155" stroke-width="3"/>
+  <!-- Сигнал-точка -->
+  <circle cx="88" cy="42" r="6" fill="#00ffc8" filter="url(#g1)"/>
+  <circle cx="88" cy="42" r="3" fill="#ffffff"/>
+  <!-- Кольцо сигнала -->
+  <path d="M88 42 m-12 0 a12 12 0 1 0 24 0 a12 12 0 1 0 -24 0" fill="none" stroke="#00ffc8" stroke-width="2" opacity="0.5"/>
+</svg>

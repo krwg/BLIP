@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" fill="none" shape-rendering="crispEdges">
+  <!-- Корпус песочных часов -->
+  <path d="M44 24 L84 24 L84 36 L64 56 L84 76 L84 88 L44 88 L44 76 L64 56 L44 36 Z" fill="#0f172a" stroke="#00ffc8" stroke-width="4" stroke-linejoin="miter"/>
+  <!-- Песок -->
+  <path d="M48 28 L80 28 L80 32 L48 32 Z" fill="#00ffc8" opacity="0.8"/>
+  <path d="M64 56 L56 72 L72 72 Z" fill="#00ffc8" opacity="0.6"/>
+  <path d="M52 80 L76 80 L76 84 L52 84 Z" fill="#00ffc8" opacity="0.8"/>
+  <!-- 1h -->
+  <rect x="48" y="96" width="32" height="12" fill="#0f172a" stroke="#00ffc8" stroke-width="2"/>
+  <path d="M56 99 L56 105 L60 105 L60 99 Z" fill="#ffffff"/>
+  <path d="M64 99 L68 99 L68 101 L64 101 Z M64 103 L68 103 L68 105 L64 105 Z" fill="#ffffff"/>
+</svg>

@@ -62,7 +62,7 @@ Quick VM flow: host runs BLIP (ID **1**), VM runs BLIP (ID **2**), same subnet v
 | | |
 |---|---|
 | **What** | Desktop app: text, voice, and video over LAN / Hamachi / Radmin VPN |
-| **Release** | **0.7.10 — MESH+ Gate** (see [`CHANGELOG.md`](CHANGELOG.md)) |
+| **Release** | **1.0.0 — Mesh Plus** (see [`CHANGELOG.md`](CHANGELOG.md); last GitHub tag: [v0.7.7](https://github.com/krwg/BLIP/releases/tag/v0.7.7)) |
 | **Identity** | BLIP ID **1–64** (8×8 grid, Minecraft-style chunk metaphor) |
 | **Servers** | None — UDP broadcast, TCP, and WebRTC peer-to-peer only |
 | **Sign-up** | None |
@@ -101,10 +101,10 @@ Quick VM flow: host runs BLIP (ID **1**), VM runs BLIP (ID **2**), same subnet v
 
 | Why it matters | What you get |
 |----------------|--------------|
-| **Pair programming without the cloud** | Shared **Pad** — one notepad synced over TCP to every **online peer** on your mesh (LWW, 300 ms debounce). |
-| **Built for dev crews** | Left rail of tools (pixel symbols, no emoji clutter): **✦ Pad** live today; **▦ Board**, **◻ Canvas**, **⧉ Clipboard** on the roadmap. |
+| **Pair programming without the cloud** | Shared **Pad** — one notepad synced over TCP to every **online peer** on your mesh (LWW, 300 ms debounce); **MESH+** pad snapshots with restore. |
+| **Built for dev crews** | **✦ Pad** · **▦ Board** (kanban, RMB on cards) · **◻ Canvas** (32×16, brush/fill, palette) · **⧉ Clipboard** (enable in **Settings → Network**). Board/Canvas/500-clip search need **MESH+**. |
 | **LAN-native** | Same philosophy as BLIP chat and calls — no servers, no accounts, no upload to someone else’s SaaS. |
-| **Off until you opt in** | Hidden by default so casual users stay on dial / chat; flip one toggle and **PROJECTS** appears in the nav — teams that try it tend to keep it open. |
+| **Off until you opt in** | Hidden by default; flip **Projects** in Developer and **PROJECTS** appears in the nav. |
 
 If you ship one BLIP feature to your squad this quarter, make it **Signal Corps**.
 
@@ -289,7 +289,8 @@ blip/
 │   └── assets/fonts/  # Minecraft woff2/ttf
 ├── docs/              # ARCHITECTURE.md + GitHub Pages landing
 ├── build/             # icon.ico, icon.png (generated)
-├── app-metadata.json  # version 0.6.1, codename Portrait
+├── app-metadata.json  # version 1.0.0, codename Mesh Plus
+├── ach-icons/         # achievement SVGs (bundled in renderer)
 ├── preload.cjs        # IPC bridge
 ├── scripts/           # electron-dev, copy-fonts, build-icons, sync metadata
 ├── icon.svg           # source app icon
@@ -348,7 +349,7 @@ The **Minecraft** font is licensed separately under [MIT](https://github.com/bs-
 | | |
 |---|---|
 | **Что это** | Desktop-приложение: текст, голос и видео по LAN / Hamachi / Radmin VPN |
-| **Релиз** | **0.7.10 — MESH+ Gate** (см. [`CHANGELOG.md`](CHANGELOG.md)) |
+| **Релиз** | **1.0.0 — Mesh Plus** (см. [`CHANGELOG.md`](CHANGELOG.md); на GitHub: [v0.7.7](https://github.com/krwg/BLIP/releases/tag/v0.7.7)) |
 | **Идентификация** | BLIP ID **1–64** (сетка 8×8) |
 | **Серверы** | Нет — только UDP broadcast, TCP и WebRTC между пирами |
 | **Регистрация** | Нет |
@@ -387,10 +388,10 @@ The **Minecraft** font is licensed separately under [MIT](https://github.com/bs-
 
 | Зачем | Что внутри |
 |-------|------------|
-| **Парное кодирование без облака** | **Блокнот (Pad)** — общие заметки по TCP всем **онлайн**-абонентам (LWW, debounce 300 мс). |
-| **Инструменты в стиле BLIP** | Слева каналы: **✦ Блокнот** уже работает; **▦ Доска**, **◻ Холст**, **⧉ Буфер** — в разработке. |
+| **Парное кодирование без облака** | **Блокнот** — общие заметки по TCP всем **онлайн**-абонентам; снимки и откат (**МЭШ+**). |
+| **Инструменты в стиле BLIP** | **✦ Блокнот** · **▦ Доска** (ПКМ по карточкам) · **◻ Холст** (кисть/заливка) · **⧉ Буфер** (вкл. в **Настройки → Сеть**). Доска/холст/поиск в буфере — **МЭШ+**. |
 | **Только ЛАН** | Как чат и звонки — без серверов и чужих аккаунтов. |
-| **Вкл. по желанию** | По умолчанию скрыто; один переключатель — и **ПРОЕКТЫ** в меню. Команды, которые попробуют, обычно не выключают. |
+| **Вкл. по желанию** | По умолчанию скрыто; переключатель **Проекты** в Разработчике — пункт **ПРОЕКТЫ** в меню. |
 
 Если внедрять одну фичу BLIP в команду — начните с **Сигнал Корпс**.
 

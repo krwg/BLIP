@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" fill="none" shape-rendering="crispEdges">
+  <!-- Антенна/микрофон -->
+  <rect x="56" y="24" width="16" height="48" fill="#0f172a" stroke="#00ffc8" stroke-width="3"/>
+  <rect x="52" y="72" width="24" height="8" fill="#00ffc8"/>
+  <rect x="48" y="80" width="32" height="8" fill="#1e293b"/>
+  <!-- Волны эфира -->
+  <path d="M80 40 Q88 52 80 64" fill="none" stroke="#00ffc8" stroke-width="3" stroke-linecap="round"/>
+  <path d="M88 32 Q100 52 88 72" fill="none" stroke="#00ffc8" stroke-width="3" stroke-linecap="round" opacity="0.6"/>
+  <path d="M48 40 Q40 52 48 64" fill="none" stroke="#00ffc8" stroke-width="3" stroke-linecap="round"/>
+  <!-- Бейдж 100 -->
+  <rect x="84" y="64" width="24" height="16" fill="#0f172a" stroke="#00ffc8" stroke-width="2"/>
+  <path d="M88 68 L92 68 L92 76 L88 76 Z M94 68 L98 68 L98 76 L94 76 Z" fill="#ffffff"/>
+  <path d="M100 68 L104 68 L104 76 L100 76 Z" fill="#ffffff"/>
+</svg>

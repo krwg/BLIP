@@ -1,8 +1,9 @@
 import { t } from './i18n.js';
-import { buildPanelTitleRow, buildSettingsFieldWithHint } from './settings-ui.js';
+import { buildPanelTitleRow, createPixelToggle } from './settings-ui.js';
 import { renderAchievementsGrid } from './achievements.js';
 import { clearAllAchievementUnlocks } from './achievements-store.js';
 import { showAppToast } from './toasts.js';
+import { openConfirmDialog } from './confirm-dialog.js';
 
 /**
  * @param {object} state
@@ -14,36 +15,32 @@ export function buildSettingsAchievementsPanel(state, api) {
 
   frag.appendChild(buildPanelTitleRow('settings.section_achievements', 'achievements.hint'));
 
-  const enabledWrap = document.createElement('label');
-  enabledWrap.className = 'settings-toggle-row';
-  const enabledInput = document.createElement('input');
-  enabledInput.type = 'checkbox';
-  enabledInput.checked = !!state.config.achievementsEnabled;
-  const enabledLabel = document.createElement('span');
-  enabledLabel.dataset.i18n = 'achievements.enabled';
-  enabledLabel.textContent = t('achievements.enabled');
-  enabledWrap.appendChild(enabledInput);
-  enabledWrap.appendChild(enabledLabel);
-  frag.appendChild(
-    buildSettingsFieldWithHint('achievements.enabled_label', 'achievements.enabled_hint', enabledWrap)
-  );
+  const togglesRow = document.createElement('div');
+  togglesRow.className = 'ach-settings-toggles';
 
-  const notifyWrap = document.createElement('label');
-  notifyWrap.className = 'settings-toggle-row';
-  const notifyInput = document.createElement('input');
-  notifyInput.type = 'checkbox';
-  notifyInput.checked = state.config.achievementsNotify !== false;
-  const notifyLabel = document.createElement('span');
-  notifyLabel.dataset.i18n = 'achievements.notify';
-  notifyLabel.textContent = t('achievements.notify');
-  notifyWrap.appendChild(notifyInput);
-  notifyWrap.appendChild(notifyLabel);
-  frag.appendChild(
-    buildSettingsFieldWithHint('achievements.notify_label', 'achievements.notify_hint', notifyWrap)
-  );
+  const enabledToggle = createPixelToggle({
+    checked: !!state.config.achievementsEnabled,
+    labelKey: 'achievements.enabled',
+    onChange: async (checked) => {
+      state.config = await api.saveConfig({ achievementsEnabled: checked });
+      refreshGrid();
+    },
+  });
+
+  const notifyToggle = createPixelToggle({
+    checked: state.config.achievementsNotify !== false,
+    labelKey: 'achievements.notify',
+    onChange: async (checked) => {
+      state.config = await api.saveConfig({ achievementsNotify: checked });
+    },
+  });
+
+  togglesRow.appendChild(enabledToggle.el);
+  togglesRow.appendChild(notifyToggle.el);
+  frag.appendChild(togglesRow);
 
   const gridHost = document.createElement('div');
-  gridHost.className = 'ach-grid settings-list-panel';
+  gridHost.className = 'ach-sections';
 
   const resetBtn = document.createElement('button');
   resetBtn.type = 'button';
@@ -53,22 +50,19 @@ export function buildSettingsAchievementsPanel(state, api) {
 
   function refreshGrid() {
     const on = !!state.config.achievementsEnabled;
-    gridHost.classList.toggle('ach-grid--disabled', !on);
-    notifyWrap.classList.toggle('hidden', !on);
-    renderAchievementsGrid(gridHost);
+    gridHost.classList.toggle('ach-sections--disabled', !on);
+    notifyToggle.el.classList.toggle('hidden', !on);
+    renderAchievementsGrid(gridHost, state.config);
   }
 
-  enabledInput.addEventListener('change', async () => {
-    state.config = await api.saveConfig({ achievementsEnabled: enabledInput.checked });
-    refreshGrid();
-  });
-
-  notifyInput.addEventListener('change', async () => {
-    state.config = await api.saveConfig({ achievementsNotify: notifyInput.checked });
-  });
-
-  resetBtn.addEventListener('click', () => {
-    if (!confirm(t('achievements.reset_confirm'))) return;
+  resetBtn.addEventListener('click', async () => {
+    const ok = await openConfirmDialog({
+      title: t('achievements.reset'),
+      body: t('achievements.reset_confirm'),
+      danger: true,
+      confirmLabel: t('achievements.reset'),
+    });
+    if (!ok) return;
     clearAllAchievementUnlocks();
     refreshGrid();
     showAppToast({ title: t('achievements.reset_ok'), durationMs: 3000 });
