@@ -1,7 +1,6 @@
 appId: com.blip.messenger
 productName: BLIP
 copyright: Copyright © 2026 krwg
-description: P2P LAN messenger — text, voice, and video without cloud or accounts.
 extraMetadata:
   CompanyName: krwg
   FileDescription: BLIP — P2P LAN Messenger
@@ -17,6 +16,7 @@ directories:
   buildResources: build
 files:
   - main/**/*
+  - shared/**/*
   - preload.cjs
   - dist/**/*
   - package.json
@@ -48,7 +48,8 @@ nsis:
   createDesktopShortcut: true
   createStartMenuShortcut: true
   shortcutName: BLIP
-  runAfterFinish: true
+  # false = show “Launch BLIP” checkbox on finish page (customFinishPage defines MUI_FINISHPAGE_RUN)
+  runAfterFinish: false
   uninstallDisplayName: BLIP
   artifactName: ${productName}-Setup-${version}.${ext}
   displayLanguageSelector: true
