@@ -2916,7 +2916,7 @@ function buildSettingsUpdatesPanel() {
     const feed = filterReleasesForChannel(result.releases, !!state.config?.receiveBetaUpdates);
     for (const r of feed) {
       const card = document.createElement('article');
-      card.className = 'settings-release-card glass';
+      card.className = 'settings-release-card';
 
       const head = document.createElement('div');
       head.className = 'settings-release-head';
