@@ -1,6 +1,12 @@
 appId: com.blip.messenger
 productName: BLIP
-copyright: Copyright © 2026 BLIP
+copyright: Copyright © 2026 krwg
+description: P2P LAN messenger — text, voice, and video without cloud or accounts.
+extraMetadata:
+  CompanyName: krwg
+  FileDescription: BLIP — P2P LAN Messenger
+  ProductName: BLIP
+  LegalCopyright: Copyright © 2026 krwg
 publish:
   - provider: github
     owner: krwg
@@ -20,8 +26,14 @@ extraResources:
     to: icons/icon.png
   - from: build/tray-16.png
     to: icons/tray-16.png
+  - from: build/icons
+    to: icons
+    filter:
+      - '**/*'
 win:
   icon: icon.ico
+  publisherName: krwg
+  legalTrademarks: BLIP
   target:
     - nsis
     - portable
@@ -39,8 +51,13 @@ nsis:
   runAfterFinish: true
   uninstallDisplayName: BLIP
   artifactName: ${productName}-Setup-${version}.${ext}
+  displayLanguageSelector: true
+  multiLanguageInstaller: true
+  menuCategory: Chat
   installerLanguages:
     - en_US
     - ru_RU
+  include: build/installer.nsh
+  license: LICENSE
 portable:
   artifactName: ${productName}-${version}-Portable.${ext}

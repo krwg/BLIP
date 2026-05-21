@@ -81,6 +81,14 @@ const DEFAULT_CONFIG = {
   micInputGain: 100,
   /** Download and install updates automatically when available. */
   autoDownloadUpdates: true,
+  /** MESH+ license id (16 hex chars) — set after successful activation. */
+  meshPlusLicenseId: '',
+  /** Ed25519 signature (base64) over blip-meshplus-v1|licenseId */
+  meshPlusLicenseSig: '',
+  /** Unix ms when MESH+ was activated. */
+  meshPlusActivatedAt: 0,
+  /** App / tray / about icon: main | dop-1..4 | mesh-1..6 */
+  appIconVariant: 'main',
 };
 
 let configPath = null;

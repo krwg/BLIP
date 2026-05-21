@@ -8,3 +8,7 @@ SECURITY.local.md
 
 # GitHub profile repo draft (publish to github.com/krwg/krwg separately)
 github-profile/
+MESH-PLUS-PLAN.md
+scripts/.mesh-plus-private.b64
+mesh-plus-private.b64
+keysandlicense.md

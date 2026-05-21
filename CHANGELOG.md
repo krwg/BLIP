@@ -11,6 +11,44 @@ Release **version numbers** track [`app-metadata.json`](app-metadata.json) (sync
 
 _Nothing yet._
 
+## [0.7.10] — MESH+ Gate
+
+### Added
+
+- **App icon picker** (Appearance) — free: main + dop-1…4; MESH+: mesh-1…6 with lock toast when inactive.
+- **Icon pipeline** — `icon-main.svg` drives installer/`.exe`; all variants rasterized to `build/icons/` via `npm run build:icons`.
+
+### Changed
+
+- **МЭШ ПЛЮС** settings UX — status card, carousel counter, activation card, **Удалить ключ**.
+- **Russian localization** — full RU strings for МЭШ ПЛЮС tab (status «БЕСПЛАТНО» / «МЭШ ПЛЮС», toasts, carousel).
+- **Developer** — **Удалить подписку** clears MESH+ license (with toast if already FREE).
+- Tray/window/About icon updates live when changing variant (Start Menu shortcut updates on reinstall).
+
+## [0.7.9] — MESH+ Gate
+
+### Added
+
+- **MESH+ licensing** — Ed25519 activation in main (`mesh-plus-license.js`), IPC `activate-mesh-plus` / `deactivate-mesh-plus`, tier in public config.
+- **Settings → MESH+** — benefits carousel, activation UI, FREE / MESH+ status (EN/RU).
+- **MESH+ badge** on peer list — platinum plaque + violet gradient pixel label; `meshPlus` in UDP announce.
+- **Key generator** — `npm run mesh-plus:keygen` (private key in `scripts/.mesh-plus-private.b64`, gitignored).
+- **Installer metadata** — publisher `krwg`, file description, NSIS welcome/finish (`build/installer.nsh`), GPL license page.
+
+### Changed
+
+- `get-config` / `config-updated` no longer expose `meshPrivateKey` or raw license signature to renderer.
+
+## [0.7.8] — MESH+ Gate
+
+### Added
+
+- **[`docs/MESH-PLUS-PLAN.md`](docs/MESH-PLUS-PLAN.md)** — full MESH+ roadmap (tiers, Ed25519 keys, feature matrix, phased rollout). Implementation is incremental; FREE baseline unchanged.
+
+### Changed
+
+- **Settings UX** — shared list panels, taller dropdowns, aligned section headings (see settings styles / `settings-ui.js`).
+
 ## [0.7.7] — Signal Corps
 
 ### Added

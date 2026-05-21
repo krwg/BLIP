@@ -8,6 +8,15 @@ import { createTcpServer } from './tcp-server.js';
 import { connectToPeer, sendOnSocket, pingPeer } from './tcp-client.js';
 import { createTcpLineReader } from './tcp-framing.js';
 import { loadConfig, saveConfig, initConfigPath, getLocalIp, getLocalIpv4Set } from './config.js';
+import { toPublicConfig } from './config-public.js';
+import { validateMeshPlusActivationKey, isMeshPlusActive } from './mesh-plus-license.js';
+import {
+  canUseAppIconVariant,
+  normalizeAppIconVariant,
+  APP_ICON_VARIANTS,
+} from './app-icons.js';
+import { resolveAppIconVariant, resolveVariantWindowIconPath } from './app-icons.js';
+import { applyAppIcons } from './apply-app-icons.js';
 import { ensureMeshIdentity } from './mesh-identity.js';
 import {
   handleMeshHandshakeMessage,
@@ -95,9 +104,13 @@ function getRendererUrl() {
 }
 
 function getWindowIcon() {
-  const iconPath = resolveBuildAsset('icon.png');
+  const iconPath = resolveVariantWindowIconPath(resolveAppIconVariant(config));
   if (existsSync(iconPath)) return nativeImage.createFromPath(iconPath);
   return undefined;
+}
+
+function refreshAppIcons() {
+  return applyAppIcons(config, { mainWindow, callWindow, groupCallWindow });
 }
 
 function createWindow() {
@@ -424,14 +437,15 @@ function sendToRenderer(channel, data) {
 function patchConfig(updates) {
   config = saveConfig(updates);
   discovery?.updateConfig(config);
+  const pub = toPublicConfig(config);
   if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.webContents.send('config-updated', config);
+    mainWindow.webContents.send('config-updated', pub);
   }
   if (callWindow && !callWindow.isDestroyed()) {
-    callWindow.webContents.send('config-updated', config);
+    callWindow.webContents.send('config-updated', pub);
   }
   if (groupCallWindow && !groupCallWindow.isDestroyed()) {
-    groupCallWindow.webContents.send('config-updated', config);
+    groupCallWindow.webContents.send('config-updated', pub);
   }
   if (updates?.launchAtLogin !== undefined) {
     applyLaunchAtLogin(config.launchAtLogin);
@@ -727,10 +741,12 @@ function installTray() {
     config.language === 'ru'
       ? { show: 'Показать', quit: 'Выход' }
       : { show: 'Show', quit: 'Quit' };
+  const { trayPath } = refreshAppIcons();
   createTray({
     getMainWindow: () => mainWindow,
     tooltip: `${meta.displayName || 'BLIP'} — local network`,
     labels: trayLabels,
+    iconPath: trayPath,
     onQuit: async () => {
       await stopNetwork();
       app.quit();
@@ -739,10 +755,27 @@ function installTray() {
 }
 
 function setupIpc() {
-  ipcMain.handle('get-config', () => config);
+  ipcMain.handle('get-config', () => toPublicConfig(config));
   ipcMain.handle('save-config', (_, updates) => {
     const prevLang = config?.language;
-    config = saveConfig(updates);
+    const safe = { ...updates };
+    delete safe.meshPlusLicenseId;
+    delete safe.meshPlusLicenseSig;
+    delete safe.meshPlusActivatedAt;
+    delete safe.tier;
+    delete safe.meshPlusActive;
+    delete safe.meshPlusLicenseMasked;
+    if (safe.appIconVariant !== undefined) {
+      const id = normalizeAppIconVariant(safe.appIconVariant);
+      safe.appIconVariant = canUseAppIconVariant(
+        { ...config, ...safe },
+        id
+      )
+        ? id
+        : 'main';
+    }
+    config = saveConfig(safe);
+    if (safe.appIconVariant !== undefined) refreshAppIcons();
     if (updates?.receiveBetaUpdates !== undefined || updates?.autoDownloadUpdates !== undefined) {
       void configureAutoUpdater(config);
     }
@@ -751,14 +784,15 @@ function setupIpc() {
     if (typeof updates?.language === 'string' && updates.language !== prevLang) {
       installTray();
     }
+    const pub = toPublicConfig(config);
     if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.webContents.send('config-updated', config);
+      mainWindow.webContents.send('config-updated', pub);
     }
     if (callWindow && !callWindow.isDestroyed()) {
-      callWindow.webContents.send('config-updated', config);
+      callWindow.webContents.send('config-updated', pub);
     }
     if (groupCallWindow && !groupCallWindow.isDestroyed()) {
-      groupCallWindow.webContents.send('config-updated', config);
+      groupCallWindow.webContents.send('config-updated', pub);
     }
     if (updates?.launchAtLogin !== undefined) {
       applyLaunchAtLogin(config.launchAtLogin);
@@ -769,7 +803,55 @@ function setupIpc() {
     ) {
       refreshGlobalShortcuts();
     }
-    return config;
+    return pub;
+  });
+
+  ipcMain.handle('activate-mesh-plus', (_, rawKey) => {
+    const result = validateMeshPlusActivationKey(rawKey);
+    if (!result.ok) return result;
+    config = saveConfig({
+      meshPlusLicenseId: result.licenseId,
+      meshPlusLicenseSig: result.sigB64,
+      meshPlusActivatedAt: Date.now(),
+    });
+    discovery?.updateConfig(config);
+    discovery?.announce();
+    refreshAppIcons();
+    const pub = toPublicConfig(config);
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('config-updated', pub);
+    }
+    return { ok: true, tier: pub.tier };
+  });
+
+  ipcMain.handle('deactivate-mesh-plus', () => {
+    const patch = {
+      meshPlusLicenseId: '',
+      meshPlusLicenseSig: '',
+      meshPlusActivatedAt: 0,
+    };
+    if (String(config.appIconVariant || '').startsWith('mesh-')) {
+      patch.appIconVariant = 'main';
+    }
+    config = saveConfig(patch);
+    discovery?.updateConfig(config);
+    discovery?.announce();
+    refreshAppIcons();
+    const pub = toPublicConfig(config);
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('config-updated', pub);
+    }
+    return { ok: true, tier: 'free' };
+  });
+
+  ipcMain.handle('get-mesh-plus-status', () => {
+    const pub = toPublicConfig(config);
+    return {
+      tier: pub.tier,
+      active: pub.meshPlusActive,
+      licenseMasked: pub.meshPlusLicenseMasked || '',
+      activatedAt: config.meshPlusActivatedAt || 0,
+    };
   });
 
   ipcMain.handle('get-github-releases', async (_, limit) => fetchGithubReleases(limit ?? 8));
@@ -972,9 +1054,19 @@ function setupIpc() {
   }));
 
   ipcMain.handle('get-app-icon-url', () => {
-    const iconPath = resolveBuildAsset('icon.png');
-    if (!existsSync(iconPath)) return '';
-    return pathToFileURL(iconPath).href;
+    const { iconUrl } = refreshAppIcons();
+    return iconUrl || '';
+  });
+
+  ipcMain.handle('get-app-icon-variants', () => {
+    return APP_ICON_VARIANTS.map((v) => {
+      const p = resolveVariantWindowIconPath(v.id);
+      return {
+        id: v.id,
+        tier: v.tier,
+        previewUrl: existsSync(p) ? pathToFileURL(p).href : '',
+      };
+    });
   });
 
   ipcMain.handle('is-voice-call-active', () => {
@@ -1222,6 +1314,7 @@ app.whenReady().then(async () => {
 
   setupIpc();
   createWindow();
+  refreshAppIcons();
   installTray();
   void ensureCallWindow().catch((e) => console.warn('[BLIP] prewarm call window', e));
   void ensureGroupCallWindow().catch((e) => console.warn('[BLIP] prewarm group call window', e));

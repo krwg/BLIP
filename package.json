@@ -1,8 +1,9 @@
 {
   "name": "blip",
-  "version": "0.7.7",
-  "description": "P2P messenger for local networks — no cloud, no servers",
+  "version": "0.7.10",
+  "description": "P2P LAN messenger — text, voice, and video. No cloud, no servers, no accounts.",
   "author": "krwg",
+  "homepage": "https://krwg.github.io/BLIP/",
   "repository": {
     "type": "git",
     "url": "https://github.com/krwg/BLIP.git"
@@ -26,7 +27,8 @@
     "electron:build": "npm run build && npm run build:icons && electron-builder --win nsis",
     "electron:build:portable": "npm run build && npm run build:icons && electron-builder --win portable",
     "electron:build:all": "npm run build && npm run build:icons && electron-builder --win",
-    "electron:build:dir": "npm run build && npm run build:icons && electron-builder --win --dir"
+    "electron:build:dir": "npm run build && npm run build:icons && electron-builder --win --dir",
+    "mesh-plus:keygen": "node scripts/mesh-plus-keygen.mjs"
   },
   "devDependencies": {
     "@fontsource/press-start-2p": "^5.2.7",

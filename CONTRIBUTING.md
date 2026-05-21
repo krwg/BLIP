@@ -63,6 +63,10 @@ Outputs go to `dist-electron/` (see `electron-builder.yml`).
 
 Version and codename live in [`app-metadata.json`](app-metadata.json) (synced into `package.json` on `npm run build`). Update [`CHANGELOG.md`](CHANGELOG.md) when shipping.
 
+**MESH+** features are planned in [`docs/MESH-PLUS-PLAN.md`](docs/MESH-PLUS-PLAN.md) — implement in phases; do not break FREE behavior.
+
+Issue test keys locally: `npm run mesh-plus:keygen` (uses `scripts/.mesh-plus-private.b64`, gitignored). Embed only the **public** key in `main/mesh-plus-public-key.js` when rotating keys.
+
 ## TCP payloads (renderer ↔ main)
 
 Chat and signalling use newline-delimited JSON on TCP port **42070**. Common `type` values: `message`, `typing`, `ping`/`pong`, `call-*`, `group-*`, `group-call-*`, `file-*`, `clipboard-push`. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
@@ -71,7 +75,7 @@ The renderer Vite build produces three HTML entry points: `index.html`, `call-wi
 
 ## Version / metadata
 
-- Release version and display metadata live in **`app-metadata.json`** (current line: **0.6.1 — Portrait**).
+- Release version and display metadata live in **`app-metadata.json`** (see current version/codename there).
 - `npm run build` runs `scripts/sync-app-metadata.mjs` so `package.json`’s `version` stays in sync.
 - User-facing release notes go in **`CHANGELOG.md`** before tagging.
 

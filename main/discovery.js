@@ -8,6 +8,7 @@ import {
   signCanonical,
   verifyAnnouncePayload,
 } from './mesh-identity.js';
+import { isMeshPlusActive } from './mesh-plus-license.js';
 
 const ANNOUNCE_INTERVAL = 5000;
 const PEER_TIMEOUT = 30000;
@@ -149,7 +150,8 @@ export class Discovery {
       meshPubkey,
     });
     const meshAnnounceSig = signCanonical(this.config, canonical);
-    return { ...base, meshAnnounceSig };
+    const meshPlus = isMeshPlusActive(this.config);
+    return { ...base, meshAnnounceSig, meshPlus };
   }
 
   announce() {
@@ -210,6 +212,7 @@ export class Discovery {
       meshVerified,
       meshLegacy,
       meshPubkey,
+      meshPlus: !!data.meshPlus,
     };
 
     if (
@@ -220,7 +223,8 @@ export class Discovery {
       existing.presenceText !== peer.presenceText ||
       existing.tcpPort !== peer.tcpPort ||
       existing.meshVerified !== peer.meshVerified ||
-      existing.meshLegacy !== peer.meshLegacy
+      existing.meshLegacy !== peer.meshLegacy ||
+      existing.meshPlus !== peer.meshPlus
     ) {
       this.peers.set(data.blipId, peer);
     } else {
@@ -233,6 +237,7 @@ export class Discovery {
       existing.meshVerified = meshVerified;
       existing.meshLegacy = meshLegacy;
       existing.meshPubkey = meshPubkey;
+      existing.meshPlus = peer.meshPlus;
     }
 
     this.occupiedIds.add(data.blipId);

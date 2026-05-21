@@ -97,6 +97,10 @@ import {
   wrapInSettingsListPanel,
 } from './settings-ui.js';
 import { buildMicTestPanel } from './mic-test-panel.js';
+import { appendMeshPlusBadgeToNameRow } from './mesh-plus.js';
+import { buildSettingsMeshPlusPanel } from './mesh-plus-settings.js';
+import { appendAppIconPickerSections } from './app-icon-picker.js';
+import { isMeshPlusActive } from './mesh-plus.js';
 import {
   startClipboardSync,
   stopClipboardSync,
@@ -748,6 +752,7 @@ function renderPeersView() {
         name.appendChild(star);
       }
       name.appendChild(document.createTextNode(formatPeerDisplayName(peer)));
+      appendMeshPlusBadgeToNameRow(name, peer);
       if (peer.meshLegacy) {
         const leg = document.createElement('span');
         leg.className = 'peer-handshake-badge peer-handshake-badge--legacy';
@@ -1167,13 +1172,7 @@ function buildLaunchAtLoginSection() {
   }
 
   const block = document.createElement('div');
-  block.className = 'settings-tray-wrap';
-
-  const h = document.createElement('h3');
-  h.className = 'section-subtitle';
-  h.dataset.i18n = 'settings.launch_at_login';
-  h.textContent = t('settings.launch_at_login');
-  block.appendChild(h);
+  block.className = 'settings-tray-wrap settings-tray-wrap--flat';
 
   const row = document.createElement('div');
   row.className = 'settings-toggle-with-hint';
@@ -1197,13 +1196,7 @@ function buildCloseToTraySection() {
   }
 
   const block = document.createElement('div');
-  block.className = 'settings-tray-wrap';
-
-  const h = document.createElement('h3');
-  h.className = 'section-subtitle';
-  h.dataset.i18n = 'settings.tray_title';
-  h.textContent = t('settings.tray_title');
-  block.appendChild(h);
+  block.className = 'settings-tray-wrap settings-tray-wrap--flat';
 
   const row = document.createElement('div');
   row.className = 'settings-toggle-with-hint';
@@ -1309,6 +1302,8 @@ function buildAppearanceSection() {
     for (const chat of state.chatViews.values()) chat.renderMessages?.();
   });
   block.appendChild(buildSettingsField('settings.default_reaction', reactionInput));
+
+  appendAppIconPickerSections(block, state, (patch) => api.saveConfig(patch));
 
   return block;
 }
@@ -1527,6 +1522,7 @@ function setupGlobalShortcuts() {
 function getSettingsSectionIds() {
   const ids = [
     'profile',
+    'mesh_plus',
     'language',
     'notifications',
     'privacy',
@@ -2647,6 +2643,38 @@ function buildSettingsDeveloperPanel() {
   });
   frag.appendChild(exportBtn);
 
+  const clearMeshBtn = document.createElement('button');
+  clearMeshBtn.type = 'button';
+  clearMeshBtn.className = 'btn btn-danger';
+  clearMeshBtn.dataset.i18n = 'settings.dev_clear_mesh_plus';
+  clearMeshBtn.textContent = t('settings.dev_clear_mesh_plus');
+  clearMeshBtn.addEventListener('click', async () => {
+    if (!isMeshPlusActive(state.config)) {
+      showAppToast({
+        title: t('settings.dev_clear_mesh_plus_none'),
+        durationMs: 4000,
+      });
+      return;
+    }
+    try {
+      await window.blip.deactivateMeshPlus();
+      state.config = await window.blip.getConfig();
+      showAppToast({
+        title: t('settings.dev_clear_mesh_plus_ok'),
+        durationMs: 4500,
+      });
+      if (state.view === 'settings') renderView('settings');
+      if (state.view === 'peers') renderView('peers');
+    } catch (e) {
+      showAppToast({
+        title: e?.message || t('settings.dev_clear_mesh_plus_fail'),
+        durationMs: 4500,
+        variant: 'danger',
+      });
+    }
+  });
+  frag.appendChild(clearMeshBtn);
+
   return frag;
 }
 
@@ -3014,6 +3042,11 @@ function renderSettingsMainPanel() {
   switch (state.settingsSection) {
     case 'profile':
       return buildSettingsProfilePanel();
+    case 'mesh_plus':
+      return buildSettingsMeshPlusPanel(state, () => {
+        if (state.view === 'peers') renderView('peers');
+        if (state.view === 'settings') renderView('settings');
+      });
     case 'language':
       return buildSettingsLanguagePanel();
     case 'notifications':

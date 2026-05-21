@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <filter id="modernShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="12" stdDeviation="24" flood-color="rgba(0,0,0,0.2)"/>
+    </filter>
+  </defs>
+  
+  <rect x="64" y="64" width="896" height="896" rx="220" 
+        fill="rgba(255, 71, 137, 0.92)" filter="url(#modernShadow)"/>
+  
+  <rect x="64" y="64" width="896" height="400" rx="220" 
+        fill="rgba(255,255,255,0.08)"/>
+  
+  <g transform="translate(512, 512)" fill="#FFFFFF">
+    <g opacity="0.5">
+      <rect x="-6" y="-340" width="12" height="32" rx="2"/>
+      <rect x="-6" y="-244" width="12" height="32" rx="2"/>
+      <rect x="-6" y="-148" width="12" height="32" rx="2"/>
+      <rect x="-6" y="148" width="12" height="32" rx="2"/>
+      <rect x="-6" y="244" width="12" height="32" rx="2"/>
+      <rect x="-6" y="340" width="12" height="32" rx="2"/>
+      <rect x="-340" y="-6" width="32" height="12" rx="2"/>
+      <rect x="-244" y="-6" width="32" height="12" rx="2"/>
+      <rect x="-148" y="-6" width="32" height="12" rx="2"/>
+      <rect x="148" y="-6" width="32" height="12" rx="2"/>
+      <rect x="244" y="-6" width="32" height="12" rx="2"/>
+      <rect x="340" y="-6" width="32" height="12" rx="2"/>
+    </g>
+    
+    <g fill="none" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round">
+      <rect x="-320" y="-320" width="640" height="640" rx="32" opacity="0.95"/>
+      <rect x="-240" y="-240" width="480" height="480" rx="24" opacity="0.88"/>
+      <rect x="-160" y="-160" width="320" height="320" rx="16" opacity="0.82"/>
+      <rect x="-80" y="-80" width="160" height="160" rx="10" opacity="0.76"/>
+    </g>
+    
+    <g fill="#FFFFFF" opacity="0.85">
+      <rect x="-332" y="-332" width="16" height="16" rx="2"/>
+      <rect x="316" y="-332" width="16" height="16" rx="2"/>
+      <rect x="-332" y="316" width="16" height="16" rx="2"/>
+      <rect x="316" y="316" width="16" height="16" rx="2"/>
+      <rect x="-252" y="-252" width="12" height="12" rx="2"/>
+      <rect x="240" y="-252" width="12" height="12" rx="2"/>
+      <rect x="-252" y="240" width="12" height="12" rx="2"/>
+      <rect x="240" y="240" width="12" height="12" rx="2"/>
+    </g>
+    
+    <g>
+      <rect x="-28" y="-28" width="56" height="56" rx="12" fill="#FFFFFF"/>
+      <rect x="-44" y="-12" width="12" height="24" rx="3" fill="#FFFFFF" opacity="0.7"/>
+      <rect x="32" y="-12" width="12" height="24" rx="3" fill="#FFFFFF" opacity="0.7"/>
+      <rect x="-12" y="-44" width="24" height="12" rx="3" fill="#FFFFFF" opacity="0.7"/>
+      <rect x="-12" y="32" width="24" height="12" rx="3" fill="#FFFFFF" opacity="0.7"/>
+    </g>
+    
+    <g fill="#FFFFFF" opacity="0.6">
+      <circle cx="0" cy="-200" r="4"/>
+      <circle cx="0" cy="200" r="4"/>
+      <circle cx="-200" cy="0" r="4"/>
+      <circle cx="200" cy="0" r="4"/>
+    </g>
+  </g>
+  
+  <path d="M 280 180 Q 512 140 744 180" 
+        stroke="rgba(255,255,255,0.2)" stroke-width="3" 
+        fill="none" stroke-linecap="round"/>
+</svg>
