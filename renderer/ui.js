@@ -373,11 +373,34 @@ function ensureProjectsView() {
   return projectsViewInstance;
 }
 
+function normalizeBlipId(id) {
+  const n = Number(id);
+  return Number.isFinite(n) ? n : null;
+}
+
+function refreshLiveChat(peerId) {
+  const id = normalizeBlipId(peerId);
+  if (id == null) return;
+  const chat = state.chatViews.get(id);
+  if (!chat?.el?.isConnected) return;
+  if (state.view !== 'chat' || state.activePeer !== id) return;
+  chat.renderMessages?.();
+  chat.scrollToBottom?.();
+}
+
+const CHAT_VIEW_API_VERSION = 2;
+
 function ensureChatView(peerId) {
-  if (!state.chatViews.has(peerId)) {
-    const peer = state.peers.find((p) => p.blipId === peerId);
+  const id = normalizeBlipId(peerId);
+  if (id == null) return null;
+  const stale = state.chatViews.get(id);
+  if (stale && stale.apiVersion !== CHAT_VIEW_API_VERSION) {
+    state.chatViews.delete(id);
+  }
+  if (!state.chatViews.has(id)) {
+    const peer = state.peers.find((p) => p.blipId === id);
     const chat = createChatView(
-      peerId,
+      id,
       () => state.config,
       (to, msg) =>
         api.sendTcpMessage({
@@ -407,6 +430,50 @@ function ensureChatView(peerId) {
           emoji: payload.emoji,
           add: payload.add,
         }),
+      async (to, file, onProgress) => {
+        const xfer = { transferId: createMessageId() };
+        const abortXfer = () =>
+          void abortFileTransfer(api, state.config, to, xfer.transferId);
+        trackTransferStart(to, xfer.transferId, {
+          name: file.name,
+          size: file.size,
+          direction: 'out',
+          cancellable: true,
+          onCancel: abortXfer,
+        });
+        try {
+          const result = await sendChatFile(
+            api,
+            state.config,
+            to,
+            file,
+            (pct, extra) => {
+              trackTransferProgress(to, xfer.transferId, pct, {
+                name: file.name,
+                size: file.size,
+                direction: 'out',
+                speedBps: extra?.speedBps,
+                cancellable: true,
+                onCancel: abortXfer,
+              });
+              onProgress?.(pct, extra);
+            },
+            { transferId: xfer.transferId }
+          );
+          if (result.transferId) xfer.transferId = result.transferId;
+          if (result.chunked) {
+            const dataUrl = await fileToDataUrl(file);
+            result.attachment = { ...result.attachment, dataUrl };
+          }
+          return result;
+        } catch (err) {
+          if (err?.message === 'cancelled') throw err;
+          throw err;
+        } finally {
+          trackTransferEnd(to, xfer.transferId);
+        }
+      },
+      (e, peerId) => showPeerContextMenu(e, peerId, { hideMessage: true }),
       (to, payload) =>
         api.sendTcpMessage({
           type: 'message-pin',
@@ -421,54 +488,12 @@ function ensureChatView(peerId) {
           messageId: payload.messageId,
           text: payload.text,
           editedAt: payload.editedAt,
-        }),
-      async (to, file, onProgress) => {
-        let tid = createMessageId();
-        trackTransferStart(to, tid, {
-          name: file.name,
-          size: file.size,
-          direction: 'out',
-          cancellable: true,
-          onCancel: () => void abortFileTransfer(api, state.config, to, tid),
-        });
-        try {
-          const result = await sendChatFile(
-            api,
-            state.config,
-            to,
-            file,
-            (pct, extra) => {
-              trackTransferProgress(to, tid, pct, {
-                name: file.name,
-                size: file.size,
-                direction: 'out',
-                speedBps: extra?.speedBps,
-                cancellable: true,
-                onCancel: () => void abortFileTransfer(api, state.config, to, tid),
-              });
-              onProgress?.(pct, extra);
-            },
-            { transferId: tid }
-          );
-          if (result.transferId) tid = result.transferId;
-          if (result.chunked) {
-            const dataUrl = await fileToDataUrl(file);
-            result.attachment = { ...result.attachment, dataUrl };
-          }
-          return result;
-        } catch (err) {
-          if (err?.message === 'cancelled') throw err;
-          throw err;
-        } finally {
-          trackTransferEnd(to, tid);
-        }
-      },
-      (e, peerId) => showPeerContextMenu(e, peerId, { hideMessage: true })
+        })
     );
-    if (peer) chat.setPeerName(formatPeerDisplayName(peer, peerId));
-    state.chatViews.set(peerId, chat);
+    if (peer) chat.setPeerName(formatPeerDisplayName(peer, id));
+    state.chatViews.set(id, chat);
   }
-  return state.chatViews.get(peerId);
+  return state.chatViews.get(id);
 }
 
 function getUnreadTotal() {
@@ -3480,6 +3505,13 @@ function renderView(viewName) {
 
   const current = mainContent.firstElementChild;
   if (current === view) {
+    if (viewName === 'chat') {
+      if (state.activePeer != null) {
+        state.chatViews.get(state.activePeer)?.renderMessages?.();
+      } else if (state.activeGroup != null) {
+        state.groupChatViews.get(state.activeGroup)?.renderMessages?.();
+      }
+    }
     applyI18n(mainContent);
     updateNavActive();
     if (viewName === 'peers') {
@@ -3915,14 +3947,19 @@ function routePeerMessage(msg) {
   const peerId = Number(msg.from === state.config.blipId ? msg.to : msg.from);
   if (!Number.isFinite(peerId) || isBlocked(peerId)) return;
 
-  ensureChatView(peerId);
-  state.chatViews.get(peerId)?.handleIncoming(msg);
+  const id = normalizeBlipId(peerId);
+  if (id == null) return;
 
-  if (state.view === 'chat' && state.activePeer === peerId) {
+  ensureChatView(id);
+  const chat = state.chatViews.get(id);
+  chat?.handleIncoming(msg);
+  refreshLiveChat(id);
+
+  if (state.view === 'chat' && state.activePeer === id) {
     return;
   }
 
-  bumpUnread(peerId);
+  bumpUnread(id);
 
   let preview = typeof msg.text === 'string' ? msg.text.slice(0, 120) : '';
   if (msg.attachment?.kind === 'file') {
@@ -3930,12 +3967,12 @@ function routePeerMessage(msg) {
   } else if (msg.attachment?.kind === 'image') {
     preview = t('chat.image_preview');
   }
-  showMessageToast(peerId, preview);
+  showMessageToast(id, preview);
 
   const typingOther =
     state.view === 'chat' &&
     state.activePeer &&
-    state.activePeer !== peerId &&
+    state.activePeer !== id &&
     document.activeElement?.closest?.('.chat-input-row');
 
   if (typingOther) {
@@ -3943,8 +3980,8 @@ function routePeerMessage(msg) {
   }
 
   state.view = 'chat';
-  state.activePeer = peerId;
-  clearUnread(peerId);
+  state.activePeer = id;
+  clearUnread(id);
   if (mainContent?.isConnected) renderView('chat');
 }
 

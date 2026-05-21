@@ -1,35 +1,55 @@
 /** WebRTC capture constraints and sender tuning for BLIP calls. */
 
-export const STREAM_QUALITY_IDS = ['low', 'hd', 'fhd', 'max'];
+export const STREAM_QUALITY_IDS = ['low', 'hd', 'fhd', 'max', 'qhd', 'uhd'];
 
 const PRESETS = {
   low: {
     camera: { width: { ideal: 640, min: 480 }, height: { ideal: 480, min: 360 }, frameRate: { ideal: 24, max: 24 } },
-    screen: { width: { ideal: 1280, min: 720 }, height: { ideal: 720, min: 480 }, frameRate: { ideal: 24, max: 24 } },
-    camBitrate: 800_000,
-    screenBitrate: 2_000_000,
+    screen: { width: { ideal: 1280, max: 1280 }, height: { ideal: 720, max: 720 }, frameRate: { ideal: 24, max: 24 } },
+    camBitrate: 900_000,
+    screenBitrate: 2_500_000,
     screenMax: { w: 1280, h: 720 },
+    screenFps: 24,
   },
   hd: {
     camera: { width: { ideal: 1280, min: 640 }, height: { ideal: 720, min: 480 }, frameRate: { ideal: 24, max: 30 } },
-    screen: { width: { ideal: 1280, min: 1280 }, height: { ideal: 720, min: 720 }, frameRate: { ideal: 30, max: 30 } },
-    camBitrate: 1_500_000,
-    screenBitrate: 4_000_000,
+    screen: { width: { ideal: 1280, max: 1920 }, height: { ideal: 720, max: 1080 }, frameRate: { ideal: 30, max: 30 } },
+    camBitrate: 1_800_000,
+    screenBitrate: 5_000_000,
     screenMax: { w: 1280, h: 720 },
+    screenFps: 30,
   },
   fhd: {
     camera: { width: { ideal: 1920, min: 1280 }, height: { ideal: 1080, min: 720 }, frameRate: { ideal: 30, max: 30 } },
-    screen: { width: { ideal: 1920, min: 1280 }, height: { ideal: 1080, min: 720 }, frameRate: { ideal: 30, max: 30 } },
-    camBitrate: 2_500_000,
-    screenBitrate: 6_000_000,
+    screen: { width: { ideal: 1920, max: 1920 }, height: { ideal: 1080, max: 1080 }, frameRate: { ideal: 30, max: 30 } },
+    camBitrate: 3_000_000,
+    screenBitrate: 8_000_000,
     screenMax: { w: 1920, h: 1080 },
+    screenFps: 30,
   },
   max: {
     camera: { width: { ideal: 1920, min: 1280 }, height: { ideal: 1080, min: 720 }, frameRate: { ideal: 30, max: 60 } },
-    screen: { width: { ideal: 1920, min: 1920 }, height: { ideal: 1080, min: 1080 }, frameRate: { ideal: 30, max: 30 } },
-    camBitrate: 4_000_000,
-    screenBitrate: 8_000_000,
+    screen: { width: { ideal: 1920, max: 1920 }, height: { ideal: 1080, max: 1080 }, frameRate: { ideal: 30, max: 60 } },
+    camBitrate: 4_500_000,
+    screenBitrate: 12_000_000,
     screenMax: { w: 1920, h: 1080 },
+    screenFps: 60,
+  },
+  qhd: {
+    camera: { width: { ideal: 1920, min: 1280 }, height: { ideal: 1080, min: 720 }, frameRate: { ideal: 30, max: 60 } },
+    screen: { width: { ideal: 2560, max: 2560 }, height: { ideal: 1440, max: 1440 }, frameRate: { ideal: 30, max: 60 } },
+    camBitrate: 4_500_000,
+    screenBitrate: 16_000_000,
+    screenMax: { w: 2560, h: 1440 },
+    screenFps: 60,
+  },
+  uhd: {
+    camera: { width: { ideal: 1920, min: 1280 }, height: { ideal: 1080, min: 720 }, frameRate: { ideal: 30, max: 60 } },
+    screen: { width: { ideal: 3840, max: 3840 }, height: { ideal: 2160, max: 2160 }, frameRate: { ideal: 30, max: 60 } },
+    camBitrate: 5_000_000,
+    screenBitrate: 25_000_000,
+    screenMax: { w: 3840, h: 2160 },
+    screenFps: 60,
   },
 };
 
@@ -98,13 +118,15 @@ export function getScreenCaptureConstraints(config) {
 }
 
 export function getScreenCaptureMandatory(config) {
-  const { screenMax } = getStreamPreset(config);
+  const p = getStreamPreset(config);
+  const { screenMax } = p;
+  const fps = p.screenFps ?? p.screen?.frameRate?.max ?? 30;
   return {
-    minWidth: screenMax.w,
+    minWidth: Math.min(screenMax.w, 640),
     maxWidth: screenMax.w,
-    minHeight: screenMax.h,
+    minHeight: Math.min(screenMax.h, 480),
     maxHeight: screenMax.h,
-    maxFrameRate: 30,
+    maxFrameRate: fps,
   };
 }
 
@@ -114,14 +136,25 @@ export const CAMERA_VIDEO_CONSTRAINTS = PRESETS.fhd.camera;
 /** @deprecated use getScreenCaptureConstraints(config) */
 export const SCREEN_CAPTURE_CONSTRAINTS = { video: PRESETS.fhd.screen, audio: false };
 
+export function applyScreenTrackHints(track) {
+  if (!track) return;
+  try {
+    if ('contentHint' in track) track.contentHint = 'detail';
+  } catch {
+    /* ignore */
+  }
+}
+
 export async function applyScreenTrackConstraints(track, config) {
   if (!track?.applyConstraints) return;
   const p = getStreamPreset(config);
+  const fps = p.screenFps ?? p.screen?.frameRate?.max ?? 30;
+  applyScreenTrackHints(track);
   try {
     await track.applyConstraints({
-      width: { ideal: p.screenMax.w, min: Math.floor(p.screenMax.w * 0.75) },
-      height: { ideal: p.screenMax.h, min: Math.floor(p.screenMax.h * 0.75) },
-      frameRate: { ideal: 30, max: 30 },
+      width: { ideal: p.screenMax.w, max: p.screenMax.w },
+      height: { ideal: p.screenMax.h, max: p.screenMax.h },
+      frameRate: { ideal: fps, max: fps },
     });
   } catch (err) {
     console.warn('[call] screen track constraints:', err.message);
@@ -131,13 +164,25 @@ export async function applyScreenTrackConstraints(track, config) {
 export async function tuneVideoSender(sender, { screenShare = false, config } = {}) {
   if (!sender?.getParameters || !sender.setParameters) return;
   const p = getStreamPreset(config);
+  const screenFps = p.screenFps ?? p.screen?.frameRate?.max ?? 30;
   try {
     const params = sender.getParameters();
     if (!params.encodings?.length) params.encodings = [{}];
     const enc = params.encodings[0];
     enc.maxBitrate = screenShare ? p.screenBitrate : p.camBitrate;
-    enc.maxFramerate = screenShare ? 30 : p.camera.frameRate?.max || 30;
-    if (screenShare) enc.scaleResolutionDownBy = 1;
+    enc.maxFramerate = screenShare
+      ? screenFps
+      : p.camera.frameRate?.max || 30;
+    if (screenShare) {
+      enc.scaleResolutionDownBy = 1;
+      try {
+        enc.degradationPreference = 'maintain-resolution';
+        enc.priority = 'high';
+        enc.networkPriority = 'high';
+      } catch {
+        /* optional RTP fields */
+      }
+    }
     await sender.setParameters(params);
   } catch (err) {
     console.warn('[call] RTP encoding:', err.message);

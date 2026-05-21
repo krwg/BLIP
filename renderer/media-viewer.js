@@ -267,10 +267,14 @@ export function openImageAttachment(attachment) {
 }
 
 export function openVideoAttachment(attachment) {
-  if (!attachment?.dataUrl) return;
+  let src = attachment?.dataUrl || '';
+  if (!src && attachment?.blob instanceof Blob) {
+    src = URL.createObjectURL(attachment.blob);
+  }
+  if (!src) return;
   openMediaViewer({
     type: 'video',
-    src: attachment.dataUrl,
+    src,
     name: attachment.name || 'video.mp4',
   });
 }

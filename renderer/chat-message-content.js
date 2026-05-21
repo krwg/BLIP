@@ -119,7 +119,11 @@ function appendVideoBubble(block, attachment) {
   btn.className = 'chat-media-bubble chat-media-bubble--video';
   const vid = document.createElement('video');
   vid.className = 'chat-media-thumb';
-  vid.src = attachment.dataUrl;
+  if (attachment.blob instanceof Blob) {
+    vid.src = URL.createObjectURL(attachment.blob);
+  } else if (attachment.dataUrl) {
+    vid.src = attachment.dataUrl;
+  }
   vid.muted = true;
   vid.playsInline = true;
   vid.preload = 'metadata';

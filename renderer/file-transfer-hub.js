@@ -83,6 +83,7 @@ function render() {
       cancelBtn.textContent = t('transfer.hub_cancel');
       cancelBtn.addEventListener('click', (e) => {
         e.stopPropagation();
+        e.preventDefault();
         job.onCancel?.();
       });
       row.appendChild(cancelBtn);
