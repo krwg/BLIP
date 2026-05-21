@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+
+    <filter id="shadowWhite" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="15" stdDeviation="25" flood-color="rgba(0,0,0,0.08)"/>
+    </filter>
+    
+
+    <filter id="plusShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="rgba(0,0,0,0.2)"/>
+    </filter>
+  </defs>
+
+  
+  <rect x="64" y="64" width="896" height="896" rx="220" fill="#FFFFFF" filter="url(#shadowWhite)"/>
+  
+  
+  <rect x="84" y="84" width="856" height="856" rx="200" fill="none" stroke="#E5E5E5" stroke-width="3"/>
+
+  <g transform="translate(512, 512)">
+
+    <g opacity="0.2">
+      <rect x="-6" y="-340" width="12" height="32" rx="2" fill="#000000"/>
+      <rect x="-6" y="-244" width="12" height="32" rx="2" fill="#000000"/>
+      <rect x="-6" y="-148" width="12" height="32" rx="2" fill="#000000"/>
+      <rect x="-6" y="148" width="12" height="32" rx="2" fill="#000000"/>
+      <rect x="-6" y="244" width="12" height="32" rx="2" fill="#000000"/>
+      <rect x="-6" y="340" width="12" height="32" rx="2" fill="#000000"/>
+      
+      <rect x="-340" y="-6" width="32" height="12" rx="2" fill="#000000"/>
+      <rect x="-244" y="-6" width="32" height="12" rx="2" fill="#000000"/>
+      <rect x="-148" y="-6" width="32" height="12" rx="2" fill="#000000"/>
+      <rect x="148" y="-6" width="32" height="12" rx="2" fill="#000000"/>
+      <rect x="244" y="-6" width="32" height="12" rx="2" fill="#000000"/>
+      <rect x="340" y="-6" width="32" height="12" rx="2" fill="#000000"/>
+    </g>
+
+ 
+    <g fill="none" stroke="#1D1D1F" stroke-width="10" stroke-linecap="round">
+      <rect x="-320" y="-320" width="640" height="640" rx="32" opacity="0.85"/>
+      <rect x="-240" y="-240" width="480" height="480" rx="24" opacity="0.75"/>
+      <rect x="-160" y="-160" width="320" height="320" rx="16" opacity="0.65"/>
+      <rect x="-80" y="-80" width="160" height="160" rx="10" opacity="0.55"/>
+    </g>
+
+
+    <g filter="url(#plusShadow)" fill="#000000">
+      <rect x="-64" y="-16" width="128" height="32" rx="8"/>
+      <rect x="-16" y="-64" width="32" height="128" rx="8"/>
+    </g>
+
+    <g fill="#000000" opacity="0.8">
+      <rect x="-332" y="-332" width="12" height="12" rx="3"/>
+      <rect x="320" y="-332" width="12" height="12" rx="3"/>
+      <rect x="-332" y="320" width="12" height="12" rx="3"/>
+      <rect x="320" y="320" width="12" height="12" rx="3"/>
+    </g>
+  </g>
+</svg>

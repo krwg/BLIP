@@ -1,14 +1,86 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" shape-rendering="crispEdges">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
   <defs>
-    <linearGradient id="wave16" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#007AFF"/>
-      <stop offset="100%" stop-color="#5856D6"/>
-    </linearGradient>
+    <!-- Modern shadow -->
+    <filter id="modernShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="0" dy="12" stdDeviation="24" flood-color="rgba(0,0,0,0.2)"/>
+    </filter>
+    
+    <!-- Subtle inner glow -->
+    <filter id="innerGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
   </defs>
   
-  <rect x="7" y="7" width="2" height="2" fill="url(#wave16)"/>
+  <!-- Modern background with subtle depth -->
+  <rect x="64" y="64" width="896" height="896" rx="220" 
+        fill="rgba(58, 134, 255, 0.92)" filter="url(#modernShadow)"/>
   
-  <rect x="4" y="4" width="8" height="8" fill="none" stroke="url(#wave16)" stroke-width="1" opacity="0.75"/>
+  <!-- Subtle highlight overlay -->
+  <rect x="64" y="64" width="896" height="400" rx="220" 
+        fill="rgba(255,255,255,0.06)"/>
   
-  <rect x="1" y="1" width="14" height="14" fill="none" stroke="url(#wave16)" stroke-width="1" opacity="0.35"/>
+  <!-- Signal group -->
+  <g transform="translate(512, 512)" fill="#FFFFFF">
+    
+    <!-- Diagonal cross signals (modern interpretation) -->
+    <g opacity="0.5">
+      <rect x="-6" y="-340" width="12" height="32" rx="2"/>
+      <rect x="-6" y="-244" width="12" height="32" rx="2"/>
+      <rect x="-6" y="-148" width="12" height="32" rx="2"/>
+      <rect x="-6" y="148" width="12" height="32" rx="2"/>
+      <rect x="-6" y="244" width="12" height="32" rx="2"/>
+      <rect x="-6" y="340" width="12" height="32" rx="2"/>
+      
+      <rect x="-340" y="-6" width="32" height="12" rx="2"/>
+      <rect x="-244" y="-6" width="32" height="12" rx="2"/>
+      <rect x="-148" y="-6" width="32" height="12" rx="2"/>
+      <rect x="148" y="-6" width="32" height="12" rx="2"/>
+      <rect x="244" y="-6" width="32" height="12" rx="2"/>
+      <rect x="340" y="-6" width="32" height="12" rx="2"/>
+    </g>
+    
+    <!-- Modern concentric squares with rounded corners -->
+    <g fill="none" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round">
+      <rect x="-320" y="-320" width="640" height="640" rx="32" opacity="0.95"/>
+      <rect x="-240" y="-240" width="480" height="480" rx="24" opacity="0.88"/>
+      <rect x="-160" y="-160" width="320" height="320" rx="16" opacity="0.82"/>
+      <rect x="-80" y="-80" width="160" height="160" rx="10" opacity="0.76"/>
+    </g>
+    
+    <!-- Pixel accents at corners (minimalist) -->
+    <g fill="#FFFFFF" opacity="0.85">
+      <rect x="-332" y="-332" width="16" height="16" rx="2"/>
+      <rect x="316" y="-332" width="16" height="16" rx="2"/>
+      <rect x="-332" y="316" width="16" height="16" rx="2"/>
+      <rect x="316" y="316" width="16" height="16" rx="2"/>
+      
+      <rect x="-252" y="-252" width="12" height="12" rx="2"/>
+      <rect x="240" y="-252" width="12" height="12" rx="2"/>
+      <rect x="-252" y="240" width="12" height="12" rx="2"/>
+      <rect x="240" y="240" width="12" height="12" rx="2"/>
+    </g>
+    
+    <!-- Modern center with pulse effect -->
+    <g>
+      <rect x="-28" y="-28" width="56" height="56" rx="12" fill="#FFFFFF"/>
+      <rect x="-44" y="-12" width="12" height="24" rx="3" fill="#FFFFFF" opacity="0.7"/>
+      <rect x="32" y="-12" width="12" height="24" rx="3" fill="#FFFFFF" opacity="0.7"/>
+      <rect x="-12" y="-44" width="24" height="12" rx="3" fill="#FFFFFF" opacity="0.7"/>
+      <rect x="-12" y="32" width="24" height="12" rx="3" fill="#FFFFFF" opacity="0.7"/>
+    </g>
+    
+    <!-- Subtle ring dots -->
+    <g fill="#FFFFFF" opacity="0.6">
+      <circle cx="0" cy="-200" r="4"/>
+      <circle cx="0" cy="200" r="4"/>
+      <circle cx="-200" cy="0" r="4"/>
+      <circle cx="200" cy="0" r="4"/>
+    </g>
+  </g>
+  
+  <!-- Top highlight for depth -->
+  <path d="M 280 180 Q 512 140 744 180" 
+        stroke="rgba(255,255,255,0.2)" stroke-width="3" 
+        fill="none" stroke-linecap="round"/>
 </svg>

@@ -3,10 +3,10 @@ import { existsSync } from 'fs';
 import { resolveBuildAsset } from './paths.js';
 
 let tray = null;
+let trayIconPath = null;
 
-function createTrayIcon() {
-  const trayPath = resolveBuildAsset('tray-16.png');
-  if (existsSync(trayPath)) {
+function createTrayIconFromPath(trayPath) {
+  if (trayPath && existsSync(trayPath)) {
     return nativeImage.createFromPath(trayPath);
   }
 
@@ -23,6 +23,11 @@ function createTrayIcon() {
     }
   }
   return nativeImage.createFromBuffer(canvas, { width: size, height: size });
+}
+
+/** @deprecated use setTrayIconPath */
+function createTrayIcon() {
+  return createTrayIconFromPath(trayIconPath) || createTrayIconFallback();
 }
 
 export function destroyTray() {
@@ -44,12 +49,28 @@ export function destroyTray() {
  *   labels?: { show?: string; quit?: string };
  * }} opts
  */
+export function setTrayIconPath(path) {
+  trayIconPath = path || null;
+  if (tray && !tray.isDestroyed?.()) {
+    try {
+      tray.setImage(createTrayIconFromPath(trayIconPath) || createTrayIconFallback());
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+function createTrayIconFallback() {
+  return createTrayIconFromPath(resolveBuildAsset('tray-16.png'));
+}
+
 export function createTray(opts) {
   destroyTray();
-  const { getMainWindow, tooltip, onQuit, labels } = opts;
+  const { getMainWindow, tooltip, onQuit, labels, iconPath } = opts;
+  trayIconPath = iconPath || trayIconPath || resolveBuildAsset('tray-16.png');
   const L = { show: labels?.show || 'Show', quit: labels?.quit || 'Quit' };
   try {
-    tray = new Tray(createTrayIcon());
+    tray = new Tray(createTrayIconFromPath(trayIconPath) || createTrayIconFallback());
     tray.setToolTip(tooltip || 'BLIP');
 
     const showMain = () => {

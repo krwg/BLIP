@@ -64,6 +64,32 @@ export function createPixelHintIcon(hintKey) {
   return btn;
 }
 
+/** Section subtitle (h3) + optional pixel ? hint. */
+export function buildSectionSubtitleRow(labelKey, hintKey) {
+  const row = document.createElement('div');
+  row.className = 'section-title-row';
+  const sub = document.createElement('h3');
+  sub.className = 'section-subtitle';
+  sub.dataset.i18n = labelKey;
+  sub.textContent = t(labelKey);
+  row.appendChild(sub);
+  if (hintKey) row.appendChild(createPixelHintIcon(hintKey));
+  return row;
+}
+
+/** Panel title (h2) + optional hint. */
+export function buildPanelTitleRow(labelKey, hintKey) {
+  const row = document.createElement('div');
+  row.className = 'settings-panel-title-row';
+  const h = document.createElement('h2');
+  h.className = 'settings-panel-title';
+  h.dataset.i18n = labelKey;
+  h.textContent = t(labelKey);
+  row.appendChild(h);
+  if (hintKey) row.appendChild(createPixelHintIcon(hintKey));
+  return row;
+}
+
 /** Label row: text + optional hint icon. */
 export function buildSettingsLabelRow(labelKey, hintKey) {
   const row = document.createElement('div');
