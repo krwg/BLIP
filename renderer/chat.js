@@ -184,7 +184,12 @@ export function createChatView(
   avatarMount.className = 'chat-avatar-mount';
   function mountHeaderAvatar() {
     avatarMount.innerHTML = '';
-    const peer = typeof getPeer === 'function' ? getPeer() : null;
+    let peer = null;
+    try {
+      peer = typeof getPeer === 'function' ? getPeer() : null;
+    } catch (err) {
+      console.warn('[BLIP chat] header peer', err);
+    }
     avatarMount.appendChild(
       peer
         ? createTrustedAvatarElement(peerId, 2, { selfBlipId: getConfig()?.blipId ?? null })
@@ -1033,7 +1038,7 @@ export function createChatView(
   renderMessages();
 
   return {
-    apiVersion: 2,
+    apiVersion: 3,
     el: wrap,
     renderMessages,
     scrollToBottom,

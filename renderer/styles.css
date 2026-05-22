@@ -103,6 +103,14 @@ textarea {
 .projects-workspace-view {
   position: relative;
   z-index: 2;
+  pointer-events: auto;
+}
+
+.view,
+.chat-hub-view,
+.chat-hub-list,
+.peers-list {
+  pointer-events: auto;
 }
 
 .main-content button,
@@ -717,7 +725,7 @@ select.blip-select:focus {
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
-  cursor: default;
+  cursor: pointer;
 }
 
 .peer-row.offline {
@@ -1994,7 +2002,7 @@ select.blip-select:focus {
   margin-top: 8px;
 }
 
-.voice-tile-slot {
+.voice-tile-slot:not(.voice-tile-frame) {
   position: relative;
   min-height: 72px;
   display: flex;
@@ -3386,6 +3394,17 @@ select.blip-select:focus {
 
 .profile-gif-cloud-wrap.hidden {
   display: none !important;
+}
+
+.profile-gif-cloud-wrap--loading .profile-gif-cloud {
+  min-width: 84px;
+  min-height: 48px;
+  border-style: dashed;
+  opacity: 0.85;
+}
+
+.profile-gif-cloud-wrap--loading .profile-gif-cloud::after {
+  opacity: 0.6;
 }
 
 .profile-gif-cloud {
@@ -5053,12 +5072,31 @@ body.media-viewer-open {
   padding: 8px 0 4px;
 }
 
+.settings-about-icon-btn {
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  line-height: 0;
+}
+
+.settings-about-icon-btn:hover .settings-about-icon {
+  filter: brightness(1.08);
+}
+
+.settings-about-icon-btn:focus-visible {
+  outline: 2px solid var(--blip-accent);
+  outline-offset: 4px;
+}
+
 .settings-about-icon {
+  display: block;
   width: 112px;
   height: 112px;
   image-rendering: pixelated;
-  border: 2px solid var(--blip-glass-border);
-  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.55);
+  border: none;
+  box-shadow: none;
+  pointer-events: none;
 }
 
 .settings-about-line {

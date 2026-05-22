@@ -387,7 +387,7 @@ function createGroupCallShell(config) {
   timerEl.textContent = '00:00';
 
   const controls = document.createElement('div');
-  controls.className = 'call-controls';
+  controls.className = 'call-controls group-call-controls';
 
   const muteBtn = document.createElement('button');
   muteBtn.type = 'button';

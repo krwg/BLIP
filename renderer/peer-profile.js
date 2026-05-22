@@ -1,5 +1,5 @@
 import { buildProfileCard } from './profile-card.js';
-import { getPeerProfileGifDataUrl } from './peer-gif-cache.js';
+import { getPeerProfileGifDisplayUrl } from './peer-gif-cache.js';
 
 /**
  * @param {object} peer
@@ -19,7 +19,7 @@ export function buildPeerProfilePage(peer, hooks = {}) {
       ) {
         return (await window.blip?.getProfileGifActiveUrl?.()) || null;
       }
-      return getPeerProfileGifDataUrl(p.blipId);
+      return getPeerProfileGifDisplayUrl(p.blipId);
     },
   });
 }

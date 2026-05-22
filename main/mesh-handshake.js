@@ -69,9 +69,10 @@ export function handleMeshHandshakeMessage(msg, socket, ctx) {
       return true;
     }
     if (!peerIpMatchesDiscovery(discovery, v.from, session.remoteIp)) {
-      console.warn(`[Handshake] IP mismatch for #${v.from} from ${session.remoteIp}`);
-      socket.destroy();
-      return true;
+      console.warn(
+        `[Handshake] IP mismatch for #${v.from} from ${session.remoteIp} — using observed route`,
+      );
+      discovery?.noteObservedPeerIp?.(v.from, session.remoteIp);
     }
     if (!pubkeyMatchesKnown(config, v.from, v.meshPubkey)) {
       console.warn(`[Handshake] pubkey mismatch for #${v.from}`);
@@ -101,9 +102,10 @@ export function handleMeshHandshakeMessage(msg, socket, ctx) {
       return true;
     }
     if (!peerIpMatchesDiscovery(discovery, v.from, session.remoteIp)) {
-      pending?.reject(new Error('IP mismatch'));
-      socket.destroy();
-      return true;
+      console.warn(
+        `[Handshake] IP mismatch for #${v.from} from ${session.remoteIp} — using observed route`,
+      );
+      discovery?.noteObservedPeerIp?.(v.from, session.remoteIp);
     }
     session.peerId = v.from;
     session.meshPubkey = v.meshPubkey;

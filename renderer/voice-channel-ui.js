@@ -16,7 +16,6 @@ import {
   getLocalScreenPreview,
 } from './voice-channel.js';
 import { getVoiceChannelRoster } from './voice-channel-roster.js';
-import { getGroup } from './groups.js';
 
 export function createVoiceStage(config, groupId, channelId) {
   const wrap = document.createElement('div');
@@ -24,20 +23,36 @@ export function createVoiceStage(config, groupId, channelId) {
 
   const head = document.createElement('div');
   head.className = 'voice-stage-head';
+
+  const indicator = document.createElement('span');
+  indicator.className = 'voice-stage-indicator';
+  indicator.setAttribute('aria-hidden', 'true');
+
+  const headText = document.createElement('div');
+  headText.className = 'voice-stage-head-text';
+
   const title = document.createElement('span');
   title.className = 'voice-stage-title';
   title.dataset.i18n = 'voice.stage_title';
   title.textContent = t('voice.stage_title');
+
   const status = document.createElement('span');
   status.className = 'voice-stage-status';
-  head.appendChild(title);
-  head.appendChild(status);
+
+  headText.appendChild(title);
+  headText.appendChild(status);
+  head.appendChild(indicator);
+  head.appendChild(headText);
 
   const grid = document.createElement('div');
   grid.className = 'voice-stage-grid';
+  grid.setAttribute('role', 'list');
 
   const controls = document.createElement('div');
   controls.className = 'voice-stage-controls';
+
+  const toolbar = document.createElement('div');
+  toolbar.className = 'voice-stage-toolbar';
 
   const muteBtn = document.createElement('button');
   muteBtn.type = 'button';
@@ -59,13 +74,14 @@ export function createVoiceStage(config, groupId, channelId) {
 
   const leaveBtn = document.createElement('button');
   leaveBtn.type = 'button';
-  leaveBtn.className = 'btn btn-accent voice-ctrl-btn voice-ctrl-leave';
+  leaveBtn.className = 'btn btn-danger voice-ctrl-btn voice-ctrl-leave';
   leaveBtn.dataset.i18n = 'voice.leave';
   leaveBtn.textContent = t('voice.leave');
 
-  controls.appendChild(muteBtn);
-  controls.appendChild(deafBtn);
-  controls.appendChild(shareBtn);
+  toolbar.appendChild(muteBtn);
+  toolbar.appendChild(deafBtn);
+  toolbar.appendChild(shareBtn);
+  controls.appendChild(toolbar);
   controls.appendChild(leaveBtn);
 
   wrap.appendChild(head);
@@ -93,6 +109,7 @@ export function createVoiceStage(config, groupId, channelId) {
     const inThis =
       active?.groupId === groupId && active?.channelId === channelId && isInVoiceChannel();
     wrap.classList.toggle('hidden', !inThis);
+    wrap.classList.toggle('voice-stage--connected', inThis);
 
     if (!inThis) return;
 
@@ -117,15 +134,20 @@ export function createVoiceStage(config, groupId, channelId) {
       empty.dataset.i18n = 'voice.stage_empty';
       empty.textContent = t('voice.stage_empty');
       grid.appendChild(empty);
+      return;
     }
+    const selfId = Number(config.blipId);
     ids.forEach((pid) => {
       const n = Number(pid);
+      const isSelf = n === selfId;
       const tile = document.createElement('div');
-      tile.className = 'voice-tile glass';
+      tile.className = `voice-tile glass${isSelf ? ' voice-tile--self' : ''}`;
+      tile.setAttribute('role', 'listitem');
+
       const slot = document.createElement('div');
-      slot.className = 'voice-tile-slot';
+      slot.className = 'voice-tile-slot voice-tile-frame';
       const preview =
-        n === Number(config.blipId) ? getLocalScreenPreview() : getPeerVideoStream(n);
+        n === selfId ? getLocalScreenPreview() : getPeerVideoStream(n);
       if (preview?.getVideoTracks?.()?.[0]) {
         const vid = document.createElement('video');
         vid.className = 'voice-tile-video';
@@ -134,7 +156,7 @@ export function createVoiceStage(config, groupId, channelId) {
         vid.playsInline = true;
         vid.srcObject = preview;
         vid.addEventListener('click', () => {
-          const overlay = document.createElement("div");
+          const overlay = document.createElement('div');
           overlay.className = 'voice-stream-fs';
           const full = document.createElement('video');
           full.autoplay = true;
@@ -158,6 +180,7 @@ export function createVoiceStage(config, groupId, channelId) {
         slot.appendChild(createAvatarElement(n, 4, { selfBlipId: config.blipId }));
       }
       tile.appendChild(slot);
+
       const media = getParticipantMediaState(n);
       const badges = document.createElement('div');
       badges.className = 'voice-tile-badges';
@@ -180,9 +203,10 @@ export function createVoiceStage(config, groupId, channelId) {
         badges.appendChild(b);
       }
       if (badges.childElementCount) tile.appendChild(badges);
+
       const lbl = document.createElement('span');
       lbl.className = 'voice-tile-label';
-      lbl.textContent = n === Number(config.blipId) ? t('group.you') : `#${n}`;
+      lbl.textContent = isSelf ? t('group.you') : `#${n}`;
       tile.appendChild(lbl);
       grid.appendChild(tile);
     });

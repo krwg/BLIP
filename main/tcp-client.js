@@ -1,33 +1,34 @@
 import net from 'net';
 import { DEFAULT_TCP_PORT } from './ports.js';
 
-const pendingConnections = new Map();
+/** @type {Map<string, Promise<import('net').Socket>>} */
+const connectInflight = new Map();
 
 export function connectToPeer(ip, blipId, tcpPort = DEFAULT_TCP_PORT) {
-  return new Promise((resolve, reject) => {
-    const key = `${ip}:${blipId}:${tcpPort}`;
-    if (pendingConnections.has(key)) {
-      resolve(pendingConnections.get(key));
-      return;
-    }
+  const key = `${ip}:${blipId}:${tcpPort}`;
+  const existing = connectInflight.get(key);
+  if (existing) return existing;
 
+  const promise = new Promise((resolve, reject) => {
     const socket = net.createConnection({ host: ip, port: tcpPort }, () => {
-      pendingConnections.set(key, socket);
       resolve(socket);
     });
 
     socket.setTimeout(5000);
     socket.on('timeout', () => {
       socket.destroy();
-      pendingConnections.delete(key);
       reject(new Error('Connection timeout'));
     });
 
     socket.on('error', (err) => {
-      pendingConnections.delete(key);
       reject(err);
     });
+  }).finally(() => {
+    connectInflight.delete(key);
   });
+
+  connectInflight.set(key, promise);
+  return promise;
 }
 
 export function sendOnSocket(socket, payload) {

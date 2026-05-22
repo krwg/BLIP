@@ -292,6 +292,18 @@ export class Discovery {
     return Array.from(this.peers.values()).sort((a, b) => a.blipId - b.blipId);
   }
 
+  /** Update peer IP after a TCP session from a different route (NAT/VPN/Tailscale). */
+  noteObservedPeerIp(blipId, ip) {
+    const id = Number(blipId);
+    if (!Number.isFinite(id)) return;
+    const peer = this.peers.get(id);
+    if (!peer) return;
+    const nip = normalizePeerIp(ip);
+    if (!nip || peer.ip === nip) return;
+    peer.ip = nip;
+    this.emitPeers();
+  }
+
   getOccupiedIds() {
     return Array.from(this.occupiedIds);
   }

@@ -12,22 +12,70 @@
   animation: mesh-plus-badge-gradient 3.2s ease-in-out infinite;
 }
 
-/* Unofficial subscription — same plaque, red animated gradient */
+/* Unofficial subscription — platinum plaque, bright red gradient text (readable) */
+.mesh-plus-badge--trust-unverified {
+  background: linear-gradient(
+    180deg,
+    #f5e8e8 0%,
+    #d4a8a8 38%,
+    #b08080 52%,
+    #e8d0d0 100%
+  );
+  border-color: #9a4a4a;
+}
+
 .mesh-plus-badge--trust-unverified .mesh-plus-badge__text {
   background: linear-gradient(
     105deg,
-    #fff0f0 0%,
-    #fecaca 14%,
-    #f87171 28%,
-    #dc2626 42%,
-    #991b1b 52%,
-    #ef4444 66%,
-    #fca5a5 80%,
-    #fff0f0 100%
+    #ffffff 0%,
+    #ffe4e4 12%,
+    #fca5a5 26%,
+    #ef4444 42%,
+    #dc2626 52%,
+    #f87171 68%,
+    #fecaca 84%,
+    #ffffff 100%
   );
-  background-size: 220% 100%;
+  background-size: 240% 100%;
   background-position: 0% 50%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  /* filter + background-clip:text hides glyphs in Chromium — use text-shadow */
+  filter: none;
+  paint-order: stroke fill;
+  text-shadow:
+    0 1px 0 #450a0a,
+    0 0 2px rgba(0, 0, 0, 0.9),
+    1px 0 0 #450a0a,
+    -1px 0 0 #450a0a;
   animation: mesh-plus-badge-gradient-red 3.2s ease-in-out infinite;
+}
+
+.mesh-plus-pixel-banner__label--unverified {
+  background: linear-gradient(
+    105deg,
+    #ffffff 0%,
+    #ffe4e4 12%,
+    #fca5a5 26%,
+    #ef4444 42%,
+    #dc2626 52%,
+    #f87171 68%,
+    #fecaca 84%,
+    #ffffff 100%
+  );
+  background-size: 240% 100%;
+  background-position: 0% 50%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  filter: none;
+  text-shadow:
+    0 1px 0 #450a0a,
+    0 0 2px rgba(0, 0, 0, 0.9);
+  animation: mesh-plus-badge-gradient-red 3.4s ease-in-out infinite;
 }
 
 @keyframes mesh-plus-badge-gradient-red {

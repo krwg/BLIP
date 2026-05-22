@@ -93,6 +93,9 @@ export function createGroupChatView(
   ongoingBar.className = 'group-call-ongoing glass hidden';
   const ongoingPulse = document.createElement('span');
   ongoingPulse.className = 'group-call-ongoing-pulse';
+  ongoingPulse.setAttribute('aria-hidden', 'true');
+  const ongoingBody = document.createElement('div');
+  ongoingBody.className = 'group-call-ongoing-body';
   const ongoingText = document.createElement('span');
   ongoingText.className = 'group-call-ongoing-text';
   const ongoingJoin = document.createElement('button');
@@ -101,8 +104,9 @@ export function createGroupChatView(
   ongoingJoin.dataset.i18n = 'group.join_call';
   ongoingJoin.textContent = t('group.join_call');
   ongoingJoin.addEventListener('click', () => onJoinOngoingCall?.(group.id));
+  ongoingBody.appendChild(ongoingText);
   ongoingBar.appendChild(ongoingPulse);
-  ongoingBar.appendChild(ongoingText);
+  ongoingBar.appendChild(ongoingBody);
   ongoingBar.appendChild(ongoingJoin);
 
   const messagesEl = document.createElement('div');
