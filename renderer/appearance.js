@@ -3,7 +3,7 @@
  */
 
 import { t } from './i18n.js';
-import { isMeshPlusTierActive } from '../shared/mesh-plus-gates.js';
+import { uiShowsPremiumTier } from '../shared/mesh-plus-gates.js';
 
 export const THEME_MODES = ['light', 'dark', 'auto'];
 
@@ -140,7 +140,7 @@ export function normalizeCustomAccentHex(raw) {
 
 function applyCustomAccentVars(html, config) {
   const hex = normalizeCustomAccentHex(config?.accentCustomHex);
-  if (isMeshPlusTierActive(config) && hex) {
+  if (uiShowsPremiumTier(config) && hex) {
     html.style.setProperty('--blip-accent', hex);
     html.style.setProperty('--blip-glass-border', hex);
     html.style.setProperty('--blip-caret', hex);

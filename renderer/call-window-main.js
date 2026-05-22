@@ -5,10 +5,13 @@ import { setLang, applyI18n, onLangChange } from './i18n.js';
 import { createCallUI } from './call.js';
 import { applyCallWindowAppearance, listenReducedMotion } from './appearance.js';
 import { setSoundPrefs } from './audio.js';
+import { setLocalTrustState } from './trust-ui.js';
 
 let callAppearanceRm = null;
 let callUI = null;
 let liveConfig = null;
+/** @type {object | null} */
+let remotePeerTrust = null;
 
 const api = {
   getConfig: () => window.blip.getConfig(),
@@ -59,6 +62,10 @@ async function boot() {
   }
 
   const config = await window.blip.getConfig();
+  if (window.blip?.getTrustState) {
+    setLocalTrustState(await window.blip.getTrustState());
+  }
+  window.blip?.onTrustState?.((trust) => setLocalTrustState(trust));
   setSoundPrefs({
     enabled: config.uiSoundsEnabled !== false && config.doNotDisturb !== true,
     volume: typeof config.uiSoundsVolume === 'number' ? config.uiSoundsVolume : 1,
@@ -75,6 +82,7 @@ async function boot() {
     onClosed: () => {
       window.blip.closeCallWindow?.();
     },
+    getRemotePeer: () => remotePeerTrust,
   });
   root.appendChild(callUI.el);
 
@@ -91,13 +99,31 @@ async function boot() {
   onLangChange(() => applyI18n(document));
   window.blip.onConfigUpdated?.((cfg) => applyCallWindowChrome(cfg));
 
+  async function cacheRemotePeer(peerId) {
+    try {
+      const { peers } = await window.blip.getPeers();
+      remotePeerTrust =
+        peers.find((p) => Number(p.blipId) === Number(peerId)) || {
+          blipId: peerId,
+          buildTrust: 'unverified_build',
+        };
+      callUI?.refreshCallAvatar?.();
+    } catch {
+      remotePeerTrust = { blipId: peerId, buildTrust: 'unverified_build' };
+    }
+  }
+
   window.blip.onCallOutgoing?.((payload) => {
     const peerId = payload?.peerId;
     const video = !!payload?.video;
-    if (peerId) callUI.startOutgoing(peerId, video);
+    if (peerId) {
+      void cacheRemotePeer(peerId);
+      callUI.startOutgoing(peerId, video);
+    }
   });
 
   window.blip.onIncomingCall((data) => {
+    if (data?.from) void cacheRemotePeer(data.from);
     callUI.handleIncoming(data);
   });
   window.blip.onCallAnswer((data) => {

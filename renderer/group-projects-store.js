@@ -17,6 +17,13 @@ export const CLIP_MAX_FREE = 20;
 /** Practical cap for MESH+ clipboard board (effectively unlimited vs FREE). */
 export const CLIP_MAX_MESH_PLUS = 500;
 
+export function resetMeshProjectStores() {
+  pads.clear();
+  boards.clear();
+  canvases.clear();
+  clips.clear();
+}
+
 export function clipLimitForTier(meshPlusActive) {
   return meshPlusActive ? CLIP_MAX_MESH_PLUS : CLIP_MAX_FREE;
 }

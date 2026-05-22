@@ -226,32 +226,39 @@ export function buildProfileCard(peerInput, hooks = {}) {
     if (callBtn) callBtn.disabled = !peer.online;
     syncBlockBtn();
 
-    void resolveGifUrl().then((url) => {
-      if (url) {
-        cloudWrap.classList.remove('hidden');
-        cloudImg.onload = () => applyGifCloudSize(cloud, cloudImg);
-        cloudImg.src = url;
-        cloudImg.classList.remove('hidden');
-        cloud.classList.add('profile-gif-cloud--active');
-        if (cloudImg.complete && cloudImg.naturalWidth) {
-          applyGifCloudSize(cloud, cloudImg);
+    void resolveGifUrl()
+      .then((url) => {
+        if (url) {
+          cloudWrap.classList.remove('hidden');
+          cloudImg.onload = () => applyGifCloudSize(cloud, cloudImg);
+          cloudImg.src = url;
+          cloudImg.classList.remove('hidden');
+          cloud.classList.add('profile-gif-cloud--active');
+          if (cloudImg.complete && cloudImg.naturalWidth) {
+            applyGifCloudSize(cloud, cloudImg);
+          }
+        } else {
+          cloudWrap.classList.add('hidden');
+          cloudImg.removeAttribute('src');
+          cloudImg.onload = null;
+          cloudImg.classList.add('hidden');
+          cloud.classList.remove('profile-gif-cloud--active');
+          cloud.style.width = '';
+          cloud.style.height = '';
         }
-      } else {
+      })
+      .catch(() => {
         cloudWrap.classList.add('hidden');
         cloudImg.removeAttribute('src');
         cloudImg.onload = null;
         cloudImg.classList.add('hidden');
         cloud.classList.remove('profile-gif-cloud--active');
-        cloud.style.width = '';
-        cloud.style.height = '';
-      }
-    });
+      });
   }
 
   refresh();
   let pulseTimer = null;
-  if (peer.online && onPing) {
-    void onPing();
+  if (peer.online) {
     pulseTimer = window.setInterval(refresh, 2000);
   }
 

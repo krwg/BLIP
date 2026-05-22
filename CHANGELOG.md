@@ -9,6 +9,24 @@ Release **version numbers** track [`app-metadata.json`](app-metadata.json) (sync
 
 ## [Unreleased]
 
+## [1.0.1] — Security & fixes — 2026-05-21
+
+Patch release: MESH+ integrity improvements and profile GIF fixes.
+
+### Added
+
+- **Verified Builds & MESH+ trust** — official signed builds show purple/cyan cues; unofficial clients and MESH+ use red accents only (tooltips, no text badges). LAN announce carries build trust; renderer reads `window.trustState` from main.
+
+### Changed
+
+- **MESH+** — stronger premium-tier checks across settings, Signal Corps, and main process.
+- **Profile GIF** — safer LAN sync for large GIFs; profile page opens reliably when a peer has a status GIF.
+
+### Fixed
+
+- **Profile page** — GIF cloud and peer/self GIF URLs; no ping spam when opening a profile.
+- **Chat hub** — avatar opens the full peer profile (including status GIF flag).
+
 ## [1.0.0] — Mesh Plus — 2026-05-21
 
 First **1.x** stable line. Codename **Mesh Plus**. Builds on everything since the last public GitHub release **[v0.7.7](https://github.com/krwg/BLIP/releases/tag/v0.7.7)** (pin/edit messages, export). Intermediate versions **0.7.8–0.10.1** were developed on `main` and are summarized here.

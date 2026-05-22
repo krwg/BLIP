@@ -26,6 +26,10 @@ function persist() {
 
 load();
 
+export function resetFavoritesStore() {
+  favorites = new Set();
+}
+
 export function isFavorite(peerId) {
   return favorites.has(Number(peerId));
 }

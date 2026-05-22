@@ -11,6 +11,8 @@ import {
 import { sounds } from './audio.js';
 import { showAppToast } from './toasts.js';
 import { createAvatarElement } from './avatar.js';
+import { createTrustedAvatarElement, getLocalTrustState } from './trust-ui.js';
+import { BUILD_TRUST } from '../shared/trust-levels.js';
 import { openScreenPickerDialog } from './screen-picker-dialog.js';
 import { captureDisplayStream } from './display-capture.js';
 import {
@@ -551,7 +553,14 @@ function createGroupCallShell(config) {
         v.srcObject = remoteStream;
         slot.appendChild(v);
       } else {
-        slot.appendChild(createAvatarElement(n, 4, { selfBlipId: config.blipId }));
+        const localTrust = getLocalTrustState();
+        const peer =
+          n === myId
+            ? { blipId: n, buildTrust: localTrust?.buildTrust || BUILD_TRUST.UNVERIFIED_BUILD }
+            : apiRef?.getLanPeer?.(n) || { blipId: n, buildTrust: BUILD_TRUST.UNVERIFIED_BUILD };
+        slot.appendChild(
+          createTrustedAvatarElement(n, 4, { selfBlipId: config.blipId }, peer)
+        );
       }
       }
       tile.appendChild(slot);

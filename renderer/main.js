@@ -7,6 +7,8 @@ import {
   toggleDoNotDisturb,
 } from './ui.js';
 import { initMediaViewer } from './media-viewer.js';
+import { syncPremiumTierWithHost } from './mesh-plus-verify.js';
+import { setLocalTrustState } from './trust-ui.js';
 
 const api = {
   saveConfig: (data) => window.blip.saveConfig(data),
@@ -52,7 +54,13 @@ async function boot() {
   const lang = config.language || localStorage.getItem('blip_lang') || 'en';
   setLang(lang);
 
-  initUI(config, api);
+  const bootState = { config };
+  await syncPremiumTierWithHost(bootState);
+  if (window.blip?.getTrustState) {
+    setLocalTrustState(await window.blip.getTrustState());
+  }
+  window.blip?.onTrustState?.((trust) => setLocalTrustState(trust));
+  initUI(bootState.config, api);
   initMediaViewer();
 
   const { peers, occupiedIds } = await window.blip.getPeers();

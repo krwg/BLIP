@@ -1,11 +1,20 @@
 import { existsSync, readFileSync } from 'fs';
-import { join } from 'path';
+import { join, dirname } from 'path';
 import { app } from 'electron';
 
 let cached = '';
 
+function readKeyFile(p) {
+  try {
+    if (!existsSync(p)) return '';
+    return readFileSync(p, 'utf8').trim();
+  } catch {
+    return '';
+  }
+}
+
 /**
- * Giphy API key: env, then userData/giphy-api-key.txt, then ./giphy-api-key.local (gitignored).
+ * Giphy API key: env → userData → packaged resources → dev giphy-api-key.local.
  */
 export function getGiphyApiKey() {
   if (cached) return cached;
@@ -18,21 +27,26 @@ export function getGiphyApiKey() {
     cached = fromEnv;
     return cached;
   }
-  const paths = [
-    join(app.getPath('userData'), 'giphy-api-key.txt'),
-    join(process.cwd(), 'giphy-api-key.local'),
-  ];
-  for (const p of paths) {
+
+  const paths = [join(app.getPath('userData'), 'giphy-api-key.txt')];
+
+  if (app.isPackaged) {
+    paths.push(join(process.resourcesPath, 'giphy-api-key.txt'));
     try {
-      if (existsSync(p)) {
-        const k = readFileSync(p, 'utf8').trim();
-        if (k) {
-          cached = k;
-          return cached;
-        }
-      }
+      paths.push(join(dirname(app.getPath('exe')), 'giphy-api-key.txt'));
     } catch {
       /* ignore */
+    }
+  } else {
+    paths.push(join(process.cwd(), 'giphy-api-key.local'));
+    paths.push(join(app.getAppPath(), '..', 'giphy-api-key.local'));
+  }
+
+  for (const p of paths) {
+    const k = readKeyFile(p);
+    if (k) {
+      cached = k;
+      return cached;
     }
   }
   return '';

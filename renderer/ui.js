@@ -44,6 +44,7 @@ import {
   setPeerAvatarDataUrl,
   getSelfAvatarCache,
 } from './avatar.js';
+import { createTrustedAvatarElement } from './trust-ui.js';
 import { openAvatarCropDialog } from './avatar-crop-dialog.js';
 import {
   sounds,
@@ -101,9 +102,9 @@ import {
 import { buildMicTestPanel } from './mic-test-panel.js';
 import {
   appendMeshPlusBadgeToNameRow,
-  fillMeshGatedDropdown,
-  isMeshPlusActive,
-  markMeshPlusGatedOptions,
+  fillPremiumGatedDropdown,
+  premiumTierEnabled,
+  markPremiumGatedOptions,
   MESH_PLUS_FEATURES,
 } from './mesh-plus.js';
 import { buildSettingsMeshPlusPanel } from './mesh-plus-settings.js';
@@ -125,6 +126,10 @@ import { formatPeerDisplayName } from './peer-labels.js';
 import { openMeshLabelDialog } from './mesh-label-dialog.js';
 import { showAppToast } from './toasts.js';
 import { openConfirmDialog } from './confirm-dialog.js';
+import {
+  clearRendererLocalStorage,
+  resetRendererMemoryStores,
+} from './factory-reset-local.js';
 import { buildPeerProfilePage } from './peer-profile.js';
 import { buildSettingsProfilePanel as buildSettingsProfilePanelView } from './settings-profile-panel.js';
 import { renderSettingsNavAside as renderSettingsNavGroups } from './settings-nav.js';
@@ -172,7 +177,7 @@ async function broadcastCustomAvatar() {
 }
 
 async function broadcastProfileGif() {
-  const dataUrl = await window.blip?.getProfileGifActiveUrl?.();
+  const dataUrl = await window.blip?.getProfileGifShareUrl?.();
   if (!dataUrl || !state.config?.blipId) return;
   const targets = state.peers.filter((p) => p.online && !isBlocked(p.blipId));
   for (const p of targets) {
@@ -545,6 +550,7 @@ function ensureChatView(peerId) {
       },
       (e, peerId) => showPeerContextMenu(e, peerId, { hideMessage: true }),
       (peerId) => openPeerProfileFromUi(peerId),
+      () => state.peers.find((p) => p.blipId === id),
       (to, payload) =>
         api.sendTcpMessage({
           type: 'message-pin',
@@ -804,7 +810,9 @@ function renderPeersView() {
         isFavorite(peer.blipId) ? 'peer-row--favorite' : ''
       }`;
 
-      const avatar = createAvatarElement(peer.blipId, 2, { selfBlipId: state.config.blipId });
+      const avatar = createTrustedAvatarElement(peer.blipId, 2, {
+        selfBlipId: state.config.blipId,
+      }, peer);
       avatar.classList.add('peer-row-avatar');
       avatar.style.cursor = 'pointer';
       avatar.title = t('peers.profile_open');
@@ -1022,6 +1030,7 @@ function peerForContextMenu(peerOrId) {
     online: false,
     presence: 'offline',
     presenceText: '',
+    hasProfileGif: false,
   };
 }
 
@@ -1435,13 +1444,13 @@ function buildAppearanceSection() {
   block.appendChild(
     buildSectionSubtitleRow('settings.bg_animated', 'settings.bg_animated_mesh_hint')
   );
-  const animOpts = markMeshPlusGatedOptions(
+  const animOpts = markPremiumGatedOptions(
     ANIMATED_BACKGROUNDS.map((id) => ({ value: id, label: labelBg(id) })),
     MESH_PLUS_FEATURES.animated_bg,
     state.config
   );
   const animSelect = buildThemedSelect();
-  fillMeshGatedDropdown(
+  fillPremiumGatedDropdown(
     animSelect,
     animOpts,
     ANIMATED_BACKGROUNDS.includes(curBg) ? curBg : 'none',
@@ -1959,9 +1968,9 @@ function buildSettingsSoundPanel() {
   volRow.appendChild(volVal);
 
   const soundPackSelect = buildThemedSelect();
-  fillMeshGatedDropdown(
+  fillPremiumGatedDropdown(
     soundPackSelect,
-    markMeshPlusGatedOptions(
+    markPremiumGatedOptions(
       [
         { value: 'signal', label: t('settings.sound_pack_signal') },
         { value: 'pulse', label: t('settings.sound_pack_pulse') },
@@ -1981,9 +1990,9 @@ function buildSettingsSoundPanel() {
   );
 
   const melodyPackSelect = buildThemedSelect();
-  fillMeshGatedDropdown(
+  fillPremiumGatedDropdown(
     melodyPackSelect,
-    markMeshPlusGatedOptions(
+    markPremiumGatedOptions(
       [
         { value: 'mesh', label: t('settings.melody_pack_mesh') },
         { value: 'grid', label: t('settings.melody_pack_grid') },
@@ -2759,7 +2768,7 @@ function buildSettingsDeveloperPanel() {
   clearMeshBtn.dataset.i18n = 'settings.dev_clear_mesh_plus';
   clearMeshBtn.textContent = t('settings.dev_clear_mesh_plus');
   clearMeshBtn.addEventListener('click', async () => {
-    if (!isMeshPlusActive(state.config)) {
+    if (!premiumTierEnabled(state.config)) {
       showAppToast({
         title: t('settings.dev_clear_mesh_plus_none'),
         durationMs: 4000,
@@ -2785,7 +2794,80 @@ function buildSettingsDeveloperPanel() {
   });
   frag.appendChild(clearMeshBtn);
 
+  const factoryRow = document.createElement('div');
+  factoryRow.className = 'settings-toggle-with-hint settings-dev-factory-row';
+  const factoryBtn = document.createElement('button');
+  factoryBtn.type = 'button';
+  factoryBtn.className = 'btn btn-danger';
+  factoryBtn.dataset.i18n = 'settings.dev_factory_reset';
+  factoryBtn.textContent = t('settings.dev_factory_reset');
+  factoryBtn.addEventListener('click', async () => {
+    const ok = await openConfirmDialog({
+      title: t('settings.dev_factory_reset'),
+      body: t('settings.dev_factory_reset_confirm'),
+      confirmLabel: t('settings.dev_factory_reset'),
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await applyFactoryReset();
+      showAppToast({
+        title: t('settings.dev_factory_reset_ok'),
+        durationMs: 5000,
+      });
+    } catch (e) {
+      showAppToast({
+        title: e?.message || t('settings.dev_factory_reset_fail'),
+        durationMs: 4500,
+        variant: 'danger',
+      });
+    }
+  });
+  factoryRow.appendChild(factoryBtn);
+  factoryRow.appendChild(createPixelHintIcon('settings.dev_factory_reset_hint'));
+  frag.appendChild(factoryRow);
+
   return frag;
+}
+
+async function applyFactoryReset() {
+  for (const chat of state.chatViews.values()) {
+    chat?.destroy?.();
+  }
+  state.chatViews.clear();
+  for (const gc of state.groupChatViews.values()) {
+    gc?.destroy?.();
+  }
+  state.groupChatViews.clear();
+  projectsViewInstance?.destroy?.();
+  projectsViewInstance = null;
+  clearProfileNavigationState();
+  stopClipboardSync();
+  clearRendererLocalStorage();
+  resetRendererMemoryStores();
+
+  const res = await window.blip.factoryReset?.();
+  if (!res?.ok) throw new Error(t('settings.dev_factory_reset_fail'));
+
+  state.config = res.config || (await window.blip.getConfig());
+  state.peers = [];
+  state.occupiedIds = [];
+  state.activePeer = null;
+  state.activeGroup = null;
+  state.settingsSection = null;
+  state.view = 'grid';
+  unreadByGroup.clear();
+  lastUpdateStatus = null;
+
+  initPeerTrust(state.config, api);
+  purgeGroupsFor(state.config.blipId);
+  applySoundPrefsFromConfig(state.config);
+  applyAppearance(state.config);
+  applyReactiveWallpaperConfig(state.config);
+  setAchievementConfigProvider(() => state.config);
+  void loadSelfAvatarFromMain();
+  restartClipboardSync();
+  render();
 }
 
 function buildSettingsAboutPanel() {
@@ -2794,6 +2876,10 @@ function buildSettingsAboutPanel() {
 
   const hero = document.createElement('div');
   hero.className = 'settings-about-hero';
+  void import('./trust-ui.js').then(({ getLocalTrustState, applyBuildTrustClass }) => {
+    const trust = getLocalTrustState();
+    if (trust) applyBuildTrustClass(hero, trust.buildTrust);
+  });
   const icon = document.createElement('img');
   icon.className = 'settings-about-icon';
   icon.alt = 'BLIP';
@@ -3585,6 +3671,14 @@ function renderChatHubView() {
     list.appendChild(empty);
   } else if (rows.length > 0) {
     rows.forEach((row) => {
+      const peer = state.peers.find((p) => p.blipId === row.blipId);
+      const peerForProfile = peer || {
+        blipId: row.blipId,
+        displayName: row.displayName,
+        online: row.online,
+        hasProfileGif: false,
+      };
+
       const item = document.createElement('button');
       item.type = 'button';
       item.className = `chat-hub-row glass ${row.online ? 'online' : 'offline'}`;
@@ -3594,7 +3688,7 @@ function renderChatHubView() {
       avatar.addEventListener('click', (e) => {
         e.stopPropagation();
         e.preventDefault();
-        openPeerProfileFromUi(peer || { blipId: row.blipId, displayName: row.displayName, online: row.online });
+        openPeerProfileFromUi(peerForProfile);
       });
       const info = document.createElement('div');
       info.className = 'chat-hub-info';
@@ -3621,8 +3715,7 @@ function renderChatHubView() {
       }
 
       const dot = document.createElement('span');
-      const peer = state.peers.find((p) => p.blipId === row.blipId);
-      dot.className = `status-dot ${peerPresenceClass(peer || { online: row.online })}`;
+      dot.className = `status-dot ${peerPresenceClass(peerForProfile)}`;
 
       const unread = unreadByPeer.get(row.blipId) || 0;
       if (unread > 0) {
@@ -3837,6 +3930,9 @@ export function initUI(config, blipApi) {
       state.config = cfg;
       applyTrustFromConfig(cfg);
       restartClipboardSync();
+      void import('./mesh-plus-verify.js').then(({ syncPremiumTierWithHost }) =>
+        syncPremiumTierWithHost(state)
+      );
     });
   }
 
@@ -3994,7 +4090,7 @@ export function handleTcpMessage(msg) {
     const from = Number(msg.from);
     if (!Number.isFinite(from) || isBlocked(from)) return;
     void (async () => {
-      const dataUrl = await window.blip?.getProfileGifActiveUrl?.();
+      const dataUrl = await window.blip?.getProfileGifShareUrl?.();
       if (!dataUrl) return;
       await api.sendTcpMessage({
         type: 'profile-gif-share',

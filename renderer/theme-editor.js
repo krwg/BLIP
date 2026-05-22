@@ -1,5 +1,5 @@
 import { t } from './i18n.js';
-import { isMeshPlusActive, showMeshPlusLockedToast } from './mesh-plus.js';
+import { premiumTierEnabled, showPremiumLockedToast } from './mesh-plus.js';
 import { applyAppearance, normalizeCustomAccentHex } from './appearance.js';
 import { buildSectionSubtitleRow } from './settings-ui.js';
 import { createBlipColorInput } from './blip-color-input.js';
@@ -66,8 +66,8 @@ export function appendThemeEditorSection(block, getConfig, saveConfig) {
   });
 
   applyBtn.addEventListener('click', async () => {
-    if (!isMeshPlusActive(getConfig())) {
-      showMeshPlusLockedToast();
+    if (!premiumTierEnabled(getConfig())) {
+      showPremiumLockedToast();
       return;
     }
     const hex = normalizeCustomAccentHex(hexInput.value || colorPick.value);
@@ -78,8 +78,8 @@ export function appendThemeEditorSection(block, getConfig, saveConfig) {
   });
 
   clearBtn.addEventListener('click', async () => {
-    if (!isMeshPlusActive(getConfig())) {
-      showMeshPlusLockedToast();
+    if (!premiumTierEnabled(getConfig())) {
+      showPremiumLockedToast();
       return;
     }
     const cfg = await saveConfig({ accentCustomHex: '' });
@@ -97,12 +97,12 @@ export function appendThemeEditorSection(block, getConfig, saveConfig) {
   block.appendChild(customWrap);
 
   syncInputsFromConfig();
-  setDisabled(!isMeshPlusActive(getConfig()));
+  setDisabled(!premiumTierEnabled(getConfig()));
 
   return {
     refresh() {
       syncInputsFromConfig();
-      setDisabled(!isMeshPlusActive(getConfig()));
+      setDisabled(!premiumTierEnabled(getConfig()));
     },
   };
 }

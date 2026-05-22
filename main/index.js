@@ -9,10 +9,15 @@ import { connectToPeer, sendOnSocket, pingPeer } from './tcp-client.js';
 import { createTcpLineReader } from './tcp-framing.js';
 import { loadConfig, saveConfig, initConfigPath, getLocalIp, getLocalIpv4Set } from './config.js';
 import { toPublicConfig } from './config-public.js';
-import { validateMeshPlusActivationKey, isMeshPlusActive } from './mesh-plus-license.js';
+import { confirmEntitlementBlob, resolveEntitlementState } from './mesh-plus-license.js';
 import {
-  meshPlusClampPatch,
-  sanitizeMeshPlusConfigUpdates,
+  initAppTrustState,
+  getAppTrustState,
+  refreshMeshPlusTrust,
+} from './trust-state.js';
+import {
+  premiumResetPatch,
+  sanitizePremiumPrefs,
 } from '../shared/mesh-plus-gates.js';
 import {
   canUseAppIconVariant,
@@ -52,6 +57,7 @@ import {
   clearActiveProfileGif,
   getActiveProfileGifId,
   getProfileGifDataUrl,
+  getProfileGifShareDataUrl,
   getProfileGifPublicState,
   hasActiveProfileGif,
   listProfileGifHistory,
@@ -71,6 +77,7 @@ import {
   resolveDisplaySourceForCallback,
   setPendingDisplaySource,
 } from './display-capture.js';
+import { performFactoryReset } from './factory-reset.js';
 import os from 'os';
 
 if (process.env.BLIP_USER_DATA_DIR) {
@@ -455,6 +462,17 @@ function sendToRenderer(channel, data) {
   }
 }
 
+function broadcastTrustState() {
+  const trust = getAppTrustState();
+  sendToRenderer('trust-state', trust);
+  if (callWindow && !callWindow.isDestroyed()) {
+    callWindow.webContents.send('trust-state', trust);
+  }
+  if (groupCallWindow && !groupCallWindow.isDestroyed()) {
+    groupCallWindow.webContents.send('trust-state', trust);
+  }
+}
+
 function patchConfig(updates) {
   config = saveConfig(updates);
   discovery?.updateConfig(config);
@@ -740,6 +758,18 @@ async function bootstrapNetworking() {
   await discovery.start();
 }
 
+function closeAuxiliaryWindows() {
+  if (callWindow && !callWindow.isDestroyed()) {
+    callWindow.destroy();
+    callWindow = null;
+  }
+  if (groupCallWindow && !groupCallWindow.isDestroyed()) {
+    groupCallWindow.destroy();
+    groupCallWindow = null;
+    groupCallWindowReady = false;
+  }
+}
+
 async function stopNetwork() {
   discovery?.stop();
   discovery = null;
@@ -797,10 +827,10 @@ function setupIpc() {
         ? id
         : 'main';
     }
-    const meshActive = isMeshPlusActive({ ...config, ...safe });
+    const meshActive = resolveEntitlementState({ ...config, ...safe });
     Object.assign(
       safe,
-      sanitizeMeshPlusConfigUpdates(config, safe, meshActive)
+      sanitizePremiumPrefs(config, safe, meshActive)
     );
     config = saveConfig(safe);
     if (safe.appIconVariant !== undefined) refreshAppIcons();
@@ -835,7 +865,7 @@ function setupIpc() {
   });
 
   ipcMain.handle('activate-mesh-plus', (_, rawKey) => {
-    const result = validateMeshPlusActivationKey(rawKey);
+    const result = confirmEntitlementBlob(rawKey);
     if (!result.ok) return result;
     config = saveConfig({
       meshPlusLicenseId: result.licenseId,
@@ -845,6 +875,8 @@ function setupIpc() {
     discovery?.updateConfig(config);
     discovery?.announce();
     refreshAppIcons();
+    refreshMeshPlusTrust(config);
+    broadcastTrustState();
     const pub = toPublicConfig(config);
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('config-updated', pub);
@@ -861,18 +893,40 @@ function setupIpc() {
     if (String(config.appIconVariant || '').startsWith('mesh-')) {
       patch.appIconVariant = 'main';
     }
-    const prefsPatch = meshPlusClampPatch(config);
+    const prefsPatch = premiumResetPatch(config);
     if (prefsPatch) Object.assign(patch, prefsPatch);
     if (prefsPatch?.hasProfileGif === false) clearActiveProfileGif();
     config = saveConfig(patch);
     discovery?.updateConfig(config);
     discovery?.announce();
     refreshAppIcons();
+    refreshMeshPlusTrust(config);
+    broadcastTrustState();
     const pub = toPublicConfig(config);
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('config-updated', pub);
     }
     return { ok: true, tier: 'free' };
+  });
+
+  ipcMain.handle('factory-reset', () => {
+    closeAuxiliaryWindows();
+    for (const s of peerSockets.values()) {
+      if (!s.destroyed) s.destroy();
+    }
+    peerSockets.clear();
+    config = performFactoryReset();
+    unregisterGlobalShortcuts();
+    refreshAppIcons();
+    discovery?.updateConfig(config);
+    discovery?.announce();
+    sendToRenderer('peers-updated', { peers: [], occupiedIds: [] });
+    const pub = toPublicConfig(config);
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('config-updated', pub);
+      mainWindow.webContents.send('factory-reset-done', pub);
+    }
+    return { ok: true, config: pub };
   });
 
   ipcMain.handle('get-mesh-plus-status', () => {
@@ -884,6 +938,8 @@ function setupIpc() {
       activatedAt: config.meshPlusActivatedAt || 0,
     };
   });
+
+  ipcMain.handle('get-trust-state', () => getAppTrustState());
 
   ipcMain.handle('get-github-releases', async (_, limit) => fetchGithubReleases(limit ?? 8));
   ipcMain.handle('get-peers', () => ({
@@ -1125,13 +1181,16 @@ function setupIpc() {
   });
 
   ipcMain.handle('get-profile-gif-active-url', () => getProfileGifDataUrl());
+  ipcMain.handle('get-profile-gif-share-url', () => getProfileGifShareDataUrl());
   ipcMain.handle('get-profile-gif-history', () => listProfileGifHistory());
   ipcMain.handle('is-giphy-configured', () => isGiphyConfigured());
   ipcMain.handle('search-giphy', (_, query, offset) => searchGiphy(query, { offset }));
   ipcMain.handle('trending-giphy', (_, offset) => trendingGiphy({ offset }));
 
   ipcMain.handle('save-profile-gif', async (_, dataUrl) => {
-    if (!isMeshPlusActive(config)) return { ok: false, error: 'mesh_plus_required' };
+    if (!resolveEntitlementState(config) || !config?.meshPlusLicenseId) {
+      return { ok: false, error: 'mesh_plus_required' };
+    }
     try {
       const id = saveProfileGifFromDataUrl(dataUrl);
       const pub = getProfileGifPublicState();
@@ -1147,7 +1206,9 @@ function setupIpc() {
   });
 
   ipcMain.handle('save-profile-gif-bytes', async (_, base64) => {
-    if (!isMeshPlusActive(config)) return { ok: false, error: 'mesh_plus_required' };
+    if (!resolveEntitlementState(config) || !config?.meshPlusLicenseId) {
+      return { ok: false, error: 'mesh_plus_required' };
+    }
     try {
       const buf = Buffer.from(String(base64 || ''), 'base64');
       if (!buf.length) return { ok: false, error: 'invalid_gif' };
@@ -1165,7 +1226,9 @@ function setupIpc() {
   });
 
   ipcMain.handle('save-profile-gif-path', async (_, filePath) => {
-    if (!isMeshPlusActive(config)) return { ok: false, error: 'mesh_plus_required' };
+    if (!resolveEntitlementState(config) || !config?.meshPlusLicenseId) {
+      return { ok: false, error: 'mesh_plus_required' };
+    }
     try {
       const p = String(filePath || '').trim();
       if (!p) return { ok: false, error: 'invalid_gif' };
@@ -1428,6 +1491,7 @@ app.whenReady().then(async () => {
 
   initConfigPath();
   config = loadConfig();
+  initAppTrustState(config);
   const gifPub = getProfileGifPublicState();
   if (
     config.hasProfileGif !== gifPub.hasProfileGif ||
@@ -1438,8 +1502,8 @@ app.whenReady().then(async () => {
       hasProfileGif: gifPub.hasProfileGif,
     });
   }
-  const meshClamp = meshPlusClampPatch(config);
-  if (meshClamp && !isMeshPlusActive(config)) {
+  const meshClamp = premiumResetPatch(config);
+  if (meshClamp && !resolveEntitlementState(config)) {
     config = saveConfig(meshClamp);
   }
   const hadMeshKeys = !!(config.meshPrivateKey && config.meshPublicKey);
@@ -1464,6 +1528,7 @@ app.whenReady().then(async () => {
 
   setupIpc();
   createWindow();
+  broadcastTrustState();
   refreshAppIcons();
   installTray();
   void ensureCallWindow().catch((e) => console.warn('[BLIP] prewarm call window', e));

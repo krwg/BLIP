@@ -1,38 +1,44 @@
 # BLIP · MESH+
 
-MESH+ is a **license tier** (`BLIP-XXXX-…` full key, Ed25519 verify in main). FREE users keep the full baseline chat, calls, and LAN mesh.
+**MESH+** is the optional premium tier for BLIP. **FREE** includes the full LAN messenger: chat, calls, groups (beta), Mesh Pulse, avatars, themes, and core sounds.
 
-## Shipped (high level)
+Activate in **Settings → MESH+** with your `BLIP-XXXX-…` key.
+
+## What you get
 
 | Area | MESH+ |
 |------|--------|
-| Premium animated backgrounds & sound packs | ✦ |
-| Theme editor (custom `#RRGGBB` accent) | ✦ |
-| App icons `mesh-1` … `mesh-6` | ✦ |
-| Profile status GIF (LAN cloud) | ✦ |
-| Signal Corps: Board, Canvas, Pad history, Clipboard 500 + search | ✦ |
-| Chat export PDF/HTML with BLIP theme | ✦ |
-| Badge on peers (`meshPlus` in UDP announce) | ✦ |
-| Full achievement icon art after unlock (`ach-icons/*.svg`) | shown when **Achievements** enabled |
+| Animated backgrounds **Ember**, **Rift** | ✦ |
+| Sound packs **Wire**, **Static** · melodies **Beacon**, **Chime** | ✦ |
+| Theme editor — custom `#RRGGBB` accent | ✦ |
+| App icons **mesh-1** … **mesh-6** | ✦ |
+| Profile **status GIF** cloud (LAN) | ✦ |
+| Signal Corps: **Board**, **Canvas**, Pad snapshots, Clipboard **500** + search | ✦ |
+| Chat export PDF/HTML with BLIP styling | ✦ |
+| **MESH+** badge on peers in the list and profile | ✦ |
+| Achievement icons in full color after unlock | ✦ (with **Achievements** enabled) |
 
-## Not in app yet (marketing only)
+## Signal Corps (FREE vs MESH+)
 
-- LAN relay, MESH+ Bridge, bandwidth priority — carousel slide only; implementation deferred.
+| Tool | Tier |
+|------|------|
+| **✦ Pad** — shared mesh notepad | FREE |
+| **▦ Board** — kanban | MESH+ |
+| **◻ Canvas** — 32×16 pixel board | MESH+ |
+| **⧉ Clipboard** — mesh history (20 entries FREE, 500 + search MESH+) | FREE / MESH+ |
 
-## Settings layout
+Enable **Settings → Developer → Projects** to show **PROJECTS** in the nav.
 
-- **MESH+** — activation + benefits carousel (premium scenes, sounds, theme editor, icons, Signal Corps, export, GIF, relay planned).
-- **Network** — session stats + activity bars; **Signal Corps clipboard** toggle (off by default).
-- **Achievements** — optional, **off by default**; **Unlocked** / **Not yet unlocked** lists; icons from `ach-icons/*.svg` via `renderer/achievements-icons.js` (hidden until unlocked).
+## Settings
 
-## Code
+- **MESH+** — activation and benefits overview.
+- **Network** — session stats; optional Signal Corps clipboard mesh sync.
+- **Achievements** — optional, off by default.
 
-- Gates: `shared/mesh-plus-gates.js`
-- License: `main/mesh-plus-license.js`
-- UI: `renderer/mesh-plus-settings.js`, `renderer/mesh-plus.js`
-- Projects: `renderer/projects-view.js`, `renderer/project-tools-ui.js`, `renderer/projects-mesh-wire.js`
-- Achievements: `renderer/achievements.js`, `renderer/achievements-icons.js`, `renderer/achievements-settings-panel.js`
+## Planned (marketing only)
 
-**App version:** `1.0.0` · codename **Mesh Plus** (`app-metadata.json`).
+LAN relay, MESH+ Bridge, bandwidth priority — not implemented yet.
 
-*No ROOT build switcher in public repo.*
+**App version:** `1.0.1` · codename **Mesh Plus** (`app-metadata.json`).
+
+*BLIP · FREE for everyone · MESH+ by key*

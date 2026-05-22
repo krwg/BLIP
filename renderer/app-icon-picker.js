@@ -1,5 +1,5 @@
 import { t } from './i18n.js';
-import { isMeshPlusActive } from './mesh-plus.js';
+import { premiumTierEnabled } from './mesh-plus.js';
 import { showAppToast } from './toasts.js';
 import { buildSectionSubtitleRow } from './settings-ui.js';
 
@@ -78,7 +78,7 @@ export function appendAppIconPickerSections(block, state, saveConfig) {
     btn.type = 'button';
     const selected = (state.config?.appIconVariant || 'main') === id;
     btn.className = `settings-app-icon-tile${selected ? ' selected' : ''}${
-      tier === 'mesh_plus' && !isMeshPlusActive(state.config)
+      tier === 'mesh_plus' && !premiumTierEnabled(state.config)
         ? ' settings-app-icon-tile--locked'
         : ''
     }`;
@@ -100,7 +100,7 @@ export function appendAppIconPickerSections(block, state, saveConfig) {
     });
 
     btn.addEventListener('click', async () => {
-      if (tier === 'mesh_plus' && !isMeshPlusActive(state.config)) {
+      if (tier === 'mesh_plus' && !premiumTierEnabled(state.config)) {
         showAppToast({
           title: t('settings.app_icon_mesh_locked'),
           durationMs: 4200,

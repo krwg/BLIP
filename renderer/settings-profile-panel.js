@@ -3,7 +3,12 @@ import { buildProfileCard } from './profile-card.js';
 import { createAvatarElement, setSelfAvatarCache, regenerateAvatar } from './avatar.js';
 import { openAvatarCropDialog } from './avatar-crop-dialog.js';
 import { openProfileGifPicker } from './profile-gif-picker.js';
-import { isMeshPlusActive, showMeshPlusLockedToast } from './mesh-plus.js';
+import { premiumTierEnabled, showPremiumLockedToast } from './mesh-plus.js';
+import {
+  readEntitlementMarker,
+  gateAllowsCapability,
+  MESH_PLUS_FEATURES,
+} from '../shared/mesh-plus-gates.js';
 import { showAppToast } from './toasts.js';
 import {
   buildSettingsField,
@@ -71,7 +76,7 @@ export function buildSettingsProfilePanel(state, api, deps = {}) {
   gifBtn.className = 'btn btn-lang';
   gifBtn.dataset.i18n = 'settings.profile_gif_pick';
   gifBtn.textContent = t('settings.profile_gif_pick');
-  if (!isMeshPlusActive(state.config)) {
+  if (!premiumTierEnabled(state.config)) {
     gifBtn.title = t('mesh_plus.feature_locked');
   }
 
@@ -196,7 +201,7 @@ export function buildSettingsProfilePanel(state, api, deps = {}) {
       online: true,
       presence: state.config.presenceStatus || 'online',
       presenceText: state.config.presenceText || '',
-      meshPlus: isMeshPlusActive(state.config),
+      meshPlus: premiumTierEnabled(state.config),
     };
   }
 
@@ -213,7 +218,7 @@ export function buildSettingsProfilePanel(state, api, deps = {}) {
     previewBuilt = buildProfileCard(selfPeer(), {
       selfBlipId: state.config.blipId,
       isSelfPreview: true,
-      meshPlusOnSelf: isMeshPlusActive(state.config),
+      meshPlusOnSelf: premiumTierEnabled(state.config),
       showBanner: true,
       showPrivateNote: false,
       showActions: false,
@@ -296,8 +301,12 @@ export function buildSettingsProfilePanel(state, api, deps = {}) {
   });
 
   gifBtn.addEventListener('click', () => {
-    if (!isMeshPlusActive(state.config)) {
-      showMeshPlusLockedToast();
+    if (
+      !premiumTierEnabled(state.config) ||
+      !readEntitlementMarker(state.config) ||
+      !gateAllowsCapability(state.config, MESH_PLUS_FEATURES.profile_gif)
+    ) {
+      showPremiumLockedToast();
       return;
     }
     void openProfileGifPicker({

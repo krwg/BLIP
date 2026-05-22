@@ -64,6 +64,21 @@ Environment overrides: `BLIP_UDP_PORT`, `BLIP_TCP_PORT`. Separate user data dirs
 | `clipboard-push` | Peer ↔ peer | LAN clipboard text (mode-gated in renderer) |
 | `mesh-proj-pad` | Mesh (online peers) | Signal Corps shared Pad (LWW text, debounced) — not group-scoped |
 
+## MESH+ (premium tier)
+
+Optional tier activated in **Settings → MESH+**. Gates live in `shared/mesh-plus-gates.js`; settings UI in `renderer/mesh-plus-settings.js`. Product list: [`MESH-PLUS.md`](MESH-PLUS.md).
+
+| Area | Modules |
+|------|---------|
+| Themes & sound | `appearance.js`, `theme-editor.js`, premium IDs in `mesh-plus-gates.js` |
+| App icons | `app-icon-picker.js`, `main/app-icons.js` |
+| Profile GIF | `profile-gif-store.js`, `profile-card.js`, TCP `profile-gif-*` |
+| Signal Corps | Board/Canvas/history gates in `projects-view.js`, `project-tools-ui.js` |
+| Export | `chat-export.js` themed PDF/HTML |
+| Badge | UDP announce `meshPlus`; `renderer/mesh-plus.js` badge |
+
+FREE baseline keeps core chat, calls, Pad, Mesh Pulse, and Clipboard (20 entries).
+
 ## Signal Corps (Projects)
 
 **Signal Corps** is BLIP’s flagship builder workspace — the feature teams should enable first on a dev LAN. It lives in the main renderer (`projects-view.js`, `project-tools-ui.js`, `projects-mesh-wire.js`), gated by `devProjectsEnabled` in config.
@@ -86,7 +101,7 @@ Groups (`groups.js`, voice channels) are beta and gated by `devGroupsEnabled` in
 | Chat history | Renderer `localStorage` key `blip_chat_v1`. |
 | Favorite peer IDs | Renderer `localStorage` key `blip_favorites_v1`. |
 | Avatar seeds (per BLIP ID) | Renderer `localStorage` key `blip_avatar_seed_v1` (`avatar.js`). |
-| Release metadata | `app-metadata.json` (version **1.0.0**, codename **Mesh Plus**, repo URL). |
+| Release metadata | `app-metadata.json` (version **1.0.1**, codename **Mesh Plus**, repo URL). |
 | Achievement icons | `ach-icons/*.svg` → `renderer/achievements-icons.js` (Vite `?url` imports). |
 | MESH+ overview | [`MESH-PLUS.md`](MESH-PLUS.md) — tier summary (no phased roadmap file). |
 | Group avatars | Renderer `localStorage` `blip_group_avatar_v1` |

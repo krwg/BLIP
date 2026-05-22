@@ -13,6 +13,12 @@ export function buildPeerProfilePage(peer, hooks = {}) {
     showBanner: true,
     getProfileGifUrl: async (p) => {
       if (hooks.getProfileGifUrl) return hooks.getProfileGifUrl(p);
+      if (
+        hooks.selfBlipId != null &&
+        Number(p.blipId) === Number(hooks.selfBlipId)
+      ) {
+        return (await window.blip?.getProfileGifActiveUrl?.()) || null;
+      }
       return getPeerProfileGifDataUrl(p.blipId);
     },
   });

@@ -1,7 +1,7 @@
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { resolveBuildAsset } from './paths.js';
-import { isMeshPlusActive } from './mesh-plus-license.js';
+import { resolveEntitlementState } from './mesh-plus-license.js';
 
 /** @type {{ id: string, file: string, tier: 'free' | 'mesh_plus' }[]} */
 export const APP_ICON_VARIANTS = [
@@ -29,14 +29,14 @@ export function normalizeAppIconVariant(id) {
 /** @param {object} config */
 export function resolveAppIconVariant(config) {
   let id = normalizeAppIconVariant(config?.appIconVariant);
-  if (MESH_IDS.has(id) && !isMeshPlusActive(config)) id = 'main';
+  if (MESH_IDS.has(id) && !resolveEntitlementState(config)) id = 'main';
   return id;
 }
 
 export function canUseAppIconVariant(config, variantId) {
   const id = normalizeAppIconVariant(variantId);
   if (FREE_IDS.has(id)) return true;
-  if (MESH_IDS.has(id)) return isMeshPlusActive(config);
+  if (MESH_IDS.has(id)) return resolveEntitlementState(config);
   return false;
 }
 

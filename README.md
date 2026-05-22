@@ -25,6 +25,7 @@
 | Testing (one PC) | [Testing](#en-testing) | [Тестирование](#ru-testing) |
 | Overview | [Overview](#en-overview) | [Обзор](#ru-overview) |
 | Features | [Features](#en-features) | [Возможности](#ru-features) |
+| MESH+ | [MESH+](#en-mesh-plus) | [MESH+](#ru-mesh-plus) |
 | Signal Corps | [Signal Corps](#en-signal-corps) | [Сигнал Корпс](#ru-signal-corps) |
 | Architecture | [Architecture](#en-architecture) | [Архитектура](#ru-architecture) |
 | Stack | [Stack](#en-stack) | [Стек](#ru-stack) |
@@ -62,7 +63,7 @@ Quick VM flow: host runs BLIP (ID **1**), VM runs BLIP (ID **2**), same subnet v
 | | |
 |---|---|
 | **What** | Desktop app: text, voice, and video over LAN / Hamachi / Radmin VPN |
-| **Release** | **1.0.0 — Mesh Plus** (see [`CHANGELOG.md`](CHANGELOG.md); last GitHub tag: [v0.7.7](https://github.com/krwg/BLIP/releases/tag/v0.7.7)) |
+| **Release** | **1.0.1 — Mesh Plus** (see [`CHANGELOG.md`](CHANGELOG.md); last GitHub tag: [v0.7.7](https://github.com/krwg/BLIP/releases/tag/v0.7.7)) |
 | **Identity** | BLIP ID **1–64** (8×8 grid, Minecraft-style chunk metaphor) |
 | **Servers** | None — UDP broadcast, TCP, and WebRTC peer-to-peer only |
 | **Sign-up** | None |
@@ -94,6 +95,20 @@ Quick VM flow: host runs BLIP (ID **1**), VM runs BLIP (ID **2**), same subnet v
 | **Settings** | Profile, privacy/block list, appearance, network, shortcuts, call devices, transfers |
 | **Window** | Custom title bar, system tray, close-to-tray (Windows), **launch at login** (Windows) |
 | **Updates** | Auto-check on startup (packaged builds) |
+| **MESH+** | Optional premium tier — themes, sounds, status GIF, Signal Corps Board/Canvas, export styling ([details](docs/MESH-PLUS.md)) |
+
+<h3 id="en-mesh-plus">MESH+</h3>
+
+**MESH+** unlocks premium cosmetics and builder tools on top of the free LAN messenger. Enter your `BLIP-XXXX-…` key in **Settings → MESH+**.
+
+| Category | Examples |
+|----------|----------|
+| **Look & feel** | Animated backgrounds *Ember* / *Rift*, **Wire** / **Static** FX, **Beacon** / **Chime** melodies, custom `#RRGGBB` accent, six **mesh** app icons |
+| **Profile** | **Status GIF** cloud visible to peers on the LAN |
+| **Signal Corps** | **Board** (kanban), **Canvas** (32×16), Pad snapshots, Clipboard **500** entries + search |
+| **Social** | **MESH+** badge on peers; themed chat export (PDF/HTML) |
+
+FREE keeps chat, voice/video, groups (beta), Pad, Mesh Pulse, core themes, and Clipboard (20 entries). Full list: [`docs/MESH-PLUS.md`](docs/MESH-PLUS.md).
 
 <h3 id="en-signal-corps">Signal Corps — the must-have mesh workspace</h3>
 
@@ -289,7 +304,8 @@ blip/
 │   └── assets/fonts/  # Minecraft woff2/ttf
 ├── docs/              # ARCHITECTURE.md + GitHub Pages landing
 ├── build/             # icon.ico, icon.png (generated)
-├── app-metadata.json  # version 1.0.0, codename Mesh Plus
+├── app-metadata.json  # version 1.0.1, codename Mesh Plus
+├── docs/MESH-PLUS.md  # MESH+ feature list
 ├── ach-icons/         # achievement SVGs (bundled in renderer)
 ├── preload.cjs        # IPC bridge
 ├── scripts/           # electron-dev, copy-fonts, build-icons, sync metadata
@@ -317,6 +333,7 @@ blip/
 | [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | Community standards |
 | [SECURITY.md](SECURITY.md) | Reporting vulnerabilities |
 | [CHANGELOG.md](CHANGELOG.md) | Release history |
+| [docs/MESH-PLUS.md](docs/MESH-PLUS.md) | MESH+ tier — what’s included |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Technical map |
 | [Landing site (Pages)](https://krwg.github.io/BLIP/) | Static showcase (`docs/index.html`) |
 
@@ -349,7 +366,7 @@ The **Minecraft** font is licensed separately under [MIT](https://github.com/bs-
 | | |
 |---|---|
 | **Что это** | Desktop-приложение: текст, голос и видео по LAN / Hamachi / Radmin VPN |
-| **Релиз** | **1.0.0 — Mesh Plus** (см. [`CHANGELOG.md`](CHANGELOG.md); на GitHub: [v0.7.7](https://github.com/krwg/BLIP/releases/tag/v0.7.7)) |
+| **Релиз** | **1.0.1 — Mesh Plus** (см. [`CHANGELOG.md`](CHANGELOG.md); на GitHub: [v0.7.7](https://github.com/krwg/BLIP/releases/tag/v0.7.7)) |
 | **Идентификация** | BLIP ID **1–64** (сетка 8×8) |
 | **Серверы** | Нет — только UDP broadcast, TCP и WebRTC между пирами |
 | **Регистрация** | Нет |
@@ -381,6 +398,20 @@ The **Minecraft** font is licensed separately under [MIT](https://github.com/bs-
 | **Настройки** | Профиль, конфиденциальность/блок, вид, сеть, горячие клавиши, звонок, передачи |
 | **Окно** | Свой title bar, трей, в трей (Windows), **автозапуск при входе в Windows** |
 | **Обновления** | Проверка при запуске (собранные сборки) |
+| **MESH+** | Опциональный премиум — темы, гифка статуса, Доска/Холст, оформление экспорта ([подробнее](docs/MESH-PLUS.md)) |
+
+<h3 id="ru-mesh-plus">MESH+</h3>
+
+**MESH+** — премиум-уровень поверх бесплатного LAN-мессенджера. Ключ `BLIP-XXXX-…` в **Настройки → MESH+**.
+
+| Категория | Примеры |
+|-----------|---------|
+| **Оформление** | Фоны *Ember* / *Rift*, FX **Wire** / **Static**, мелодии **Beacon** / **Chime**, свой акцент `#RRGGBB`, иконки **mesh-1…6** |
+| **Профиль** | **Гифка статуса** в облачке для пиров в LAN |
+| **Сигнал Корпс** | **Доска**, **Холст**, снимки блокнота, буфер **500** + поиск |
+| **Соц.** | Бейдж **MESH+** у пиров; экспорт чата с темой BLIP |
+
+FREE: чат, звонки, группы (бета), блокнот, Mesh Pulse, базовые темы, буфер (20 записей). Полный список: [`docs/MESH-PLUS.md`](docs/MESH-PLUS.md).
 
 <h3 id="ru-signal-corps">Сигнал Корпс — главная фича для разработки в МЕШе</h3>
 

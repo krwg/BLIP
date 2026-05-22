@@ -95,6 +95,11 @@ export function clearDeclinedInvite(groupId) {
 }
 
 /** Drop groups you are not a member of (stale localStorage). */
+export function resetGroupsStore() {
+  groups.clear();
+  declinedInvites.clear();
+}
+
 export function purgeGroupsFor(blipId) {
   const id = Number(blipId);
   let changed = false;

@@ -9,6 +9,9 @@ export function createIdGrid({ occupiedIds = [], reservedIds = [], selectedId = 
   title.dataset.i18n = 'grid.title';
   title.textContent = t('grid.title');
 
+  const occupied = new Set(occupiedIds);
+  const reserved = new Set(reservedIds);
+
   const hint = document.createElement('p');
   hint.className = 'hint';
   if (reserved.size > 0) {
@@ -22,9 +25,6 @@ export function createIdGrid({ occupiedIds = [], reservedIds = [], selectedId = 
   const grid = document.createElement('div');
   grid.className = 'id-grid';
   grid.setAttribute('role', 'grid');
-
-  const occupied = new Set(occupiedIds);
-  const reserved = new Set(reservedIds);
   let pending = selectedId;
 
   for (let n = 1; n <= 64; n++) {
