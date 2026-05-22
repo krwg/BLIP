@@ -1,12 +1,13 @@
 import { t } from './i18n.js';
 import { showAppToast } from './toasts.js';
+import { applyPeerMeshPlusBadgeTrust } from './trust-ui.js';
 import {
   MESH_PLUS_FEATURES,
   PREMIUM_ANIMATED_BG_IDS,
   PREMIUM_MELODY_PACK_IDS,
   PREMIUM_SOUND_PACK_IDS,
-  isMeshPlusTierActive,
-  requireMeshPlus,
+  uiShowsPremiumTier,
+  freeTierAllowsValue,
 } from '../shared/mesh-plus-gates.js';
 
 export {
@@ -14,49 +15,36 @@ export {
   PREMIUM_ANIMATED_BG_IDS,
   PREMIUM_SOUND_PACK_IDS,
   PREMIUM_MELODY_PACK_IDS,
-  isMeshPlusTierActive,
-  requireMeshPlus,
+  uiShowsPremiumTier,
+  freeTierAllowsValue,
 };
 
 /** @param {object} [cfg] */
-export function isMeshPlusActive(cfg) {
-  return isMeshPlusTierActive(cfg);
+export function premiumTierEnabled(cfg) {
+  return uiShowsPremiumTier(cfg);
 }
 
 /** @param {object} [peer] */
-export function peerHasMeshPlus(peer) {
+export function peerShowsPremiumBadge(peer) {
   return !!peer?.meshPlus;
 }
 
-export function showMeshPlusLockedToast() {
+export function showPremiumLockedToast() {
   showAppToast({
     title: t('mesh_plus.feature_locked'),
     durationMs: 4200,
   });
 }
 
-/**
- * @param {{ value: string, label: string }[]} options
- * @param {string} feature
- * @param {object} [cfg]
- */
-export function markMeshPlusGatedOptions(options, feature, cfg) {
-  if (isMeshPlusTierActive(cfg)) return options;
+export function markPremiumGatedOptions(options, feature, cfg) {
+  if (uiShowsPremiumTier(cfg)) return options;
   return options.map((opt) => ({
     ...opt,
-    meshPlus: !requireMeshPlus(cfg, feature, opt.value),
+    meshPlus: !freeTierAllowsValue(cfg, feature, opt.value),
   }));
 }
 
-/**
- * @param {HTMLSelectElement} select
- * @param {{ value: string, label: string, meshPlus?: boolean }[]} options
- * @param {string} current
- * @param {string} feature
- * @param {object} cfg
- * @param {(value: string) => void | Promise<void>} onChange
- */
-export function fillMeshGatedDropdown(select, options, current, feature, cfg, onChange) {
+export function fillPremiumGatedDropdown(select, options, current, feature, cfg, onChange) {
   select.innerHTML = '';
   for (const opt of options) {
     const o = document.createElement('option');
@@ -72,8 +60,8 @@ export function fillMeshGatedDropdown(select, options, current, feature, cfg, on
   select.addEventListener('change', () => {
     const val = select.value;
     const picked = options.find((o) => o.value === val);
-    if (picked?.meshPlus || !requireMeshPlus(cfg, feature, val)) {
-      showMeshPlusLockedToast();
+    if (picked?.meshPlus || !freeTierAllowsValue(cfg, feature, val)) {
+      showPremiumLockedToast();
       const revert = ok ? current : allowed[0]?.value ?? options[0]?.value ?? '';
       select.value = revert;
       return;
@@ -82,10 +70,6 @@ export function fillMeshGatedDropdown(select, options, current, feature, cfg, on
   });
 }
 
-/**
- * Platinum plaque + pixel gradient "MESH+" label.
- * @param {{ title?: string, compact?: boolean }} [opts]
- */
 export function createMeshPlusBadge(opts = {}) {
   const el = document.createElement('span');
   el.className = `mesh-plus-badge${opts.compact ? ' mesh-plus-badge--compact' : ''}`;
@@ -97,12 +81,10 @@ export function createMeshPlusBadge(opts = {}) {
   return el;
 }
 
-/**
- * @param {HTMLElement} nameRow
- * @param {object} [peer]
- */
 export function appendMeshPlusBadgeToNameRow(nameRow, peer) {
-  if (!peerHasMeshPlus(peer)) return;
+  if (!peerShowsPremiumBadge(peer)) return;
   if (nameRow.querySelector('.mesh-plus-badge')) return;
-  nameRow.appendChild(createMeshPlusBadge({ compact: true }));
+  const badge = createMeshPlusBadge({ compact: true });
+  applyPeerMeshPlusBadgeTrust(badge, peer);
+  nameRow.appendChild(badge);
 }

@@ -8,7 +8,12 @@ import {
   signCanonical,
   verifyAnnouncePayload,
 } from './mesh-identity.js';
-import { isMeshPlusActive } from './mesh-plus-license.js';
+import { resolveEntitlementState } from './mesh-plus-license.js';
+import {
+  getBuildAnnounceTrust,
+  peerBuildTrustFromAnnounce,
+  peerMeshPlusTrustFromAnnounce,
+} from './trust-state.js';
 
 const ANNOUNCE_INTERVAL = 5000;
 const PEER_TIMEOUT = 30000;
@@ -150,9 +155,19 @@ export class Discovery {
       meshPubkey,
     });
     const meshAnnounceSig = signCanonical(this.config, canonical);
-    const meshPlus = isMeshPlusActive(this.config);
+    const meshPlus = resolveEntitlementState(this.config);
     const hasProfileGif = meshPlus && !!this.config?.hasProfileGif;
-    return { ...base, meshAnnounceSig, meshPlus, hasProfileGif };
+    const buildTrust = getBuildAnnounceTrust();
+    return {
+      ...base,
+      meshAnnounceSig,
+      meshPlus,
+      hasProfileGif,
+      buildVerified: buildTrust.buildVerified,
+      buildIssuer: buildTrust.buildIssuer,
+      buildVersion: buildTrust.buildVersion,
+      meshPlusTrust: meshPlus ? buildTrust.meshPlusTrust : null,
+    };
   }
 
   announce() {
@@ -215,6 +230,10 @@ export class Discovery {
       meshPubkey,
       meshPlus: !!data.meshPlus,
       hasProfileGif: !!data.meshPlus && !!data.hasProfileGif,
+      buildTrust: peerBuildTrustFromAnnounce(data),
+      buildIssuer: String(data.buildIssuer || ''),
+      buildVerified: !!data.buildVerified,
+      meshPlusTrust: peerMeshPlusTrustFromAnnounce(data),
     };
 
     if (
@@ -227,7 +246,10 @@ export class Discovery {
       existing.meshVerified !== peer.meshVerified ||
       existing.meshLegacy !== peer.meshLegacy ||
       existing.meshPlus !== peer.meshPlus ||
-      existing.hasProfileGif !== peer.hasProfileGif
+      existing.hasProfileGif !== peer.hasProfileGif ||
+      existing.buildTrust !== peer.buildTrust ||
+      existing.buildVerified !== peer.buildVerified ||
+      existing.meshPlusTrust !== peer.meshPlusTrust
     ) {
       this.peers.set(data.blipId, peer);
     } else {
@@ -242,6 +264,10 @@ export class Discovery {
       existing.meshPubkey = meshPubkey;
       existing.meshPlus = peer.meshPlus;
       existing.hasProfileGif = peer.hasProfileGif;
+      existing.buildTrust = peer.buildTrust;
+      existing.buildIssuer = peer.buildIssuer;
+      existing.buildVerified = peer.buildVerified;
+      existing.meshPlusTrust = peer.meshPlusTrust;
     }
 
     this.occupiedIds.add(data.blipId);

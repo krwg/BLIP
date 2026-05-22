@@ -13,6 +13,8 @@ import { randomBytes } from 'crypto';
 const MAX_HISTORY = 5;
 /** @type {number} max stored GIF size (bytes) */
 export const MAX_PROFILE_GIF_BYTES = 8 * 1024 * 1024;
+/** Max raw GIF bytes for one TCP JSON line (base64 + framing under 4 MiB). */
+export const MAX_PROFILE_GIF_TCP_BYTES = 2_800_000;
 const MAX_BYTES = MAX_PROFILE_GIF_BYTES;
 
 function gifsDir() {
@@ -112,19 +114,32 @@ export function clearActiveProfileGif() {
   return saveMeta({ ...meta, activeId: '' });
 }
 
-/** @param {string} [id] */
-export function getProfileGifDataUrl(id) {
+function readGifBuffer(id) {
   const meta = loadMeta();
   const useId = id || meta.activeId;
   if (!useId) return null;
   const p = filePathForId(useId);
   if (!existsSync(p)) return null;
   try {
-    const buf = readFileSync(p);
-    return `data:image/gif;base64,${buf.toString('base64')}`;
+    return readFileSync(p);
   } catch {
     return null;
   }
+}
+
+/** @param {string} [id] */
+export function getProfileGifDataUrl(id) {
+  const buf = readGifBuffer(id);
+  if (!buf) return null;
+  return `data:image/gif;base64,${buf.toString('base64')}`;
+}
+
+/** LAN share payload — skips oversized GIFs to avoid TCP line overflow. */
+export function getProfileGifShareDataUrl(id) {
+  const buf = readGifBuffer(id);
+  if (!buf) return null;
+  if (buf.length > MAX_PROFILE_GIF_TCP_BYTES) return null;
+  return `data:image/gif;base64,${buf.toString('base64')}`;
 }
 
 export function getActiveProfileGifId() {

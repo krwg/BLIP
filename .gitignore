@@ -13,3 +13,9 @@ scripts/.mesh-plus-private.b64
 mesh-plus-private.b64
 keysandlicense.md
 giphy-api-key.local
+build/giphy-api-key.txt
+.env.local
+.env.build
+mesh-plus-public-key.local
+build/mesh-plus-public-key.txt
+ENTITLEMENT-MAP.local.md

@@ -10,15 +10,29 @@ import {
 } from './group-call.js';
 import { applyCallWindowAppearance, listenReducedMotion } from './appearance.js';
 import { setSoundPrefs } from './audio.js';
+import { setLocalTrustState } from './trust-ui.js';
 
 let appearanceRm = null;
+/** @type {Map<number, object>} */
+let lanPeersById = new Map();
 
 const api = {
   getConfig: () => window.blip.getConfig(),
   saveConfig: (data) => window.blip.saveConfig(data),
   sendTcpMessage: (payload) => window.blip.sendTcpMessage(payload),
   fetchGroup: (groupId) => window.blip.getGroupForCall(groupId),
+  getPeers: () => window.blip.getPeers(),
+  getLanPeer: (id) => lanPeersById.get(Number(id)) || null,
 };
+
+async function syncLanPeers() {
+  try {
+    const { peers } = await window.blip.getPeers();
+    lanPeersById = new Map(peers.map((p) => [Number(p.blipId), p]));
+  } catch {
+    lanPeersById = new Map();
+  }
+}
 
 async function callApi() {
   const config = await api.getConfig();
@@ -68,6 +82,14 @@ async function boot() {
   applyChrome(config);
   appearanceRm?.();
   appearanceRm = listenReducedMotion(() => {});
+  await syncLanPeers();
+  window.blip.onPeersUpdated?.(() => {
+    void syncLanPeers();
+  });
+  window.blip.onTrustState?.((trust) => setLocalTrustState(trust));
+  void window.blip.getTrustState?.().then((trust) => {
+    if (trust) setLocalTrustState(trust);
+  });
   initGroupCallWindow(api, config);
 
   document.getElementById('group-call-win-min')?.addEventListener('click', () => {

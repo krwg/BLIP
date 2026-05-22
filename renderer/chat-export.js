@@ -1,6 +1,6 @@
 import { getMessages } from './chat.js';
 import { normalizeCustomAccentHex } from './appearance.js';
-import { isMeshPlusTierActive } from '../shared/mesh-plus-gates.js';
+import { uiShowsPremiumTier } from '../shared/mesh-plus-gates.js';
 
 function downloadBlob(blob, filename) {
   const url = URL.createObjectURL(blob);
@@ -42,7 +42,7 @@ function sanitizeMessageForExport(m) {
 
 function resolveThemedAccent(config) {
   const custom = normalizeCustomAccentHex(config?.accentCustomHex);
-  if (isMeshPlusTierActive(config) && custom) return custom;
+  if (uiShowsPremiumTier(config) && custom) return custom;
   return '#00ffc8';
 }
 

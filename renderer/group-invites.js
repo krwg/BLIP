@@ -36,6 +36,10 @@ function dispatchChanged() {
 
 load();
 
+export function resetGroupInvitesStore() {
+  pending.clear();
+}
+
 export function getPendingGroupInvites() {
   return [...pending.values()].sort((a, b) => (b.receivedAt || 0) - (a.receivedAt || 0));
 }

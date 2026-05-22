@@ -132,6 +132,14 @@ export function saveConfig(config) {
   return merged;
 }
 
+/** Wipe config to defaults (blipId null — first-run / ID grid). */
+export function resetConfigToDefaults() {
+  if (!configPath) initConfigPath();
+  const fresh = { ...DEFAULT_CONFIG };
+  writeFileSync(configPath, JSON.stringify(fresh, null, 2), 'utf8');
+  return fresh;
+}
+
 export function normalizePeerIp(ip) {
   if (!ip || typeof ip !== 'string') return '';
   return ip.replace(/^::ffff:/i, '');

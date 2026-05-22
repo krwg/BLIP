@@ -1,0 +1,64 @@
+/* Trust cues — color only, no text badges */
+
+.build-trust-official {
+  border: 1px solid rgba(140, 90, 255, 0.6);
+  box-shadow: 0 0 12px rgba(140, 90, 255, 0.25);
+  border-radius: 2px;
+}
+
+.build-trust-unverified {
+  border: 1px solid rgba(255, 60, 60, 0.6);
+  box-shadow: 0 0 12px rgba(255, 60, 60, 0.25);
+  border-radius: 2px;
+}
+
+.meshplus-official {
+  background: linear-gradient(135deg, #7c3aed, #22d3ee);
+  box-shadow: 0 0 14px rgba(124, 58, 237, 0.35);
+}
+
+.meshplus-unverified {
+  background: rgba(255, 60, 60, 0.15);
+  border: 1px solid rgba(255, 60, 60, 0.45);
+  box-shadow: 0 0 10px rgba(255, 60, 60, 0.2);
+}
+
+.mesh-plus-badge--trust-unverified .mesh-plus-badge__text {
+  background: rgba(255, 60, 60, 0.22) !important;
+  border-color: rgba(255, 60, 60, 0.55) !important;
+}
+
+.avatar-trust-ring {
+  display: inline-flex;
+  padding: 2px;
+  box-sizing: border-box;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.avatar-trust-ring .avatar-wrap,
+.avatar-trust-ring .avatar-canvas,
+.avatar-trust-ring .avatar-img {
+  display: block;
+}
+
+.settings-about-hero.build-trust-official,
+.mesh-plus-status-card.meshplus-official {
+  animation: trust-glow-pulse 4s ease-in-out infinite;
+}
+
+@keyframes trust-glow-pulse {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.06);
+  }
+}
+
+.call-avatar-slot.build-trust-official,
+.call-avatar-slot.build-trust-unverified {
+  display: inline-flex;
+  padding: 3px;
+}

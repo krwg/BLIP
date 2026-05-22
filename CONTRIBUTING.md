@@ -65,7 +65,7 @@ Version and codename live in [`app-metadata.json`](app-metadata.json) (synced in
 
 **MESH+** tier notes: [`docs/MESH-PLUS.md`](docs/MESH-PLUS.md). Do not break FREE behavior when gating premium features.
 
-Issue test keys locally: `npm run mesh-plus:keygen` (uses `scripts/.mesh-plus-private.b64`, gitignored). Embed only the **public** key in `main/mesh-plus-public-key.js` when rotating keys.
+Release builds: run `npm run setup:build-secrets` once, then configure maintainer build secrets before `electron:build:*` (see `ENTITLEMENT-MAP.local.md`, gitignored).
 
 ## TCP payloads (renderer ↔ main)
 

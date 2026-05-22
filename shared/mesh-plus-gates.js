@@ -16,7 +16,6 @@ export const MESH_PLUS_FEATURES = {
   chat_export_themed: 'chat_export_themed',
 };
 
-/** Animated CSS backgrounds (themes.css). */
 export const PREMIUM_ANIMATED_BG_IDS = ['ember', 'rift'];
 
 export const FREE_SOUND_PACK_IDS = ['signal', 'pulse'];
@@ -32,17 +31,42 @@ const DEFAULTS = {
 };
 
 /** @param {object} [cfg] */
-export function isMeshPlusTierActive(cfg) {
+export function uiShowsPremiumTier(cfg) {
   return cfg?.meshPlusActive === true || cfg?.tier === 'mesh_plus';
+}
+
+/** @param {object} [cfg] */
+export function readTierFlag(cfg) {
+  return cfg?.tier === 'mesh_plus';
+}
+
+/** @param {object} [cfg] */
+export function readEntitlementMarker(cfg) {
+  return !!(cfg?.meshPlusLicenseId || cfg?.meshPlusLicenseMasked);
+}
+
+/** @param {object} [cfg] */
+export function readActiveEntitlement(cfg) {
+  return cfg?.meshPlusActive === true;
 }
 
 /**
  * @param {object} [cfg]
  * @param {string} feature — MESH_PLUS_FEATURES.*
+ */
+export function gateAllowsCapability(cfg, feature) {
+  if (!readActiveEntitlement(cfg) || !readTierFlag(cfg)) return false;
+  if (!uiShowsPremiumTier(cfg)) return false;
+  return freeTierAllowsValue(cfg, feature, feature);
+}
+
+/**
+ * @param {object} [cfg]
+ * @param {string} feature
  * @param {string} [value]
  */
-export function requireMeshPlus(cfg, feature, value) {
-  if (isMeshPlusTierActive(cfg)) return true;
+export function freeTierAllowsValue(cfg, feature, value) {
+  if (uiShowsPremiumTier(cfg)) return true;
   if (!value) return true;
   switch (feature) {
     case MESH_PLUS_FEATURES.animated_bg:
@@ -56,12 +80,8 @@ export function requireMeshPlus(cfg, feature, value) {
   }
 }
 
-/**
- * Values that must be reset when tier is FREE.
- * @param {object} config
- * @returns {Record<string, string> | null}
- */
-export function meshPlusClampPatch(config) {
+/** @param {object} config */
+export function premiumResetPatch(config) {
   if (!config || typeof config !== 'object') return null;
   const patch = {};
 
@@ -92,13 +112,7 @@ export function meshPlusClampPatch(config) {
   return Object.keys(patch).length ? patch : null;
 }
 
-/**
- * Strip or downgrade premium prefs in a save-config patch.
- * @param {object} config — current merged config
- * @param {object} updates
- * @param {boolean} meshPlusActive
- */
-export function sanitizeMeshPlusConfigUpdates(config, updates, meshPlusActive) {
+export function sanitizePremiumPrefs(config, updates, meshPlusActive) {
   if (!updates || typeof updates !== 'object') return updates;
   if (meshPlusActive) return updates;
 
@@ -106,21 +120,21 @@ export function sanitizeMeshPlusConfigUpdates(config, updates, meshPlusActive) {
 
   if (out.animatedBgId !== undefined) {
     const id = String(out.animatedBgId);
-    if (!requireMeshPlus(config, MESH_PLUS_FEATURES.animated_bg, id)) {
+    if (!freeTierAllowsValue(config, MESH_PLUS_FEATURES.animated_bg, id)) {
       out.animatedBgId = DEFAULTS.animatedBgId;
     }
   }
 
   if (out.uiSoundPack !== undefined) {
     const id = String(out.uiSoundPack);
-    if (!requireMeshPlus(config, MESH_PLUS_FEATURES.sound_pack, id)) {
+    if (!freeTierAllowsValue(config, MESH_PLUS_FEATURES.sound_pack, id)) {
       out.uiSoundPack = DEFAULTS.uiSoundPack;
     }
   }
 
   if (out.uiMelodyPack !== undefined) {
     const id = String(out.uiMelodyPack);
-    if (!requireMeshPlus(config, MESH_PLUS_FEATURES.melody_pack, id)) {
+    if (!freeTierAllowsValue(config, MESH_PLUS_FEATURES.melody_pack, id)) {
       out.uiMelodyPack = DEFAULTS.uiMelodyPack;
     }
   }
@@ -136,13 +150,8 @@ export function sanitizeMeshPlusConfigUpdates(config, updates, meshPlusActive) {
   return out;
 }
 
-/**
- * @param {object} config
- * @param {boolean} meshPlusActive
- * @returns {object}
- */
-export function applyMeshPlusClampToConfig(config, meshPlusActive) {
+export function applyPremiumReset(config, meshPlusActive) {
   if (meshPlusActive) return config;
-  const patch = meshPlusClampPatch(config);
+  const patch = premiumResetPatch(config);
   return patch ? { ...config, ...patch } : config;
 }

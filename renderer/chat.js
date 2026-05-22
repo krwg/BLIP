@@ -1,6 +1,7 @@
 import { t } from './i18n.js';
 import { sounds } from './audio.js';
 import { createAvatarElement } from './avatar.js';
+import { createTrustedAvatarElement } from './trust-ui.js';
 import { attachEmojiPicker } from './emoji-picker.js';
 import {
   encodeChatImageAttachment,
@@ -22,7 +23,7 @@ function formatFileLimitLabelForChat(config) {
 import { createMessageId } from './message-id.js';
 import { getPinnedMessageId, setPinnedMessageId } from './chat-pins.js';
 import { exportPeerChatJson, exportPeerChatPdf, exportPeerChatHtml } from './chat-export.js';
-import { isMeshPlusActive, showMeshPlusLockedToast } from './mesh-plus.js';
+import { premiumTierEnabled, showPremiumLockedToast } from './mesh-plus.js';
 import { openAlertDialog, openConfirmDialog } from './confirm-dialog.js';
 import { recordMessageSent } from './session-stats.js';
 
@@ -73,6 +74,10 @@ function formatChatTime(ts) {
   } catch {
     return '';
   }
+}
+
+export function resetChatStore() {
+  messagesByPeer.clear();
 }
 
 export function getMessages(peerId) {
@@ -153,7 +158,8 @@ export function createChatView(
   onPeerMenu,
   onPin,
   onEdit,
-  onPeerProfile
+  onPeerProfile,
+  getPeer
 ) {
   registerMediaPlaceholder(t('chat.image_sent'));
   registerMediaPlaceholder(t('chat.file_sent'));
@@ -178,8 +184,11 @@ export function createChatView(
   avatarMount.className = 'chat-avatar-mount';
   function mountHeaderAvatar() {
     avatarMount.innerHTML = '';
+    const peer = typeof getPeer === 'function' ? getPeer() : null;
     avatarMount.appendChild(
-      createAvatarElement(peerId, 2, { selfBlipId: getConfig()?.blipId ?? null })
+      peer
+        ? createTrustedAvatarElement(peerId, 2, { selfBlipId: getConfig()?.blipId ?? null }, peer)
+        : createAvatarElement(peerId, 2, { selfBlipId: getConfig()?.blipId ?? null })
     );
   }
   mountHeaderAvatar();
@@ -280,8 +289,8 @@ export function createChatView(
   exportPdfThemedItem.textContent = t('chat.export_pdf_themed');
   exportPdfThemedItem.addEventListener('click', () => {
     menu.classList.add('hidden');
-    if (!isMeshPlusActive(getConfig())) {
-      showMeshPlusLockedToast();
+    if (!premiumTierEnabled(getConfig())) {
+      showPremiumLockedToast();
       return;
     }
     void exportPeerChatPdf(peerId, name.textContent, { themed: true, config: getConfig() });
@@ -294,8 +303,8 @@ export function createChatView(
   exportHtmlItem.textContent = t('chat.export_html_themed');
   exportHtmlItem.addEventListener('click', () => {
     menu.classList.add('hidden');
-    if (!isMeshPlusActive(getConfig())) {
-      showMeshPlusLockedToast();
+    if (!premiumTierEnabled(getConfig())) {
+      showPremiumLockedToast();
       return;
     }
     exportPeerChatHtml(peerId, name.textContent, { config: getConfig() });

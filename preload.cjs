@@ -3,12 +3,34 @@ const { contextBridge, ipcRenderer } = require('electron');
 let groupCallActive = false;
 let groupCallGroupId = null;
 
+const trustStateLive = {
+  buildTrust: 'unverified_build',
+  meshPlusTrust: 'unverified_mesh_plus',
+};
+
+ipcRenderer.invoke('get-trust-state').then((t) => {
+  if (t && typeof t === 'object') Object.assign(trustStateLive, t);
+});
+
+ipcRenderer.on('trust-state', (_, t) => {
+  if (t && typeof t === 'object') Object.assign(trustStateLive, t);
+});
+
+contextBridge.exposeInMainWorld('trustState', trustStateLive);
+
 contextBridge.exposeInMainWorld('blip', {
   platform: process.platform,
+  getTrustState: () => ipcRenderer.invoke('get-trust-state'),
+  onTrustState: (cb) => {
+    const handler = (_, data) => cb(data);
+    ipcRenderer.on('trust-state', handler);
+    return () => ipcRenderer.removeListener('trust-state', handler);
+  },
   getConfig: () => ipcRenderer.invoke('get-config'),
   saveConfig: (config) => ipcRenderer.invoke('save-config', config),
   activateMeshPlus: (key) => ipcRenderer.invoke('activate-mesh-plus', key),
   deactivateMeshPlus: () => ipcRenderer.invoke('deactivate-mesh-plus'),
+  factoryReset: () => ipcRenderer.invoke('factory-reset'),
   getMeshPlusStatus: () => ipcRenderer.invoke('get-mesh-plus-status'),
   getAppMetadata: () => ipcRenderer.invoke('get-app-metadata'),
   getAppIconUrl: () => ipcRenderer.invoke('get-app-icon-url'),
@@ -18,6 +40,7 @@ contextBridge.exposeInMainWorld('blip', {
   saveAvatar: (dataUrl) => ipcRenderer.invoke('save-avatar', dataUrl),
   clearAvatar: () => ipcRenderer.invoke('clear-avatar'),
   getProfileGifActiveUrl: () => ipcRenderer.invoke('get-profile-gif-active-url'),
+  getProfileGifShareUrl: () => ipcRenderer.invoke('get-profile-gif-share-url'),
   getProfileGifHistory: () => ipcRenderer.invoke('get-profile-gif-history'),
   saveProfileGif: (dataUrl) => ipcRenderer.invoke('save-profile-gif', dataUrl),
   saveProfileGifBytes: (base64) => ipcRenderer.invoke('save-profile-gif-bytes', base64),

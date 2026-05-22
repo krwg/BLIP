@@ -1,7 +1,7 @@
 import { t } from './i18n.js';
 import { getSessionStats, sessionOnlineHours } from './session-stats.js';
 import { isAchievementUnlocked } from './achievements-store.js';
-import { isMeshPlusActive } from './mesh-plus.js';
+import { premiumTierEnabled } from './mesh-plus.js';
 import { ACHIEVEMENT_ICON_BY_ID } from './achievements-icons.js';
 import { showAppToast } from './toasts.js';
 
@@ -135,7 +135,7 @@ export const ACHIEVEMENT_DEFS = [
     titleKey: 'achievements.mesh_plus_active',
     descKey: 'achievements.mesh_plus_active_desc',
     iconAsset: achievementIconUrl('mesh_plus_active'),
-    checkConfig: (cfg) => isMeshPlusActive(cfg),
+    checkConfig: (cfg) => premiumTierEnabled(cfg),
   },
 ];
 

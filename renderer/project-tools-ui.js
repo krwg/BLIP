@@ -565,7 +565,7 @@ export function createCanvasToolView(group, config, api, meshOpts = null) {
     swatchEls.forEach((sw) => {
       sw.classList.toggle('proj-canvas-swatch--active', sw.dataset.color === color);
     });
-    customColor.value = color.startsWith('#') && color.length >= 7 ? color : '#00ffc8';
+    customColorUi.value = color.startsWith('#') && color.length >= 7 ? color : '#00ffc8';
   }
 
   CANVAS_QUICK_COLORS.forEach((c) => {

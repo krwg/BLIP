@@ -8,7 +8,7 @@ import {
   mergeClipEntries,
   clipLimitForTier,
 } from './group-projects-store.js';
-import { isMeshPlusTierActive } from '../shared/mesh-plus-gates.js';
+import { uiShowsPremiumTier } from '../shared/mesh-plus-gates.js';
 
 export const MESH_PROJECT_SCOPE = '__mesh__';
 
@@ -97,7 +97,7 @@ export async function requestMeshClipboardPull(api, config, peerIds) {
  * @param {number} requesterId
  */
 export async function respondMeshClipboardPull(api, config, requesterId) {
-  const cap = clipLimitForTier(isMeshPlusTierActive(config));
+  const cap = clipLimitForTier(uiShowsPremiumTier(config));
   const st = getClipState(MESH_PROJECT_SCOPE);
   await broadcastMeshClipboard(api, config, [requesterId], {
     entries: st.entries.slice(0, cap),
@@ -108,7 +108,7 @@ export function handleMeshProjectTcp(msg, config, api) {
   const type = msg.type;
   const from = Number(msg.from);
   const myId = Number(config.blipId);
-  const clipCap = clipLimitForTier(isMeshPlusTierActive(config));
+  const clipCap = clipLimitForTier(uiShowsPremiumTier(config));
 
   if (type === 'mesh-proj-clipboard-pull') {
     if (!Number.isFinite(from) || from === myId) return true;

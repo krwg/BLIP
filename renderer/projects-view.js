@@ -8,12 +8,29 @@ import {
 } from './project-tools-ui.js';
 import { clipLimitForTier } from './group-projects-store.js';
 import { MESH_PROJECT_SCOPE } from './projects-mesh-wire.js';
-import { isMeshPlusActive, showMeshPlusLockedToast } from './mesh-plus.js';
+import { premiumTierEnabled, showPremiumLockedToast } from './mesh-plus.js';
+import {
+  readTierFlag,
+  gateAllowsCapability,
+  MESH_PLUS_FEATURES,
+} from '../shared/mesh-plus-gates.js';
 
 const TOOLS = [
   { id: 'pad', icon: '✦', labelKey: 'projects.tool_pad', tier: 'free' },
-  { id: 'board', icon: '▦', labelKey: 'projects.tool_board', tier: 'mesh_plus' },
-  { id: 'canvas', icon: '◻', labelKey: 'projects.tool_canvas', tier: 'mesh_plus' },
+  {
+    id: 'board',
+    icon: '▦',
+    labelKey: 'projects.tool_board',
+    tier: 'mesh_plus',
+    meshFeature: MESH_PLUS_FEATURES.projects_board,
+  },
+  {
+    id: 'canvas',
+    icon: '◻',
+    labelKey: 'projects.tool_canvas',
+    tier: 'mesh_plus',
+    meshFeature: MESH_PLUS_FEATURES.projects_canvas,
+  },
   { id: 'clipboard', icon: '⧉', labelKey: 'projects.tool_clip', tier: 'free' },
 ];
 
@@ -67,7 +84,7 @@ export function createProjectsView(configOrGetter, api, getOnlinePeerIds, hooks 
   }
 
   function meshOpts() {
-    const mp = isMeshPlusActive(getConfig());
+    const mp = premiumTierEnabled(getConfig());
     return {
       scopeId: MESH_PROJECT_SCOPE,
       getBroadcastTargets: getOnlinePeerIds,
@@ -185,7 +202,14 @@ export function createProjectsView(configOrGetter, api, getOnlinePeerIds, hooks 
 
   function canUseTool(tool) {
     if (tool.tier === 'free') return true;
-    if (tool.tier === 'mesh_plus') return isMeshPlusActive(getConfig());
+    if (tool.tier === 'mesh_plus') {
+      const cfg = getConfig();
+      return (
+        readTierFlag(cfg) &&
+        premiumTierEnabled(cfg) &&
+        gateAllowsCapability(cfg, tool.meshFeature || MESH_PLUS_FEATURES.projects_board)
+      );
+    }
     return false;
   }
 
@@ -199,7 +223,7 @@ export function createProjectsView(configOrGetter, api, getOnlinePeerIds, hooks 
 
     if (!canUseTool(def)) {
       if (def.tier === 'mesh_plus') {
-        showMeshPlusLockedToast();
+        showPremiumLockedToast();
         showStub(id, { locked: true });
       } else {
         showStub(id);
@@ -218,7 +242,7 @@ export function createProjectsView(configOrGetter, api, getOnlinePeerIds, hooks 
     toolList.querySelectorAll('.projects-tool-btn').forEach((btn) => {
       const def = TOOLS.find((x) => x.id === btn.dataset.tool);
       if (!def) return;
-      const locked = def.tier === 'mesh_plus' && !isMeshPlusActive(getConfig());
+      const locked = def.tier === 'mesh_plus' && !premiumTierEnabled(getConfig());
       btn.classList.toggle('projects-tool-btn--mesh-locked', locked);
     });
   }

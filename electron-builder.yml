@@ -14,6 +14,7 @@ publish:
 directories:
   output: dist-electron
   buildResources: build
+afterPack: scripts/obfuscate-after-pack.cjs
 files:
   - main/**/*
   - shared/**/*
@@ -22,6 +23,12 @@ files:
   - package.json
   - app-metadata.json
 extraResources:
+  - from: build/giphy-api-key.txt
+    to: giphy-api-key.txt
+  - from: build/mesh-plus-public-key.txt
+    to: mesh-plus-public-key.txt
+  - from: build/build-info.json
+    to: build-info.json
   - from: build/icon.png
     to: icons/icon.png
   - from: build/tray-16.png

@@ -1,4 +1,4 @@
-import { getMeshPlusTier, isMeshPlusActive } from './mesh-plus-license.js';
+import { resolveProductTier, resolveEntitlementState } from './mesh-plus-license.js';
 
 const SENSITIVE_KEYS = new Set(['meshPrivateKey', 'meshPlusLicenseSig']);
 
@@ -10,8 +10,8 @@ export function toPublicConfig(config) {
   if (!config || typeof config !== 'object') return config;
   const pub = { ...config };
   for (const key of SENSITIVE_KEYS) delete pub[key];
-  pub.tier = getMeshPlusTier(config);
-  pub.meshPlusActive = isMeshPlusActive(config);
+  pub.tier = resolveProductTier(config);
+  pub.meshPlusActive = resolveEntitlementState(config);
   if (pub.meshPlusLicenseId) {
     pub.meshPlusLicenseMasked = `••••-${String(pub.meshPlusLicenseId).slice(-4)}`;
   } else {

@@ -1,5 +1,7 @@
 import { t } from './i18n.js';
-import { isMeshPlusActive } from './mesh-plus.js';
+import { premiumTierEnabled } from './mesh-plus.js';
+import { applyMeshPlusTrustClass, getLocalTrustState } from './trust-ui.js';
+import { MESH_TRUST } from '../shared/trust-levels.js';
 import { showAppToast } from './toasts.js';
 import { buildPanelTitleRow, buildSectionSubtitleRow } from './settings-ui.js';
 
@@ -194,10 +196,16 @@ export function buildSettingsMeshPlusPanel(state, onConfigChange) {
   frag.appendChild(activationCard);
 
   function syncActivationUi() {
-    const active = isMeshPlusActive(state.config);
+    const active = premiumTierEnabled(state.config);
+    const trust = getLocalTrustState();
+    const meshTrust =
+      active && trust?.meshPlusTrust === MESH_TRUST.OFFICIAL_MESH_PLUS
+        ? MESH_TRUST.OFFICIAL_MESH_PLUS
+        : MESH_TRUST.UNVERIFIED_MESH_PLUS;
     statusPill.textContent = active ? t('mesh_plus.status_mesh_plus') : t('mesh_plus.status_free');
     statusPill.classList.toggle('mesh-plus-tier-pill--active', active);
     statusCard.classList.toggle('mesh-plus-status-card--active', active);
+    applyMeshPlusTrustClass(statusCard, meshTrust, active);
     keyInput.classList.toggle('hidden', active);
     keyLabel.classList.toggle('hidden', active);
     activateBtn.classList.toggle('hidden', active);
