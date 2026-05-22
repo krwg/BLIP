@@ -1,26 +1,16 @@
-/* Trust cues — color only, no text badges */
+/* MESH+ subscription trust (settings card, badges) */
 
-.build-trust-official {
-  border: 1px solid rgba(140, 90, 255, 0.6);
-  box-shadow: 0 0 12px rgba(140, 90, 255, 0.25);
-  border-radius: 2px;
-}
-
-.build-trust-unverified {
-  border: 1px solid rgba(255, 60, 60, 0.6);
-  box-shadow: 0 0 12px rgba(255, 60, 60, 0.25);
-  border-radius: 2px;
-}
-
-.meshplus-official {
-  background: linear-gradient(135deg, #7c3aed, #22d3ee);
-  box-shadow: 0 0 14px rgba(124, 58, 237, 0.35);
-}
-
+/* Legacy hooks — MESH+ settings uses pixel grid hero instead of flat gradient */
+.meshplus-official,
 .meshplus-unverified {
-  background: rgba(255, 60, 60, 0.15);
-  border: 1px solid rgba(255, 60, 60, 0.45);
-  box-shadow: 0 0 10px rgba(255, 60, 60, 0.2);
+  background: transparent;
+  box-shadow: none;
+}
+
+.mesh-plus-badge--trust-official .mesh-plus-badge__text {
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.45), rgba(34, 211, 238, 0.35)) !important;
+  border-color: rgba(124, 58, 237, 0.65) !important;
+  box-shadow: 0 0 8px rgba(124, 58, 237, 0.35);
 }
 
 .mesh-plus-badge--trust-unverified .mesh-plus-badge__text {
@@ -28,37 +18,147 @@
   border-color: rgba(255, 60, 60, 0.55) !important;
 }
 
-.avatar-trust-ring {
-  display: inline-flex;
-  padding: 2px;
+/* Settings → MESH+ pixel field (BLIP purple → cyan → mint) */
+
+.mesh-plus-hero {
+  position: relative;
+  margin: 0 0 12px;
+  border: 2px solid var(--blip-glass-border);
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  image-rendering: pixelated;
+}
+
+.mesh-plus-pixel-grid {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(28, 1fr);
+  grid-template-rows: repeat(6, 1fr);
+  gap: 3px;
+  padding: 10px;
   box-sizing: border-box;
-  border-radius: 4px;
-  flex-shrink: 0;
+  pointer-events: none;
 }
 
-.avatar-trust-ring .avatar-wrap,
-.avatar-trust-ring .avatar-canvas,
-.avatar-trust-ring .avatar-img {
+.mesh-plus-pixel-grid--strip {
+  position: relative;
+  inset: auto;
+  grid-template-columns: repeat(20, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  padding: 6px 8px;
+  gap: 2px;
+}
+
+.mesh-plus-pixel-grid__cell {
   display: block;
+  min-width: 0;
+  min-height: 0;
+  border-radius: 0;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.35);
 }
 
-.settings-about-hero.build-trust-official,
-.mesh-plus-status-card.meshplus-official {
-  animation: trust-glow-pulse 4s ease-in-out infinite;
+.mesh-plus-hero--free .mesh-plus-pixel-grid__cell {
+  background: hsl(225 9% calc(var(--cell-lit, 24) * 1%));
+  animation: mesh-plus-pixel-twinkle 3.4s ease-in-out infinite;
+  animation-delay: calc(var(--cell-delay, 0) * 0.09s);
 }
 
-@keyframes trust-glow-pulse {
+.mesh-plus-hero--active .mesh-plus-pixel-grid__cell {
+  background: rgb(var(--cell-r, 124), var(--cell-g, 58), var(--cell-b, 237));
+  animation: mesh-plus-pixel-twinkle 2.6s ease-in-out infinite;
+  animation-delay: calc(var(--cell-delay, 0) * 0.07s);
+}
+
+.mesh-plus-hero__inner {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  background: color-mix(in srgb, var(--blip-bg) 78%, transparent);
+  backdrop-filter: blur(3px);
+}
+
+.mesh-plus-hero__inner .mesh-plus-status-card {
+  border: none;
+  box-shadow: none;
+  margin: 0;
+  background: transparent;
+}
+
+.mesh-plus-status-card--trust-unverified {
+  box-shadow: inset 0 0 0 1px rgba(255, 60, 60, 0.45);
+}
+
+.mesh-plus-pixel-strip {
+  margin: 0 0 8px;
+  border: 2px solid var(--blip-glass-border);
+  overflow: hidden;
+  image-rendering: pixelated;
+}
+
+.mesh-plus-pixel-strip--free .mesh-plus-pixel-grid__cell {
+  background: hsl(225 9% calc(var(--cell-lit, 24) * 1%));
+  animation: mesh-plus-pixel-twinkle 3.8s ease-in-out infinite;
+  animation-delay: calc(var(--cell-delay, 0) * 0.1s);
+}
+
+.mesh-plus-pixel-strip--active .mesh-plus-pixel-grid__cell {
+  background: rgb(var(--cell-r, 124), var(--cell-g, 58), var(--cell-b, 237));
+  animation: mesh-plus-pixel-twinkle 2.8s ease-in-out infinite;
+  animation-delay: calc(var(--cell-delay, 0) * 0.08s);
+}
+
+@keyframes mesh-plus-pixel-twinkle {
   0%,
   100% {
-    filter: brightness(1);
+    opacity: 0.42;
+    filter: brightness(0.78) saturate(0.85);
+    transform: scale(0.9);
   }
-  50% {
-    filter: brightness(1.06);
+  45% {
+    opacity: 1;
+    filter: brightness(1.12) saturate(1.15);
+    transform: scale(1);
+  }
+  70% {
+    opacity: 0.65;
+    filter: brightness(0.95) saturate(1);
+    transform: scale(0.96);
   }
 }
 
-.call-avatar-slot.build-trust-official,
-.call-avatar-slot.build-trust-unverified {
-  display: inline-flex;
-  padding: 3px;
+@media (prefers-reduced-motion: reduce) {
+  .mesh-plus-pixel-grid__cell {
+    animation: none !important;
+    opacity: 0.85;
+    transform: none;
+  }
+}
+
+/* Settings → About: build trust (client), square notice */
+
+.settings-about-trust-notice {
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto 16px;
+  padding: 14px 16px;
+  font-size: 13px;
+  line-height: 1.45;
+  letter-spacing: 0.04em;
+  text-align: center;
+  border: 2px solid var(--blip-glass-border);
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.45);
+  box-sizing: border-box;
+}
+
+.settings-about-trust-notice--official {
+  border-color: rgba(124, 58, 237, 0.55);
+  color: #c4b5fd;
+  background: rgba(124, 58, 237, 0.12);
+}
+
+.settings-about-trust-notice--unofficial {
+  border-color: rgba(255, 60, 60, 0.55);
+  color: #fca5a5;
+  background: rgba(255, 60, 60, 0.1);
 }

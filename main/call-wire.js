@@ -20,13 +20,33 @@ export function serializeSdp(sdp) {
   return null;
 }
 
-/** Prefer the peer's existing inbound TCP socket (same path the offer arrived on). */
-export async function sendCallPayload(tcpServer, ensurePeerSocket, peerBlipId, payload) {
-  const socket = tcpServer?.getConnection(peerBlipId);
-  if (socket && !socket.destroyed) {
-    await sendOnSocket(socket, payload);
+/**
+ * Prefer inbound TCP (peer dialed us), then outbound handshake socket, then new connection.
+ * @param {Map<string, import('net').Socket>} [peerSockets]
+ */
+export async function sendCallPayload(
+  tcpServer,
+  ensurePeerSocket,
+  peerBlipId,
+  payload,
+  peerSockets = null
+) {
+  const id = Number(peerBlipId);
+  const inbound = tcpServer?.getConnection(id);
+  if (inbound && !inbound.destroyed) {
+    await sendOnSocket(inbound, payload);
     return;
   }
-  const fallback = await ensurePeerSocket(peerBlipId);
+
+  if (peerSockets?.size) {
+    const needle = `:${id}:`;
+    for (const [key, socket] of peerSockets) {
+      if (!key.includes(needle) || !socket || socket.destroyed) continue;
+      await sendOnSocket(socket, payload);
+      return;
+    }
+  }
+
+  const fallback = await ensurePeerSocket(id);
   await sendOnSocket(fallback, payload);
 }

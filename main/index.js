@@ -598,6 +598,10 @@ async function ensurePeerSocket(blipId) {
   return socket;
 }
 
+function sendCallToPeer(peerBlipId, payload) {
+  return sendCallPayload(tcpServer, ensurePeerSocket, peerBlipId, payload, peerSockets);
+}
+
 function handleTcpPayload(msg, fromBlipId) {
   if (isPeerBlocked(config, fromBlipId)) return;
 
@@ -988,6 +992,12 @@ function setupIpc() {
       if (type === 'typing' && packet.active === undefined) {
         packet.active = !!payload.active;
       }
+      if (type === 'profile-gif-share' && packet.dataUrl) {
+        const line = JSON.stringify(packet) + '\n';
+        if (Buffer.byteLength(line, 'utf8') > 3_900_000) {
+          return { ok: false, error: 'profile_gif_too_large' };
+        }
+      }
       await sendOnSocket(socket, packet);
       return { ok: true };
     } catch (err) {
@@ -999,13 +1009,23 @@ function setupIpc() {
     try {
       const sdp = serializeSdp(payload.sdp);
       if (!sdp) return { ok: false, error: 'Invalid local SDP' };
-      await sendCallPayload(tcpServer, ensurePeerSocket, payload.to, {
+      const packet = {
         type: 'call-offer',
         from: config.blipId,
         to: payload.to,
         sdp,
         video: payload.video ?? false,
-      });
+      };
+      try {
+        await sendCallToPeer(payload.to, packet);
+      } catch (err) {
+        if (/peer not found/i.test(err?.message || '')) {
+          await new Promise((r) => setTimeout(r, 450));
+          await sendCallToPeer(payload.to, packet);
+        } else {
+          throw err;
+        }
+      }
       return { ok: true };
     } catch (err) {
       return { ok: false, error: err.message };
@@ -1016,7 +1036,7 @@ function setupIpc() {
     try {
       const sdp = serializeSdp(payload.sdp);
       if (!sdp) return { ok: false, error: 'Invalid local SDP' };
-      await sendCallPayload(tcpServer, ensurePeerSocket, payload.to, {
+      await sendCallToPeer(payload.to, {
         type: 'call-answer',
         from: config.blipId,
         to: payload.to,
@@ -1030,7 +1050,7 @@ function setupIpc() {
 
   ipcMain.handle('call-reject', async (_, payload) => {
     try {
-      await sendCallPayload(tcpServer, ensurePeerSocket, payload.to, {
+      await sendCallToPeer(payload.to, {
         type: 'call-reject',
         from: config.blipId,
         to: payload.to,
@@ -1043,7 +1063,7 @@ function setupIpc() {
 
   ipcMain.handle('call-candidate', async (_, payload) => {
     try {
-      await sendCallPayload(tcpServer, ensurePeerSocket, payload.to, {
+      await sendCallToPeer(payload.to, {
         type: 'call-candidate',
         from: config.blipId,
         to: payload.to,
@@ -1058,7 +1078,7 @@ function setupIpc() {
   ipcMain.handle('call-hangup', async (_, payload) => {
     try {
       if (Number(payload.to) === activeCallPeerId) activeCallPeerId = null;
-      await sendCallPayload(tcpServer, ensurePeerSocket, payload.to, {
+      await sendCallToPeer(payload.to, {
         type: 'call-hangup',
         from: config.blipId,
         to: payload.to,
@@ -1072,7 +1092,7 @@ function setupIpc() {
 
   ipcMain.handle('call-state', async (_, payload) => {
     try {
-      await sendCallPayload(tcpServer, ensurePeerSocket, payload.to, {
+      await sendCallToPeer(payload.to, {
         type: 'call-state',
         from: config.blipId,
         to: payload.to,
@@ -1090,7 +1110,7 @@ function setupIpc() {
     try {
       const sdp = serializeSdp(payload.sdp);
       if (!sdp) return { ok: false, error: 'Invalid local SDP' };
-      await sendCallPayload(tcpServer, ensurePeerSocket, payload.to, {
+      await sendCallToPeer(payload.to, {
         type: 'call-renegotiate',
         from: config.blipId,
         to: payload.to,
@@ -1106,7 +1126,7 @@ function setupIpc() {
     try {
       const sdp = serializeSdp(payload.sdp);
       if (!sdp) return { ok: false, error: 'Invalid local SDP' };
-      await sendCallPayload(tcpServer, ensurePeerSocket, payload.to, {
+      await sendCallToPeer(payload.to, {
         type: 'call-renegotiate-answer',
         from: config.blipId,
         to: payload.to,
@@ -1322,21 +1342,19 @@ function setupIpc() {
   ipcMain.handle('open-call-outgoing', async (_, payload) => {
     try {
       const peerId = Number(payload?.peerId);
-      if (Number.isFinite(peerId)) {
-        try {
-          await ensurePeerSocket(peerId);
-        } catch (err) {
-          console.warn('[BLIP] open-call-outgoing peer socket:', err?.message || err);
-        }
-      }
-      activeCallPeerId = Number(payload.peerId) || null;
+      if (!Number.isFinite(peerId)) return { ok: false, error: 'invalid_peer' };
+      const peer = findPeer(peerId);
+      if (!peer) return { ok: false, error: 'Peer not found' };
+      await ensurePeerSocket(peerId);
+      activeCallPeerId = peerId;
       await sendToCallWindow(
         'call-outgoing',
-        { peerId: payload.peerId, video: payload.video ?? false },
+        { peerId, video: payload.video ?? false },
         { focus: true }
       );
       return { ok: true };
     } catch (err) {
+      activeCallPeerId = null;
       return { ok: false, error: err?.message || String(err) };
     }
   });
@@ -1545,7 +1563,7 @@ async function hangupActiveCallIfAny() {
   if (!peer || !config?.blipId) return;
   activeCallPeerId = null;
   try {
-    await sendCallPayload(tcpServer, ensurePeerSocket, peer, {
+    await sendCallToPeer(peer, {
       type: 'call-hangup',
       from: config.blipId,
       to: peer,

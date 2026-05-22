@@ -1,9 +1,10 @@
 import { t } from './i18n.js';
 import { premiumTierEnabled } from './mesh-plus.js';
-import { applyMeshPlusTrustClass, getLocalTrustState } from './trust-ui.js';
-import { MESH_TRUST } from '../shared/trust-levels.js';
+import { getLocalTrustState, resolvePeerMeshPlusTrust } from './trust-ui.js';
+import { BUILD_TRUST, MESH_TRUST, OFFICIAL_BUILD_ISSUER } from '../shared/trust-levels.js';
 import { showAppToast } from './toasts.js';
 import { buildPanelTitleRow, buildSectionSubtitleRow } from './settings-ui.js';
+import { createMeshPlusPixelHero, createMeshPlusPixelStrip } from './mesh-plus-pixel-bg.js';
 
 const CAROUSEL_SLIDES = [
   { icon: '◈', titleKey: 'mesh_plus.slide_premium_bg', descKey: 'mesh_plus.slide_premium_bg_desc' },
@@ -27,6 +28,7 @@ export function buildSettingsMeshPlusPanel(state, onConfigChange) {
 
   frag.appendChild(buildPanelTitleRow('settings.section_mesh_plus', 'mesh_plus.intro_hint'));
 
+  const pixelHero = createMeshPlusPixelHero();
   const statusCard = document.createElement('div');
   statusCard.className = 'mesh-plus-status-card settings-list-panel';
   const statusRow = document.createElement('div');
@@ -40,7 +42,8 @@ export function buildSettingsMeshPlusPanel(state, onConfigChange) {
   statusRow.appendChild(statusLabel);
   statusRow.appendChild(statusPill);
   statusCard.appendChild(statusRow);
-  frag.appendChild(statusCard);
+  pixelHero.inner.appendChild(statusCard);
+  frag.appendChild(pixelHero.hero);
 
   const carouselTitle = document.createElement('h3');
   carouselTitle.className = 'section-subtitle';
@@ -50,6 +53,8 @@ export function buildSettingsMeshPlusPanel(state, onConfigChange) {
 
   const carousel = document.createElement('div');
   carousel.className = 'mesh-plus-carousel settings-list-panel';
+  const carouselPixelStrip = createMeshPlusPixelStrip(false);
+  carousel.appendChild(carouselPixelStrip.strip);
   const carouselTop = document.createElement('div');
   carouselTop.className = 'mesh-plus-carousel__top';
   const slideCounter = document.createElement('span');
@@ -198,14 +203,34 @@ export function buildSettingsMeshPlusPanel(state, onConfigChange) {
   function syncActivationUi() {
     const active = premiumTierEnabled(state.config);
     const trust = getLocalTrustState();
-    const meshTrust =
-      active && trust?.meshPlusTrust === MESH_TRUST.OFFICIAL_MESH_PLUS
-        ? MESH_TRUST.OFFICIAL_MESH_PLUS
-        : MESH_TRUST.UNVERIFIED_MESH_PLUS;
+    const selfPeer = {
+      meshPlus: active,
+      meshPlusTrust: trust?.meshPlusTrust,
+      buildTrust: trust?.buildTrust,
+      buildVerified: trust?.buildTrust === BUILD_TRUST.VERIFIED_OFFICIAL,
+      buildIssuer: trust?.buildTrust === BUILD_TRUST.VERIFIED_OFFICIAL ? OFFICIAL_BUILD_ISSUER : '',
+    };
+    const meshTrust = active
+      ? resolvePeerMeshPlusTrust(selfPeer)
+      : MESH_TRUST.UNVERIFIED_MESH_PLUS;
     statusPill.textContent = active ? t('mesh_plus.status_mesh_plus') : t('mesh_plus.status_free');
     statusPill.classList.toggle('mesh-plus-tier-pill--active', active);
     statusCard.classList.toggle('mesh-plus-status-card--active', active);
-    applyMeshPlusTrustClass(statusCard, meshTrust, active);
+    pixelHero.setSubscriptionActive(active);
+    carouselPixelStrip.setSubscriptionActive(active);
+    if (meshTrust === MESH_TRUST.UNVERIFIED_MESH_PLUS && active) {
+      statusCard.classList.add('mesh-plus-status-card--trust-unverified');
+    } else {
+      statusCard.classList.remove('mesh-plus-status-card--trust-unverified');
+    }
+    if (
+      active &&
+      meshTrust === MESH_TRUST.UNVERIFIED_MESH_PLUS &&
+      trust?.buildTrust === BUILD_TRUST.UNVERIFIED_BUILD
+    ) {
+      statusCard.dataset.i18nTitle = 'mesh_plus.trust_needs_official_build';
+      statusCard.title = t('mesh_plus.trust_needs_official_build');
+    }
     keyInput.classList.toggle('hidden', active);
     keyLabel.classList.toggle('hidden', active);
     activateBtn.classList.toggle('hidden', active);

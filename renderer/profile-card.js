@@ -209,6 +209,17 @@ export function buildProfileCard(peerInput, hooks = {}) {
     return getPeerProfileGifDataUrl(peer.blipId);
   }
 
+  function setPeer(nextPeer) {
+    if (!nextPeer || nextPeer.blipId == null) return;
+    peer = nextPeer;
+    if (peer.online && !pulseTimer) {
+      pulseTimer = window.setInterval(refresh, 2000);
+    } else if (!peer.online && pulseTimer) {
+      clearInterval(pulseTimer);
+      pulseTimer = null;
+    }
+  }
+
   function refresh() {
     const pClass = presenceClass(peer);
     const tip = statusTooltip(peer);
@@ -265,6 +276,7 @@ export function buildProfileCard(peerInput, hooks = {}) {
   return {
     el: card,
     refresh,
+    setPeer,
     destroy() {
       if (noteSaveTimer) clearTimeout(noteSaveTimer);
       if (noteInput) setPeerPrivateNote(peer.blipId, noteInput.value);

@@ -2,11 +2,13 @@ import { t } from './i18n.js';
 import { getSessionStats, sessionOnlineHours } from './session-stats.js';
 import { isAchievementUnlocked } from './achievements-store.js';
 import { premiumTierEnabled } from './mesh-plus.js';
+import { getLocalTrustState } from './trust-ui.js';
+import { BUILD_TRUST } from '../shared/trust-levels.js';
 import { ACHIEVEMENT_ICON_BY_ID } from './achievements-icons.js';
 import { showAppToast } from './toasts.js';
 
 /**
- * @typedef {{ id: string, codeKey: string, titleKey: string, descKey: string, glyph: string, iconAsset: string, check?: (s: object) => boolean, checkConfig?: (cfg: object) => boolean }} AchievementDef
+ * @typedef {{ id: string, codeKey: string, titleKey: string, descKey: string, glyph: string, iconAsset: string, check?: (s: object) => boolean, checkConfig?: (cfg: object) => boolean, checkTrust?: () => boolean }} AchievementDef
  */
 
 /** Fallback glyph when iconAsset is empty. */
@@ -19,6 +21,8 @@ export const ACHIEVEMENT_GLYPHS = {
   first_file: '⬆',
   online_1h: '⏱',
   mesh_plus_active: '◈',
+  beta_tester: 'β',
+  unofficial_build: '⎇',
 };
 
 function appendAchievementGlyphFallback(wrap, def) {
@@ -137,9 +141,31 @@ export const ACHIEVEMENT_DEFS = [
     iconAsset: achievementIconUrl('mesh_plus_active'),
     checkConfig: (cfg) => premiumTierEnabled(cfg),
   },
+  {
+    id: 'beta_tester',
+    glyph: 'β',
+    codeKey: 'achievements.code_beta_tester',
+    titleKey: 'achievements.beta_tester',
+    descKey: 'achievements.beta_tester_desc',
+    iconAsset: achievementIconUrl('beta_tester'),
+    checkConfig: (cfg) => !!cfg?.receiveBetaUpdates,
+  },
+  {
+    id: 'unofficial_build',
+    glyph: '⎇',
+    codeKey: 'achievements.code_unofficial_build',
+    titleKey: 'achievements.unofficial_build',
+    descKey: 'achievements.unofficial_build_desc',
+    iconAsset: achievementIconUrl('unofficial_build'),
+    checkTrust: () => {
+      const trust = getLocalTrustState();
+      return trust?.buildTrust === BUILD_TRUST.UNVERIFIED_BUILD;
+    },
+  },
 ];
 
 function isProgressMet(def, stats, config) {
+  if (def.checkTrust) return !!def.checkTrust();
   if (def.checkConfig) return !!def.checkConfig(config);
   return !!def.check?.(stats);
 }

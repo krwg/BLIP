@@ -12,7 +12,11 @@ export function syncAchievements(config) {
   const stats = getSessionStats();
   const newly = [];
   for (const def of ACHIEVEMENT_DEFS) {
-    const met = def.checkConfig ? def.checkConfig(config) : def.check?.(stats);
+    const met = def.checkTrust
+      ? def.checkTrust()
+      : def.checkConfig
+        ? def.checkConfig(config)
+        : def.check?.(stats);
     if (!met) continue;
     if (isAchievementUnlocked(def.id)) continue;
     if (unlockAchievement(def.id)) newly.push(def);

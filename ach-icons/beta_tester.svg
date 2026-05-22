@@ -1,0 +1,23 @@
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" fill="none" shape-rendering="crispEdges">
+  <defs>
+    <filter id="g" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2" result="blur"/><feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+  
+
+  <path d="M64 24 L98 44 L98 84 L64 104 L30 84 L30 44 Z" fill="#0f172a" stroke="#00ffc8" stroke-width="3" stroke-linejoin="miter"/>
+  
+
+  <path d="M64 24 L64 16 M98 44 L106 44 M98 84 L106 84 M64 104 L64 112 M30 84 L22 84 M30 44 L22 44" stroke="#334155" stroke-width="3"/>
+  
+
+  <path d="M50 44 L76 44 L80 56 L70 64 L80 72 L76 84 L50 84 L46 72 L56 64 L46 56 Z" fill="#00ffc8"/>
+
+  <path d="M58 56 L68 64 L58 72 Z" fill="#0f172a"/>
+  
+
+  <circle cx="86" cy="36" r="5" fill="#00ffc8" filter="url(#g)"/>
+  <circle cx="86" cy="36" r="2" fill="#ffffff"/>
+</svg>

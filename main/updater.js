@@ -80,9 +80,20 @@ async function sanitizeUpdaterCacheOnStartup() {
  * deleted releases (orphan tags). Use GitHub REST + generic feed for betas instead.
  * @param {object} [config]
  */
+function isUnsignedInstallerError(err) {
+  const msg = err?.message || String(err);
+  return /not signed by the application owner|not digitally signed|SignerCertificate/i.test(
+    msg
+  );
+}
+
 async function applyUpdateFeed(config) {
   autoUpdater.allowPrerelease = false;
   autoUpdater.autoDownload = config?.autoDownloadUpdates !== false;
+  // GitHub releases are not Authenticode-signed; without this, Windows blocks install.
+  if (process.platform === 'win32') {
+    autoUpdater.verifyUpdateCodeSignature = false;
+  }
 
   const receiveBeta = !!config?.receiveBetaUpdates;
   if (receiveBeta) {
@@ -155,6 +166,11 @@ function attachListeners() {
           });
         }
       });
+      return;
+    }
+    if (isUnsignedInstallerError(err)) {
+      clearUpdaterCache();
+      notify({ state: 'error', code: 'unsigned_installer' });
       return;
     }
     notify({ state: 'error', message: err?.message || String(err) });

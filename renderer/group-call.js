@@ -558,9 +558,7 @@ function createGroupCallShell(config) {
           n === myId
             ? { blipId: n, buildTrust: localTrust?.buildTrust || BUILD_TRUST.UNVERIFIED_BUILD }
             : apiRef?.getLanPeer?.(n) || { blipId: n, buildTrust: BUILD_TRUST.UNVERIFIED_BUILD };
-        slot.appendChild(
-          createTrustedAvatarElement(n, 4, { selfBlipId: config.blipId }, peer)
-        );
+        slot.appendChild(createTrustedAvatarElement(n, 4, { selfBlipId: config.blipId }));
       }
       }
       tile.appendChild(slot);

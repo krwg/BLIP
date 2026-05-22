@@ -5,6 +5,12 @@ import { openAvatarCropDialog } from './avatar-crop-dialog.js';
 import { openProfileGifPicker } from './profile-gif-picker.js';
 import { premiumTierEnabled, showPremiumLockedToast } from './mesh-plus.js';
 import {
+  getLocalTrustState,
+  resolvePeerMeshPlusTrust,
+  isOfficialBuildTrust,
+} from './trust-ui.js';
+import { OFFICIAL_BUILD_ISSUER } from '../shared/trust-levels.js';
+import {
   readEntitlementMarker,
   gateAllowsCapability,
   MESH_PLUS_FEATURES,
@@ -195,14 +201,24 @@ export function buildSettingsProfilePanel(state, api, deps = {}) {
   let previewBuilt = null;
 
   function selfPeer() {
-    return {
+    const trust = getLocalTrustState();
+    const meshPlus = premiumTierEnabled(state.config);
+    const base = {
       blipId: state.config.blipId,
       displayName: state.config.displayName || 'Anonymous',
       online: true,
       presence: state.config.presenceStatus || 'online',
       presenceText: state.config.presenceText || '',
-      meshPlus: premiumTierEnabled(state.config),
+      meshPlus,
+      buildTrust: trust?.buildTrust,
+      buildVerified: isOfficialBuildTrust(trust?.buildTrust),
+      buildIssuer: isOfficialBuildTrust(trust?.buildTrust) ? OFFICIAL_BUILD_ISSUER : '',
     };
+    if (meshPlus) {
+      base.meshPlusTrust =
+        trust?.meshPlusTrust ?? resolvePeerMeshPlusTrust(base);
+    }
+    return base;
   }
 
   function refreshAvatarPreview() {
@@ -324,7 +340,11 @@ export function buildSettingsProfilePanel(state, api, deps = {}) {
   refreshAvatarPreview();
   refreshPreview();
 
-  frag._profileCleanup = () => previewBuilt?.destroy?.();
+  const onTrust = () => refreshPreview();
+  window.blip?.onTrustState?.(onTrust);
+  frag._profileCleanup = () => {
+    previewBuilt?.destroy?.();
+  };
 
   return frag;
 }

@@ -64,7 +64,7 @@ Quick VM flow: host runs BLIP (ID **1**), VM runs BLIP (ID **2**), same subnet v
 | | |
 |---|---|
 | **What** | Desktop app: text, voice, and video over LAN / Hamachi / Radmin VPN |
-| **Release** | **1.0.1 — Mesh Plus** (see [`CHANGELOG.md`](CHANGELOG.md); last GitHub tag: [v0.7.7](https://github.com/krwg/BLIP/releases/tag/v0.7.7)) |
+| **Release** | **1.0.2 — Mesh Plus** (see [`CHANGELOG.md`](CHANGELOG.md); last GitHub tag: [v0.7.7](https://github.com/krwg/BLIP/releases/tag/v0.7.7)) |
 | **Identity** | BLIP ID **1–64** (8×8 grid, Minecraft-style chunk metaphor) |
 | **Servers** | None — UDP broadcast, TCP, and WebRTC peer-to-peer only |
 | **Sign-up** | None |
@@ -96,11 +96,17 @@ Quick VM flow: host runs BLIP (ID **1**), VM runs BLIP (ID **2**), same subnet v
 | **Settings** | Profile, privacy/block list, appearance, network, shortcuts, call devices, transfers |
 | **Window** | Custom title bar, system tray, close-to-tray (Windows), **launch at login** (Windows) |
 | **Updates** | Auto-check on startup (packaged builds) |
-| **MESH+** | Optional premium tier — themes, sounds, status GIF, Signal Corps Board/Canvas, export styling ([details](docs/MESH-PLUS.md)) |
+| **MESH+** | Optional test tier — extra customization, early features, profile badge; keys free from the author ([details](docs/MESH-PLUS.md)) |
 
 <h3 id="en-mesh-plus">MESH+</h3>
 
-**MESH+** unlocks premium cosmetics and builder tools on top of the free LAN messenger. Enter your `BLIP-XXXX-…` key in **Settings → MESH+**.
+**MESH+** is a **test subscription** the author uses to learn how to ship a **license-checked** desktop app (offline key, author verification). Keys are issued **personally**, **free of charge** — email **[blipteam@icloud.com](mailto:blipteam@icloud.com)**. Paste your `BLIP-XXXX-…` key in **Settings → MESH+**.
+
+| | |
+|---|---|
+| **Today** | Subscribers get **new features first** while they are tested on the LAN |
+| **Later** | Planned to move **today’s MESH+ features into FREE** for everyone |
+| **Always** | Extra **customization** (themes, sounds, icons, status GIF, Signal Corps tools) and a **MESH+ badge** on your profile |
 
 | Category | Examples |
 |----------|----------|
@@ -305,7 +311,7 @@ blip/
 │   └── assets/fonts/  # Minecraft woff2/ttf
 ├── docs/              # ARCHITECTURE.md + GitHub Pages landing
 ├── build/             # icon.ico, icon.png (generated)
-├── app-metadata.json  # version 1.0.1, codename Mesh Plus
+├── app-metadata.json  # version 1.0.2, codename Mesh Plus
 ├── docs/MESH-PLUS.md  # MESH+ feature list
 ├── ach-icons/         # achievement SVGs (bundled in renderer)
 ├── preload.cjs        # IPC bridge
@@ -367,7 +373,7 @@ The **Minecraft** font is licensed separately under [MIT](https://github.com/bs-
 | | |
 |---|---|
 | **Что это** | Desktop-приложение: текст, голос и видео по LAN / Hamachi / Radmin VPN |
-| **Релиз** | **1.0.1 — Mesh Plus** (см. [`CHANGELOG.md`](CHANGELOG.md); на GitHub: [v0.7.7](https://github.com/krwg/BLIP/releases/tag/v0.7.7)) |
+| **Релиз** | **1.0.2 — Mesh Plus** (см. [`CHANGELOG.md`](CHANGELOG.md); на GitHub: [v0.7.7](https://github.com/krwg/BLIP/releases/tag/v0.7.7)) |
 | **Идентификация** | BLIP ID **1–64** (сетка 8×8) |
 | **Серверы** | Нет — только UDP broadcast, TCP и WebRTC между пирами |
 | **Регистрация** | Нет |
@@ -399,11 +405,17 @@ The **Minecraft** font is licensed separately under [MIT](https://github.com/bs-
 | **Настройки** | Профиль, конфиденциальность/блок, вид, сеть, горячие клавиши, звонок, передачи |
 | **Окно** | Свой title bar, трей, в трей (Windows), **автозапуск при входе в Windows** |
 | **Обновления** | Проверка при запуске (собранные сборки) |
-| **MESH+** | Опциональный премиум — темы, гифка статуса, Доска/Холст, оформление экспорта ([подробнее](docs/MESH-PLUS.md)) |
+| **MESH+** | Тестовая подписка — кастомизация, ранний доступ к фичам, бейдж; ключи бесплатно от автора ([подробнее](docs/MESH-PLUS.md)) |
 
 <h3 id="ru-mesh-plus">MESH+</h3>
 
-**MESH+** — премиум-уровень поверх бесплатного LAN-мессенджера. Ключ `BLIP-XXXX-…` в **Настройки → MESH+**.
+**MESH+** — **тестовая подписка**: автор отрабатывает **лицензионное приложение** с офлайн-проверкой ключа. Ключи выдаются **лично**, **бесплатно** — пишите на **[blipteam@icloud.com](mailto:blipteam@icloud.com)**. Ключ `BLIP-XXXX-…` в **Настройки → MESH+**.
+
+| | |
+|---|---|
+| **Сейчас** | Подписчики **первыми получают новые фичи** на время теста в LAN |
+| **Потом** | Планируется перенести **всё из MESH+ в бесплатный уровень** |
+| **Всегда** | Расширенная **кастомизация** и **бейдж MESH+** в профиле |
 
 | Категория | Примеры |
 |-----------|---------|

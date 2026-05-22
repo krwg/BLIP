@@ -187,7 +187,7 @@ export function createChatView(
     const peer = typeof getPeer === 'function' ? getPeer() : null;
     avatarMount.appendChild(
       peer
-        ? createTrustedAvatarElement(peerId, 2, { selfBlipId: getConfig()?.blipId ?? null }, peer)
+        ? createTrustedAvatarElement(peerId, 2, { selfBlipId: getConfig()?.blipId ?? null })
         : createAvatarElement(peerId, 2, { selfBlipId: getConfig()?.blipId ?? null })
     );
   }

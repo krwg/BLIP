@@ -44,7 +44,10 @@ import {
   setPeerAvatarDataUrl,
   getSelfAvatarCache,
 } from './avatar.js';
-import { createTrustedAvatarElement } from './trust-ui.js';
+import {
+  appendAboutBuildTrustNotice,
+  createTrustedAvatarElement,
+} from './trust-ui.js';
 import { openAvatarCropDialog } from './avatar-crop-dialog.js';
 import {
   sounds,
@@ -253,6 +256,9 @@ const MESH_PULSE_INTERVAL_MS = 60_000;
 let meshPulseTimer = null;
 /** @type {(() => void) | null} */
 let profilePageCleanup = null;
+/** @type {{ peerId: number, refresh: () => void, setPeer?: (p: object) => void, destroy: () => void } | null} */
+let profilePageApi = null;
+let profileRenderInProgress = false;
 
 /** @type {Map<number, number>} */
 const unreadByPeer = new Map();
@@ -268,11 +274,35 @@ function formatAppVersion(meta) {
 
 async function openCallOutgoing(peerId, video = false) {
   if (!window.blip?.openCallOutgoing) return;
+  const id = Number(peerId);
+  const peer = state.peers.find((p) => Number(p.blipId) === id);
+  if (!peer?.online) {
+    showAppToast({
+      title: t('call.signal_lost'),
+      body: t('call.signal_lost_hint'),
+      durationMs: 4500,
+    });
+    return;
+  }
   recordCallStarted();
   try {
-    await window.blip.openCallOutgoing({ peerId, video });
+    const result = await window.blip.openCallOutgoing({ peerId: id, video });
+    if (!result?.ok) {
+      showAppToast({
+        title: t('call.signal_lost'),
+        body: result?.error || t('call.signal_lost_hint'),
+        variant: 'danger',
+        durationMs: 5000,
+      });
+    }
   } catch (e) {
     console.error('[BLIP] openCallOutgoing', e);
+    showAppToast({
+      title: t('call.signal_lost'),
+      body: e?.message || t('call.signal_lost_hint'),
+      variant: 'danger',
+      durationMs: 5000,
+    });
   }
 }
 
@@ -812,7 +842,7 @@ function renderPeersView() {
 
       const avatar = createTrustedAvatarElement(peer.blipId, 2, {
         selfBlipId: state.config.blipId,
-      }, peer);
+      });
       avatar.classList.add('peer-row-avatar');
       avatar.style.cursor = 'pointer';
       avatar.title = t('peers.profile_open');
@@ -881,10 +911,18 @@ function renderPeersView() {
       });
 
       row.addEventListener('click', () => {
-        if (peer.online) openChat(peer.blipId);
+        void openChat(peer.blipId);
       });
+      row.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          void openChat(peer.blipId);
+        }
+      });
+      row.setAttribute('tabindex', '0');
+      row.setAttribute('role', 'button');
 
-      row.style.cursor = peer.online ? 'pointer' : 'default';
+      row.style.cursor = 'pointer';
 
       list.appendChild(row);
     });
@@ -913,7 +951,7 @@ async function promptMeshLabel(peer) {
   const chat = state.chatViews.get(peer.blipId);
   if (chat) chat.setPeerName(formatPeerDisplayName(peer));
   if (state.view === 'peers') renderView('peers');
-  if (state.view === 'profile') renderView('profile');
+  if (state.view === 'profile') syncPeerProfilePage();
   if (state.view === 'chat' && !state.activePeer) renderView('chat');
 
   showAppToast({
@@ -942,7 +980,7 @@ function getPeerProfileHooks(peer) {
         showAppToast({ title: t('peers.block_done'), durationMs: 3000 });
       }
       if (state.view === 'profile' && state.profilePeerId === peer.blipId) {
-        renderView('profile');
+        syncPeerProfilePage();
       }
       if (state.view === 'peers') renderView('peers');
       if (state.view === 'chat' && state.activePeer === peer.blipId) {
@@ -955,7 +993,10 @@ function getPeerProfileHooks(peer) {
 }
 
 function openPeerProfileFromUi(peerOrId) {
-  const peer = peerForContextMenu(peerOrId);
+  const peer = resolvePeerForProfile(peerOrId);
+  if (peer.hasProfileGif && !getPeerProfileGifDataUrl(peer.blipId)) {
+    void requestPeerProfileGif(peer.blipId);
+  }
   if (state.view !== 'profile') {
     state.profileReturn = {
       view: state.view,
@@ -982,16 +1023,73 @@ function openChatFromProfile(peerId) {
   void openChat(peerId);
 }
 
-function renderPeerProfileView() {
-  profilePageCleanup?.();
-  profilePageCleanup = null;
+function resolvePeerForProfile(peerOrId) {
+  if (peerOrId && typeof peerOrId === 'object' && peerOrId.blipId != null) {
+    const id = Number(peerOrId.blipId);
+    const live = state.peers.find((p) => Number(p.blipId) === id);
+    return live ? { ...live, ...peerOrId, blipId: id } : peerOrId;
+  }
+  return peerForContextMenu(peerOrId);
+}
 
-  const peer = peerForContextMenu(state.profilePeerId);
+function syncPeerProfilePage() {
+  if (profileRenderInProgress) return;
+  const peer = resolvePeerForProfile(state.profilePeerId);
+  if (!peer?.blipId) return;
   if (peer.hasProfileGif && !getPeerProfileGifDataUrl(peer.blipId)) {
     void requestPeerProfileGif(peer.blipId);
   }
-  const built = buildPeerProfilePage(peer, getPeerProfileHooks(peer));
-  profilePageCleanup = built.destroy;
+  if (
+    profilePageApi?.refresh &&
+    Number(profilePageApi.peerId) === Number(peer.blipId)
+  ) {
+    profilePageApi.setPeer?.(peer);
+    profilePageApi.refresh();
+  }
+}
+
+function renderPeerProfileView() {
+  if (profileRenderInProgress) return null;
+  profileRenderInProgress = true;
+  try {
+    return renderPeerProfileViewInner();
+  } finally {
+    profileRenderInProgress = false;
+  }
+}
+
+function renderPeerProfileViewInner() {
+  profilePageCleanup?.();
+  profilePageCleanup = null;
+  profilePageApi = null;
+
+  const peer = resolvePeerForProfile(state.profilePeerId);
+  if (peer.hasProfileGif && !getPeerProfileGifDataUrl(peer.blipId)) {
+    void requestPeerProfileGif(peer.blipId);
+  }
+  let built;
+  try {
+    built = buildPeerProfilePage(peer, getPeerProfileHooks(peer));
+  } catch (err) {
+    console.error('[BLIP] profile render', err);
+    const errWrap = document.createElement('div');
+    errWrap.className = 'view peer-profile-view';
+    const p = document.createElement('p');
+    p.className = 'hint';
+    p.textContent = t('peers.profile_open_failed');
+    errWrap.appendChild(p);
+    return errWrap;
+  }
+  profilePageApi = {
+    peerId: Number(peer.blipId),
+    refresh: built.refresh,
+    setPeer: built.setPeer,
+    destroy: built.destroy,
+  };
+  profilePageCleanup = () => {
+    profilePageApi?.destroy?.();
+    profilePageApi = null;
+  };
 
   const wrap = document.createElement('div');
   wrap.className = 'view peer-profile-view';
@@ -2702,6 +2800,7 @@ function buildSettingsDeveloperPanel() {
     labelKey: 'settings.dev_beta_updates',
     onChange: async (checked) => {
       state.config = await api.saveConfig({ receiveBetaUpdates: checked });
+      if (state.config?.achievementsEnabled) syncAchievements(state.config);
       showAppToast({
         title: checked ? t('settings.dev_beta_on') : t('settings.dev_beta_off'),
         durationMs: 4000,
@@ -2876,10 +2975,6 @@ function buildSettingsAboutPanel() {
 
   const hero = document.createElement('div');
   hero.className = 'settings-about-hero';
-  void import('./trust-ui.js').then(({ getLocalTrustState, applyBuildTrustClass }) => {
-    const trust = getLocalTrustState();
-    if (trust) applyBuildTrustClass(hero, trust.buildTrust);
-  });
   const icon = document.createElement('img');
   icon.className = 'settings-about-icon';
   icon.alt = 'BLIP';
@@ -2901,6 +2996,12 @@ function buildSettingsAboutPanel() {
   hero.appendChild(aboutLine);
   hero.appendChild(aboutVersion);
   frag.appendChild(hero);
+
+  let aboutTrustNotice = appendAboutBuildTrustNotice(frag);
+  window.blip?.onTrustState?.(() => {
+    aboutTrustNotice?.remove();
+    aboutTrustNotice = appendAboutBuildTrustNotice(frag);
+  });
 
   const githubBtn = document.createElement('button');
   githubBtn.type = 'button';
@@ -3001,6 +3102,9 @@ function formatUpdateStatusText() {
     case 'error':
       if (u.code === 'stale_release') {
         return t('settings.updates_status_stale_release');
+      }
+      if (u.code === 'unsigned_installer') {
+        return t('settings.updates_status_unsigned');
       }
       return t('settings.updates_status_error').replace('{m}', u.message || '');
     default:
@@ -3484,6 +3588,17 @@ async function runPeerPing(peer) {
   }
 }
 
+function mountMainContentView(el) {
+  if (!mainContent || !el) return;
+  const current = mainContent.firstElementChild;
+  if (current === el) return;
+  if (state.view === 'settings') runSettingsPanelCleanup();
+  profilePageCleanup?.();
+  mainContent.replaceChildren(el);
+  applyI18n(mainContent);
+  updateNavActive();
+}
+
 async function openChat(peerId) {
   const id = Number(peerId);
   if (!Number.isFinite(id)) return;
@@ -3493,15 +3608,18 @@ async function openChat(peerId) {
     return;
   }
 
+  clearProfileNavigationState();
   state.activePeer = id;
   state.activeGroup = null;
   state.view = 'chat';
   clearUnread(id);
   const chat = ensureChatView(id);
+  if (!chat) return;
   chat.markRead?.();
-  chat.scrollToBottom?.();
   if (mainContent?.isConnected) {
-    renderView('chat');
+    mountMainContentView(chat.el);
+    chat.renderMessages?.();
+    chat.scrollToBottom?.();
   } else {
     render();
   }
@@ -3676,6 +3794,8 @@ function renderChatHubView() {
         blipId: row.blipId,
         displayName: row.displayName,
         online: row.online,
+        presence: 'offline',
+        presenceText: '',
         hasProfileGif: false,
       };
 
@@ -3748,6 +3868,7 @@ function renderView(viewName) {
   if (viewName === 'profile' && state.profilePeerId == null) {
     viewName = 'peers';
   }
+  const prevView = state.view;
   state.view = viewName;
 
   let view;
@@ -3764,9 +3885,15 @@ function renderView(viewName) {
     case 'projects':
       view = renderProjectsView();
       break;
-    case 'profile':
-      view = renderPeerProfileView();
+    case 'profile': {
+      const profileView = renderPeerProfileView();
+      if (!profileView) {
+        state.view = prevView;
+        return;
+      }
+      view = profileView;
       break;
+    }
     case 'chat': {
       if (state.activeGroup) {
         const gchat = ensureGroupChatView(state.activeGroup);
@@ -3821,6 +3948,7 @@ function renderView(viewName) {
 function clearProfileNavigationState() {
   profilePageCleanup?.();
   profilePageCleanup = null;
+  profilePageApi = null;
   state.profilePeerId = null;
   state.profileReturn = null;
 }
@@ -4053,7 +4181,7 @@ export function updatePeers({ peers, occupiedIds }) {
     renderView('peers');
   }
   if (state.view === 'profile' && mainContent && state.profilePeerId != null) {
-    renderView('profile');
+    syncPeerProfilePage();
   }
   if (state.view === 'chat' && !state.activePeer && mainContent) {
     renderView('chat');
@@ -4105,9 +4233,16 @@ export function handleTcpMessage(msg) {
   if (msg.type === 'profile-gif-share') {
     const from = Number(msg.from);
     if (!Number.isFinite(from) || isBlocked(from)) return;
-    setPeerProfileGifDataUrl(from, msg.dataUrl ? String(msg.dataUrl) : null);
-    if (state.view === 'profile' && state.profilePeerId === from) {
-      renderView('profile');
+    const raw = msg.dataUrl ? String(msg.dataUrl) : '';
+    if (raw.length > 4_500_000) {
+      console.warn('[BLIP] profile-gif-share too large, ignored');
+      return;
+    }
+    setPeerProfileGifDataUrl(from, raw || null);
+    const peer = state.peers.find((p) => Number(p.blipId) === from);
+    if (peer && !peer.hasProfileGif) peer.hasProfileGif = true;
+    if (state.view === 'profile' && Number(state.profilePeerId) === from) {
+      syncPeerProfilePage();
     }
     return;
   }

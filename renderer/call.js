@@ -1,8 +1,7 @@
 import { t, applyI18n } from './i18n.js';
 import { sounds } from './audio.js';
 import { createAvatarElement } from './avatar.js';
-import { createTrustedAvatarElement, applyBuildTrustClass, getLocalTrustState } from './trust-ui.js';
-import { BUILD_TRUST } from '../shared/trust-levels.js';
+import { createTrustedAvatarElement } from './trust-ui.js';
 import {
   getCameraVideoConstraints,
   applyScreenTrackConstraints,
@@ -140,19 +139,9 @@ export function createCallUI(config, api, options = {}) {
     avatarSlot.innerHTML = '';
     const remotePeer =
       typeof options.getRemotePeer === 'function' ? options.getRemotePeer() : null;
-    if (remotePeer && Number(remotePeer.blipId) === Number(id)) {
-      avatarSlot.appendChild(
-        createTrustedAvatarElement(id, 6, { selfBlipId: config?.blipId ?? null }, remotePeer)
-      );
-      applyBuildTrustClass(avatarSlot, remotePeer.buildTrust);
-    } else {
-      avatarSlot.appendChild(createAvatarElement(id, 6, { selfBlipId: config?.blipId ?? null }));
-      const localTrust = getLocalTrustState();
-      applyBuildTrustClass(
-        avatarSlot,
-        localTrust?.buildTrust || BUILD_TRUST.UNVERIFIED_BUILD
-      );
-    }
+    avatarSlot.appendChild(
+      createTrustedAvatarElement(id, 6, { selfBlipId: config?.blipId ?? null })
+    );
   }
   const waveform = document.createElement('div');
   waveform.className = 'call-waveform';

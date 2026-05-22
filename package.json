@@ -1,6 +1,6 @@
 {
   "name": "blip",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "P2P LAN messenger — text, voice, and video. No cloud, no servers, no accounts.",
   "author": "krwg",
   "homepage": "https://krwg.github.io/BLIP/",
@@ -24,10 +24,10 @@
     "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && node scripts/electron-dev.mjs\"",
     "electron:dev:peer2": "concurrently \"vite\" \"wait-on http://localhost:5173 && node scripts/electron-dev-peer2.mjs\"",
     "build:icons": "node scripts/build-icons.mjs",
-    "electron:build": "npm run build && node scripts/sync-giphy-key.mjs && node scripts/sync-mesh-public-key.mjs && node scripts/sync-build-info.mjs && npm run build:icons && electron-builder --win nsis",
-    "electron:build:portable": "npm run build && node scripts/sync-giphy-key.mjs && node scripts/sync-mesh-public-key.mjs && node scripts/sync-build-info.mjs && npm run build:icons && electron-builder --win portable",
-    "electron:build:all": "npm run build && node scripts/sync-giphy-key.mjs && node scripts/sync-mesh-public-key.mjs && node scripts/sync-build-info.mjs && npm run build:icons && electron-builder --win",
-    "electron:build:dir": "npm run build && node scripts/sync-giphy-key.mjs && node scripts/sync-mesh-public-key.mjs && node scripts/sync-build-info.mjs && npm run build:icons && electron-builder --win --dir",
+    "electron:build": "npm run build && node scripts/sync-giphy-key.mjs && node scripts/sync-mesh-public-key.mjs && node scripts/sync-build-info.mjs && npm run build:icons && node scripts/run-electron-builder.mjs --win nsis",
+    "electron:build:portable": "npm run build && node scripts/sync-giphy-key.mjs && node scripts/sync-mesh-public-key.mjs && node scripts/sync-build-info.mjs && npm run build:icons && node scripts/run-electron-builder.mjs --win portable",
+    "electron:build:all": "npm run build && node scripts/sync-giphy-key.mjs && node scripts/sync-mesh-public-key.mjs && node scripts/sync-build-info.mjs && npm run build:icons && node scripts/run-electron-builder.mjs --win",
+    "electron:build:dir": "npm run build && node scripts/sync-giphy-key.mjs && node scripts/sync-mesh-public-key.mjs && node scripts/sync-build-info.mjs && npm run build:icons && node scripts/run-electron-builder.mjs --win --dir",
     "mesh-plus:keygen": "node scripts/mesh-plus-keygen.mjs",
     "setup:build-secrets": "node scripts/setup-build-secrets.mjs"
   },

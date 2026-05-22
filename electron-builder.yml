@@ -39,6 +39,7 @@ extraResources:
       - '**/*'
 win:
   icon: icon.ico
+  # Must match Authenticode cert subject when signing (v1.0.0 clients expect publisher krwg).
   publisherName: krwg
   legalTrademarks: BLIP
   target:

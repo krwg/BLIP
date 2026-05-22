@@ -9,6 +9,7 @@ import {
 } from 'fs';
 import { join } from 'path';
 import { randomBytes } from 'crypto';
+import { buildProfileGifShareDataUrl } from './profile-gif-share.js';
 
 const MAX_HISTORY = 5;
 /** @type {number} max stored GIF size (bytes) */
@@ -134,12 +135,10 @@ export function getProfileGifDataUrl(id) {
   return `data:image/gif;base64,${buf.toString('base64')}`;
 }
 
-/** LAN share payload — skips oversized GIFs to avoid TCP line overflow. */
+/** LAN share payload — downscales if needed so TCP line stays under limit. */
 export function getProfileGifShareDataUrl(id) {
   const buf = readGifBuffer(id);
-  if (!buf) return null;
-  if (buf.length > MAX_PROFILE_GIF_TCP_BYTES) return null;
-  return `data:image/gif;base64,${buf.toString('base64')}`;
+  return buildProfileGifShareDataUrl(buf);
 }
 
 export function getActiveProfileGifId() {

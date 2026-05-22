@@ -9,7 +9,30 @@ Release **version numbers** track [`app-metadata.json`](app-metadata.json) (sync
 
 ## [Unreleased]
 
+## [1.0.2] — Mesh Plus UI & trust — 2026-05-21
+
+### Added
+
+- **Achievements** — **Beta tester** (beta releases toggle in Developer) and **Unofficial build** (unverified maintainer signature / dev or self-built client).
+- **MESH+ settings** — animated pixel grid (BLIP purple → cyan → mint when subscribed; gray pixels when FREE).
+
+### Changed
+
+- **Trust UI** — removed purple/red build rings on peer avatars; **Settings → About** shows a square notice (official vs unofficial client). MESH+ badge trust fixed in profile preview (`resolvePeerMeshPlusTrust`).
+
+### Fixed
+
+- **Chats** — opening a conversation from the peer list, chat hub, or context menu mounts the chat view directly (fixes clicks doing nothing when `renderView` short-circuited); offline peers with history can be opened; context menus render above the UI.
+- **Calls** — signalling uses inbound or outbound TCP sockets before opening a new connection; outgoing calls require a warmed peer socket; retry when the peer was not in discovery yet.
+- **Profile GIF (MESH+)** — peers can open profiles when a subscriber uses a status GIF: LAN share downscales oversized GIFs for TCP, profile view updates in place (no full re-render on every peer ping), and GIF is requested when opening a profile.
+- **Boot crash** — renderer no longer writes to read-only `window.trustState` / `buildTrust` (contextBridge).
+- **Windows auto-update** — unsigned installers on builds 1.0.1+ after one manual install; `verifyUpdateCodeSignature = false`.
+
 ## [1.0.1] — Security & fixes — 2026-05-21
+
+> **⚠️ If you are on v1.0.0 (Windows):** in-app auto-update **will not** install this version. Download **`BLIP-Setup-1.0.1.exe`** from **Assets** below and run it once (install over the existing app). Settings, chats, and config are kept. From **v1.0.1 onward**, later updates can download automatically again.
+>
+> **⚠️ Если у вас v1.0.0 (Windows):** автообновление **не установит** этот релиз. Скачайте **`BLIP-Setup-1.0.1.exe`** в **Assets** и запустите один раз (поверх текущей установки). Настройки и чаты сохранятся. С **v1.0.1** следующие версии снова смогут обновляться из приложения.
 
 Patch release: MESH+ integrity improvements and profile GIF fixes.
 
@@ -26,6 +49,10 @@ Patch release: MESH+ integrity improvements and profile GIF fixes.
 
 - **Profile page** — GIF cloud and peer/self GIF URLs; no ping spam when opening a profile.
 - **Chat hub** — avatar opens the full peer profile (including status GIF flag).
+
+### Note (Windows updates from v1.0.0)
+
+**v1.0.0 → v1.0.1:** the updater runs inside **1.0.0** and rejects unsigned installers (`publisherName: krwg`). Either Authenticode-sign the release Setup (`scripts/sign-windows-installer.ps1` + re-upload assets) or install Setup once by hand; **1.0.1 → later** auto-updates work unsigned with the updater fix.
 
 ## [1.0.0] — Mesh Plus — 2026-05-21
 

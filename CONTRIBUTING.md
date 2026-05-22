@@ -63,7 +63,7 @@ Outputs go to `dist-electron/` (see `electron-builder.yml`).
 
 Version and codename live in [`app-metadata.json`](app-metadata.json) (synced into `package.json` on `npm run build`). Update [`CHANGELOG.md`](CHANGELOG.md) when shipping.
 
-**MESH+** tier notes: [`docs/MESH-PLUS.md`](docs/MESH-PLUS.md). Do not break FREE behavior when gating premium features.
+**MESH+** tier notes: [`docs/MESH-PLUS.md`](docs/MESH-PLUS.md) — test subscription, free keys via blipteam@icloud.com; plan to graduate features to FREE. Do not break FREE behavior when gating MESH+ features.
 
 Release builds: run `npm run setup:build-secrets` once, then configure maintainer build secrets before `electron:build:*` (see `ENTITLEMENT-MAP.local.md`, gitignored).
 

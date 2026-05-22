@@ -9,6 +9,7 @@ import {
 import { initMediaViewer } from './media-viewer.js';
 import { syncPremiumTierWithHost } from './mesh-plus-verify.js';
 import { setLocalTrustState } from './trust-ui.js';
+import { syncAchievements } from './achievements-tracker.js';
 
 const api = {
   saveConfig: (data) => window.blip.saveConfig(data),
@@ -58,8 +59,12 @@ async function boot() {
   await syncPremiumTierWithHost(bootState);
   if (window.blip?.getTrustState) {
     setLocalTrustState(await window.blip.getTrustState());
+    if (bootState.config?.achievementsEnabled) syncAchievements(bootState.config);
   }
-  window.blip?.onTrustState?.((trust) => setLocalTrustState(trust));
+  window.blip?.onTrustState?.((trust) => {
+    setLocalTrustState(trust);
+    if (bootState.config?.achievementsEnabled) syncAchievements(bootState.config);
+  });
   initUI(bootState.config, api);
   initMediaViewer();
 

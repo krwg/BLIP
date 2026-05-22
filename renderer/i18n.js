@@ -143,6 +143,7 @@ const locales = {
     'peers.profile_message': 'Message',
     'peers.profile_call': 'Call',
     'peers.profile_block': 'Block',
+    'peers.profile_open_failed': 'Could not open this profile. Try again.',
     'peers.profile_unblock': 'Unblock',
     'peers.profile_mesh_label': 'Mesh label',
     'peers.profile_display_name': 'LAN name',
@@ -382,7 +383,7 @@ const locales = {
     'settings.profile_gif_crop_title': 'Status GIF',
     'settings.section_mesh_plus': 'MESH+',
     'mesh_plus.intro_hint':
-      'Extended mesh features — LAN superpowers, premium look, and tools. Activation is offline with a personal key.',
+      'MESH+ is a free test tier from the author (licensing lab). Early access to new features; later they move to FREE. Extra customization and profile badge. Request a key: blipteam@icloud.com',
     'mesh_plus.status_label': 'Status',
     'mesh_plus.status_free': 'FREE',
     'mesh_plus.status_mesh_plus': 'MESH+',
@@ -396,16 +397,22 @@ const locales = {
     'mesh_plus.key_placeholder': 'BLIP-XXXX-XXXX-…',
     'mesh_plus.activate': 'Activate',
     'mesh_plus.revoke_key': 'Remove key',
-    'mesh_plus.no_key_hint': 'No key? Contact the developer.',
-    'mesh_plus.activation_hint': 'Paste your BLIP key below. No key? Contact the developer.',
+    'mesh_plus.no_key_hint': 'No key? Email blipteam@icloud.com — keys are free.',
+    'mesh_plus.activation_hint': 'Paste your BLIP key below. No key? Email blipteam@icloud.com (free).',
     'mesh_plus.inactive_hint': 'Paste your key and tap Activate.',
     'mesh_plus.active_ok': 'MESH+ is active on this device.',
     'mesh_plus.activate_ok': 'MESH+ activated.',
     'mesh_plus.revoke_ok': 'License removed. Status reset to FREE.',
     'mesh_plus.feature_locked': 'Requires MESH+.',
+    'trust.about_official_client': 'You are using the official BLIP client',
+    'trust.about_unofficial_client':
+      'You are using an unofficial client build (not signed by the maintainer)',
     'trust.unofficial_build_tooltip':
       'Unofficial build — not signed by BLIP maintainer',
-    'trust.unofficial_mesh_tooltip': 'Unofficial MESH+ subscription',
+    'trust.unofficial_mesh_tooltip':
+      'Valid MESH+ key, but this client build is not signed by the maintainer — shown as unofficial trust',
+    'mesh_plus.trust_needs_official_build':
+      'Your key is valid. Purple MESH+ styling requires an official signed BLIP build (not npm start / self-built).',
     'mesh_plus.sync_mismatch': 'MESH+ status was reset. Re-open Settings if needed.',
     'mesh_plus.error_empty': 'Enter your license key.',
     'mesh_plus.error_invalid_format': 'Invalid key format. Paste the full BLIP-… key.',
@@ -574,6 +581,8 @@ const locales = {
     'achievements.code_first_file': 'First file sent',
     'achievements.code_online_1h': '1 hour in app',
     'achievements.code_mesh_plus': 'MESH+ license active',
+    'achievements.code_beta_tester': 'Beta channel on',
+    'achievements.code_unofficial_build': 'Unofficial client build',
     'achievements.first_peer': 'First on the mesh',
     'achievements.first_peer_desc': 'At least one contact online this session.',
     'achievements.mesh_5': 'Five at once',
@@ -590,6 +599,12 @@ const locales = {
     'achievements.online_1h_desc': 'Stay in BLIP for one hour this session.',
     'achievements.mesh_plus_active': 'MESH+ activated',
     'achievements.mesh_plus_active_desc': 'Activate a MESH+ subscription on this device.',
+    'achievements.beta_tester': 'Beta tester',
+    'achievements.beta_tester_desc':
+      'Enable “Receive beta releases” in Settings → Developer.',
+    'achievements.unofficial_build': 'Unofficial build',
+    'achievements.unofficial_build_desc':
+      'Run a client that is not signed by the BLIP maintainer (dev run or self-built).',
     'chat.export_pdf_themed': 'Export PDF (BLIP theme)',
     'chat.export_html_themed': 'Export HTML (BLIP theme)',
     'settings.group_account': 'Account',
@@ -731,6 +746,8 @@ const locales = {
     'settings.updates_status_error': 'Error: {m}',
     'settings.updates_status_stale_release':
       'Stale update cache cleared. Checking stable channel…',
+    'settings.updates_status_unsigned':
+      'Installer is not code-signed (expected). Use «Releases» to download and run the new Setup once; later versions can auto-update.',
     'settings.updates_recent': 'Recent releases',
     'settings.updates_releases_error': 'Could not load releases from GitHub.',
     'settings.updates_open_release': 'Open on GitHub',
@@ -982,6 +999,7 @@ const locales = {
     'peers.profile_message': 'Сообщение',
     'peers.profile_call': 'Звонок',
     'peers.profile_block': 'Заблокировать',
+    'peers.profile_open_failed': 'Не удалось открыть профиль. Попробуйте ещё раз.',
     'peers.profile_unblock': 'Разблокировать',
     'peers.profile_mesh_label': 'Метка МЕШа',
     'peers.profile_display_name': 'Имя в сети',
@@ -1220,7 +1238,7 @@ const locales = {
     'settings.profile_gif_crop_title': 'Гифка статуса',
     'settings.section_mesh_plus': 'МЭШ ПЛЮС',
     'mesh_plus.intro_hint':
-      'Расширенные возможности меша — сеть, премиум-оформление и инструменты. Активация офлайн по личному ключу.',
+      'МЭШ ПЛЮС — бесплатная тестовая подписка от автора (опыт с лицензией). Ранний доступ к новым фичам; потом они станут бесплатными для всех. Кастомизация и бейдж в профиле. Ключ: blipteam@icloud.com',
     'mesh_plus.status_label': 'Статус',
     'mesh_plus.status_free': 'БЕСПЛАТНО',
     'mesh_plus.status_mesh_plus': 'МЭШ ПЛЮС',
@@ -1234,16 +1252,22 @@ const locales = {
     'mesh_plus.key_placeholder': 'BLIP-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX',
     'mesh_plus.activate': 'Активировать',
     'mesh_plus.revoke_key': 'Удалить ключ',
-    'mesh_plus.no_key_hint': 'Нет ключа? Свяжись с разработчиком.',
-    'mesh_plus.activation_hint': 'Вставь ключ BLIP ниже. Нет ключа? Свяжись с разработчиком.',
+    'mesh_plus.no_key_hint': 'Нет ключа? Пиши на blipteam@icloud.com — ключи бесплатные.',
+    'mesh_plus.activation_hint': 'Вставь ключ BLIP ниже. Нет ключа? blipteam@icloud.com (бесплатно).',
     'mesh_plus.inactive_hint': 'Вставь ключ и нажми «Активировать».',
     'mesh_plus.active_ok': 'МЭШ ПЛЮС активен на этом устройстве.',
     'mesh_plus.activate_ok': 'МЭШ ПЛЮС активирован.',
     'mesh_plus.revoke_ok': 'Ключ удалён. Статус сброшен на «БЕСПЛАТНО».',
     'mesh_plus.feature_locked': 'Нужен МЭШ ПЛЮС.',
+    'trust.about_official_client': 'Вы используете официальный клиент BLIP',
+    'trust.about_unofficial_client':
+      'Вы используете неофициальную сборку клиента (без подписи разработчика)',
     'trust.unofficial_build_tooltip':
-      'Неофициальная сборка — не подписана maintainer BLIP',
-    'trust.unofficial_mesh_tooltip': 'Неофициальная подписка МЭШ+',
+      'Неофициальная сборка — не подписана разработчиком БЛИП',
+    'trust.unofficial_mesh_tooltip':
+      'Ключ МЭШ+ действует, но сборка клиента не подписана разработчиком — «неофициальный»',
+    'mesh_plus.trust_needs_official_build':
+      'Ключ рабочий. Фиолетовый стиль МЭШ ПЛЮС только в официальной подписанной сборке BLIP (не npm start / самосбор).',
     'mesh_plus.sync_mismatch': 'Статус МЭШ ПЛЮС сброшен. Открой Настройки при необходимости.',
     'mesh_plus.error_empty': 'Введи ключ.',
     'mesh_plus.error_invalid_format': 'Неверный формат. Вставь полный ключ BLIP-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX',
@@ -1412,6 +1436,8 @@ const locales = {
     'achievements.code_first_file': 'Первый файл',
     'achievements.code_online_1h': 'Час в приложении',
     'achievements.code_mesh_plus': 'Подписка МЭШ ПЛЮС',
+    'achievements.code_beta_tester': 'Канал бета-релизов',
+    'achievements.code_unofficial_build': 'Неофициальная сборка',
     'achievements.first_peer': 'Первый в сети',
     'achievements.first_peer_desc': 'Хотя бы один контакт онлайн за эту сессию.',
     'achievements.mesh_5': 'Пятеро в сети',
@@ -1428,6 +1454,12 @@ const locales = {
     'achievements.online_1h_desc': 'Проведи в БЛИПе один час за эту сессию.',
     'achievements.mesh_plus_active': 'МЭШ ПЛЮС активирован',
     'achievements.mesh_plus_active_desc': 'Активируй подписку МЭШ+ на этом устройстве.',
+    'achievements.beta_tester': 'Бета-тестер',
+    'achievements.beta_tester_desc':
+      'Включи «Получать бета-релизы» в Настройки → Разработчик.',
+    'achievements.unofficial_build': 'Самосбор',
+    'achievements.unofficial_build_desc':
+      'Запусти клиент без официальной подписи сборки (npm start или своя сборка).',
     'chat.export_pdf_themed': 'Экспорт PDF (тема BLIP)',
     'chat.export_html_themed': 'Экспорт HTML (тема BLIP)',
     'settings.group_account': 'Аккаунт',
@@ -1568,6 +1600,8 @@ const locales = {
     'settings.updates_status_error': 'Ошибка: {m}',
     'settings.updates_status_stale_release':
       'Устаревший кэш обновлений очищен. Проверяем стабильный канал…',
+    'settings.updates_status_unsigned':
+      'Установщик без кодовой подписи (так и задумано). Нажми «Релизы», скачай и запусти Setup один раз — дальше автообновление сработает.',
     'settings.updates_recent': 'Последние релизы',
     'settings.updates_releases_error': 'Не удалось загрузить релизы с гитхаба.',
     'settings.updates_open_release': 'Открыть на гитхаб',
