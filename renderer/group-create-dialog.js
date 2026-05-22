@@ -22,20 +22,33 @@ export function openGroupCreateDialog(opts) {
     title.dataset.i18n = 'group.create_title';
     title.textContent = t('group.create_title');
 
+    const nameField = document.createElement('div');
+    nameField.className = 'group-create-field';
+    const nameLabel = document.createElement('label');
+    nameLabel.className = 'group-create-label';
+    nameLabel.dataset.i18n = 'group.name_placeholder';
+    nameLabel.textContent = t('group.name_placeholder');
     const nameInput = document.createElement('input');
     nameInput.type = 'text';
     nameInput.className = 'input blip-modal-input';
     nameInput.maxLength = 48;
     nameInput.placeholder = t('group.name_placeholder');
     nameInput.value = t('group.name_default').replace('{id}', generateGroupId().slice(0, 4));
+    nameField.appendChild(nameLabel);
+    nameField.appendChild(nameInput);
 
     const hint = document.createElement('p');
-    hint.className = 'hint';
+    hint.className = 'hint group-create-hint';
     hint.dataset.i18n = 'group.create_hint';
     hint.textContent = t('group.create_hint');
 
+    const membersLabel = document.createElement('div');
+    membersLabel.className = 'group-create-members-label';
+    membersLabel.dataset.i18n = 'group.create_hint';
+    membersLabel.textContent = t('group.members');
+
     const list = document.createElement('div');
-    list.className = 'group-create-list';
+    list.className = 'group-create-list glass';
 
     const selected = new Set();
     if (seedPeerId != null) selected.add(Number(seedPeerId));
@@ -99,8 +112,9 @@ export function openGroupCreateDialog(opts) {
     actions.appendChild(cancelBtn);
     actions.appendChild(okBtn);
     modal.appendChild(title);
-    modal.appendChild(nameInput);
+    modal.appendChild(nameField);
     modal.appendChild(hint);
+    modal.appendChild(membersLabel);
     modal.appendChild(list);
     modal.appendChild(actions);
     backdrop.appendChild(modal);

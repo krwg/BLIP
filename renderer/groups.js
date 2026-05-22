@@ -141,6 +141,18 @@ export function formatChannelLabel(ch) {
   if (ch.type === 'voice' && (ch.id === 'voice-lounge' || ch.name === 'lounge' || ch.name === 'voice')) {
     return t('voice.channel_name');
   }
+  if (ch.type === 'text' && (ch.id === 'text-general' || ch.name === 'general')) {
+    return t('voice.channel_general');
+  }
+  const slug = String(ch.name || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_');
+  if (slug) {
+    const key = `voice.channel_${slug}`;
+    const localized = t(key);
+    if (localized !== key) return localized;
+  }
   return ch.name || '';
 }
 

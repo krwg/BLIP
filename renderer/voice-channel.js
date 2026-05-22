@@ -20,9 +20,9 @@ import {
 import { openScreenPickerDialog } from './screen-picker-dialog.js';
 import { captureDisplayStream } from './display-capture.js';
 import { getVoiceMediaStream } from './audio-capture.js';
-import { dispatchReactiveAudio } from './reactive-wallpaper.js';
-
 const ICE = [];
+
+let clientConnectInFlight = false;
 
 /** @type {Map<number, RTCPeerConnection>} */
 const hostPeers = new Map();
@@ -52,25 +52,24 @@ let configRef = null;
 const peerMediaState = new Map();
 
 let audioCtx = null;
-let mixerGain = null;
-let mixDestination = null;
 /** @type {Map<number, MediaStreamTrack>} */
 const mixerTracks = new Map();
-/** @type {Map<number, MediaStreamAudioSourceNode>} */
-const mixerSources = new Map();
-/** @type {Map<number, GainNode>} */
-const mixerTaps = new Map();
-let mixedTrack = null;
 
-let playbackCtx = null;
-/** @type {Map<number, MediaStreamAudioSourceNode>} */
-const playbackSources = new Map();
+/** Silent track for mix-minus gaps (never send raw local mic as "mix"). */
+let silentAudioCtx = null;
+let silentOscillator = null;
+let silentTrack = null;
+
+/** @type {Map<number, HTMLAudioElement>} */
+const peerAudioEls = new Map();
 
 let heartbeatTimer = null;
 let stageRefresh = null;
 
 /** @type {Map<number, { type: string, sdp: string }>} */
 const pendingHostOffers = new Map();
+/** @type {Set<number>} */
+const hostOfferInFlight = new Set();
 
 /** @type {Map<number, MediaStream>} */
 const peerVideoStreams = new Map();
@@ -92,12 +91,67 @@ function isHost(group) {
 function normalizeSdp(sdp) {
   if (!sdp) return null;
   if (typeof sdp === 'string') return { type: 'offer', sdp };
-  if (typeof sdp.type === 'string' && typeof sdp.sdp === 'string') return sdp;
+  let type = sdp.type;
+  let body = sdp.sdp;
+  if (body && typeof body === 'object' && typeof body.sdp === 'string') {
+    type = body.type ?? type;
+    body = body.sdp;
+  }
+  if (typeof type === 'string' && typeof body === 'string' && body.length > 0) {
+    return { type, sdp: body };
+  }
   return null;
 }
 
 function myMediaState() {
   return { muted, deafened, screenSharing: sharingScreen };
+}
+
+function isOwnAudioTrack(track) {
+  if (!track || !localStream) return false;
+  const local = localStream.getAudioTracks()[0];
+  return !!(local && track.id === local.id);
+}
+
+/** Drop loopback of our own sender track on a PeerConnection. */
+function isPcLoopbackTrack(track, pc) {
+  if (!track || !pc) return false;
+  if (isOwnAudioTrack(track)) return true;
+  const sent = pc.getSenders?.().find((s) => s.track?.kind === 'audio')?.track;
+  return !!(sent && track.id === sent.id);
+}
+
+function ensureSilentTrack() {
+  if (silentTrack?.readyState === 'live') return silentTrack;
+  if (silentAudioCtx?.state === 'closed') {
+    silentAudioCtx = null;
+    silentOscillator = null;
+    silentTrack = null;
+  }
+  silentAudioCtx = new AudioContext();
+  silentOscillator = silentAudioCtx.createOscillator();
+  const gain = silentAudioCtx.createGain();
+  gain.gain.value = 0;
+  const dest = silentAudioCtx.createMediaStreamDestination();
+  silentOscillator.connect(gain);
+  gain.connect(dest);
+  silentOscillator.start();
+  silentTrack = dest.stream.getAudioTracks()[0] || null;
+  return silentTrack;
+}
+
+function stopSilentTrack() {
+  try {
+    silentOscillator?.stop();
+  } catch {
+    /* ignore */
+  }
+  silentOscillator = null;
+  silentTrack = null;
+  if (silentAudioCtx) {
+    void silentAudioCtx.close().catch(() => {});
+    silentAudioCtx = null;
+  }
 }
 
 function buildStates(participants) {
@@ -170,71 +224,30 @@ function micGainValue() {
 }
 
 async function resumeVoiceAudioContexts() {
-  ensureMixer();
-  if (audioCtx?.state === 'suspended') {
-    try {
-      await audioCtx.resume();
-    } catch {
-      /* ignore */
-    }
+  for (const el of peerAudioEls.values()) {
+    if (el.srcObject) void el.play().catch(() => {});
   }
-  ensurePlaybackMixer();
-  if (playbackCtx?.state === 'suspended') {
-    try {
-      await playbackCtx.resume();
-    } catch {
-      /* ignore */
-    }
-  }
-  const audio = document.getElementById('voice-ch-remote-audio');
-  if (audio?.srcObject) void audio.play().catch(() => {});
 }
 
 function ensureMixer() {
-  if (audioCtx && mixerGain) return;
+  if (audioCtx) return;
   audioCtx = new AudioContext();
-  mixerGain = audioCtx.createGain();
-  mixDestination = audioCtx.createMediaStreamDestination();
-  mixerGain.connect(mixDestination);
-  mixedTrack = mixDestination.stream.getAudioTracks()[0] || null;
 }
 
-function attachToMixer(peerId, track) {
+function registerTrackInMixer(peerId, track) {
+  if (!track || track.readyState === 'ended') return;
   ensureMixer();
-  const n = peerNum(peerId);
-  removeFromMixer(n);
-  mixerTracks.set(n, track);
-  const stream = new MediaStream([track]);
-  const src = audioCtx.createMediaStreamSource(stream);
-  const tap = audioCtx.createGain();
-  src.connect(tap);
-  tap.connect(mixerGain);
-  mixerSources.set(n, src);
-  mixerTaps.set(n, tap);
-  mixedTrack = mixDestination.stream.getAudioTracks()[0] || null;
+  mixerTracks.set(peerNum(peerId), track);
 }
 
 function removeFromMixer(peerId) {
-  const n = peerNum(peerId);
-  mixerTracks.delete(n);
-  const src = mixerSources.get(n);
-  const tap = mixerTaps.get(n);
-  if (tap) {
-    try {
-      tap.disconnect();
-    } catch {
-      /* ignore */
-    }
-    mixerTaps.delete(n);
-  }
-  if (src) {
-    try {
-      src.disconnect();
-    } catch {
-      /* ignore */
-    }
-    mixerSources.delete(n);
-  }
+  mixerTracks.delete(peerNum(peerId));
+}
+
+function registerHostMicInMixer() {
+  const track = localStream?.getAudioTracks()[0];
+  if (!track) return;
+  registerTrackInMixer(myId(), track);
 }
 
 /** Mix of all participants except excludePeerId (SFU mix-minus-self). */
@@ -245,35 +258,64 @@ function buildMixMinusTrack(excludePeerId) {
   const bus = audioCtx.createGain();
   bus.connect(dest);
   let any = false;
+  const self = myId();
+  const gainMul = micGainValue();
   for (const [pid, track] of mixerTracks) {
     if (peerNum(pid) === ex || track.readyState === 'ended') continue;
     const src = audioCtx.createMediaStreamSource(new MediaStream([track]));
-    src.connect(bus);
+    if (peerNum(pid) === self && gainMul !== 1) {
+      const g = audioCtx.createGain();
+      g.gain.value = gainMul;
+      src.connect(g);
+      g.connect(bus);
+    } else {
+      src.connect(bus);
+    }
     any = true;
   }
   return any ? dest.stream.getAudioTracks()[0] : null;
 }
 
-async function setPcAudioTrack(pc, track) {
-  if (!pc || !track) return;
+function mixerSourceCount(excludePeerId) {
+  let n = 0;
+  for (const [pid, track] of mixerTracks) {
+    if (peerNum(pid) === peerNum(excludePeerId) || track.readyState === 'ended') continue;
+    n++;
+  }
+  return n;
+}
+
+/** Outbound audio to a peer (host → client). Uses raw mic for 1:1 mix; WebAudio mix for 3+. */
+function getOutboundAudioTrack(forPeerId) {
+  const mic = localStream?.getAudioTracks()?.[0];
+  if (mixerSourceCount(forPeerId) <= 1) {
+    if (mic?.readyState === 'live') return mic;
+    return ensureSilentTrack();
+  }
+  return buildMixMinusTrack(forPeerId) || ensureSilentTrack();
+}
+
+async function setHostSendAudio(pc, track) {
+  if (!pc) return;
+  const out = track?.readyState === 'live' ? track : ensureSilentTrack();
+  if (!out) return;
   let sender = pc.getSenders().find((s) => s.track?.kind === 'audio');
   if (sender) {
-    await sender.replaceTrack(track);
+    await sender.replaceTrack(out);
     return;
   }
   try {
-    pc.addTrack(track, new MediaStream([track]));
+    pc.addTrack(out, new MediaStream([out]));
   } catch {
     const tr = pc.addTransceiver('audio', { direction: 'sendrecv' });
-    await tr.sender.replaceTrack(track);
+    await tr.sender.replaceTrack(out);
   }
 }
 
 async function pushMixedAudioToPeer(peerId) {
   const pc = hostPeers.get(peerNum(peerId));
-  if (!pc) return;
-  const track = buildMixMinusTrack(peerId);
-  await setPcAudioTrack(pc, track);
+  if (!pc || pc.signalingState === 'closed') return;
+  await setHostSendAudio(pc, getOutboundAudioTrack(peerId));
 }
 
 async function pushMixedAudioToAll() {
@@ -290,7 +332,7 @@ function disconnectHostPeer(peerId) {
     hostPeers.delete(n);
   }
   hostPendingIce.delete(n);
-  removeFromMixer(n);
+  stopRemotePeerAudio(n);
   peerMediaState.delete(n);
 }
 
@@ -308,66 +350,60 @@ function startHeartbeat(groupId, channelId) {
   }, 4000);
 }
 
-function ensureRemoteAudioElement() {
-  let audio = document.getElementById('voice-ch-remote-audio');
-  if (!audio) {
-    audio = document.createElement('audio');
-    audio.id = 'voice-ch-remote-audio';
-    audio.autoplay = true;
-    audio.playsInline = true;
-    document.body.appendChild(audio);
-  }
-  return audio;
-}
-
-let playbackDest = null;
-
-function ensurePlaybackMixer() {
-  if (!playbackCtx) {
-    playbackCtx = new AudioContext();
-    playbackDest = playbackCtx.createMediaStreamDestination();
+function wireRemoteTrackPlayback(track, audioEl) {
+  const play = () => void audioEl.play().catch(() => {});
+  if (track && !track.muted) play();
+  if (track) {
+    track.onunmute = play;
+    track.onended = () => {
+      audioEl.srcObject = null;
+    };
   }
 }
 
-function removePlaybackPeer(peerId) {
-  const src = playbackSources.get(peerNum(peerId));
-  if (src) {
-    try {
-      src.disconnect();
-    } catch {
-      /* ignore */
-    }
-    playbackSources.delete(peerNum(peerId));
-  }
-}
-
-function attachPlaybackTrack(peerId, track) {
-  ensurePlaybackMixer();
+/** Same playback path as 1:1 call — direct <audio>, no WebAudio mixer (avoids host self-monitor). */
+function playRemoteStream(peerId, stream, pc) {
   const n = peerNum(peerId);
-  removePlaybackPeer(n);
-  const src = playbackCtx.createMediaStreamSource(new MediaStream([track]));
-  src.connect(playbackDest);
-  playbackSources.set(n, src);
-  const audio = ensureRemoteAudioElement();
-  audio.srcObject = playbackDest.stream;
-  audio.muted = deafened;
-  void resumeVoiceAudioContexts().then(() => audio.play().catch(() => {}));
+  const tracks = (stream?.getAudioTracks?.() || []).filter(
+    (t) => t.kind === 'audio' && !isPcLoopbackTrack(t, pc),
+  );
+  if (!tracks.length) return;
+  let el = peerAudioEls.get(n);
+  if (!el) {
+    el = document.createElement('audio');
+    el.autoplay = true;
+    el.playsInline = true;
+    el.dataset.voicePeer = String(n);
+    document.body.appendChild(el);
+    peerAudioEls.set(n, el);
+  }
+  el.srcObject = new MediaStream(tracks);
+  el.muted = deafened;
+  wireRemoteTrackPlayback(tracks[0], el);
 }
 
-function clearPlayback() {
-  for (const pid of [...playbackSources.keys()]) removePlaybackPeer(pid);
-  if (playbackCtx) {
-    void playbackCtx.close().catch(() => {});
-    playbackCtx = null;
-    playbackDest = null;
+function stopRemotePeerAudio(peerId) {
+  const el = peerAudioEls.get(peerNum(peerId));
+  if (el) {
+    el.srcObject = null;
+    el.remove();
+    peerAudioEls.delete(peerNum(peerId));
   }
 }
 
-function playRemoteMixedStream(stream) {
-  const audio = ensureRemoteAudioElement();
-  audio.srcObject = stream;
-  audio.muted = deafened;
-  void resumeVoiceAudioContexts().then(() => audio.play().catch(() => {}));
+function clearAllRemotePeerAudio() {
+  for (const pid of [...peerAudioEls.keys()]) stopRemotePeerAudio(pid);
+  const legacy = document.getElementById('voice-ch-remote-audio');
+  if (legacy) {
+    legacy.srcObject = null;
+    legacy.remove();
+  }
+}
+
+function clientPcNeedsRebuild() {
+  if (!clientPc) return true;
+  const st = clientPc.connectionState;
+  return st === 'failed' || st === 'closed' || st === 'disconnected';
 }
 
 async function getMic() {
@@ -401,13 +437,6 @@ async function flushClientIce(pc) {
 
 async function createHostPeer(remoteId, groupId) {
   const rid = peerNum(remoteId);
-  const existing = hostPeers.get(rid);
-  if (existing) {
-    const st = existing.connectionState;
-    if (st === 'connected' || st === 'connecting' || st === 'new') return existing;
-    disconnectHostPeer(rid);
-  }
-  const group = getGroup(groupId);
   const pc = new RTCPeerConnection({ iceServers: ICE });
   hostPeers.set(rid, pc);
   hostPendingIce.set(rid, []);
@@ -415,13 +444,13 @@ async function createHostPeer(remoteId, groupId) {
   pc.ontrack = (ev) => {
     const track = ev.track;
     if (track.kind === 'audio') {
-      void resumeVoiceAudioContexts();
-      attachToMixer(rid, track);
-      void pushMixedAudioToAll();
-      ensureHostPlayback();
+      if (isPcLoopbackTrack(track, pc)) return;
+      const stream = ev.streams[0] || new MediaStream([track]);
+      playRemoteStream(rid, stream, pc);
+      sounds.stopOutgoingRing();
+      sounds.callConnected();
       track.onended = () => {
-        removeFromMixer(rid);
-        void pushMixedAudioToAll();
+        stopRemotePeerAudio(rid);
         stageRefresh?.();
       };
       stageRefresh?.();
@@ -461,33 +490,8 @@ async function createHostPeer(remoteId, groupId) {
   return pc;
 }
 
-function ensureHostPlayback() {
-  const track = buildMixMinusTrack(myId());
-  if (track) playRemoteMixedStream(new MediaStream([track]));
-  else {
-    const audio = ensureRemoteAudioElement();
-    audio.srcObject = null;
-  }
-}
-
-function attachHostLocalMic() {
-  const track = localStream?.getAudioTracks()[0];
-  if (!track) return;
-  ensureMixer();
-  const n = myId();
-  removeFromMixer(n);
-  mixerTracks.set(n, track);
-  const src = audioCtx.createMediaStreamSource(new MediaStream([track]));
-  const tap = audioCtx.createGain();
-  tap.gain.value = micGainValue();
-  src.connect(tap);
-  tap.connect(mixerGain);
-  mixerSources.set(n, src);
-  mixerTaps.set(n, tap);
-  mixedTrack = mixDestination.stream.getAudioTracks()[0] || null;
-}
-
 async function sendRenegotiateOffer(pc, groupId, remoteId) {
+  if (!pc || pc.signalingState !== 'stable' || pc.connectionState === 'closed') return;
   const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);
   await sendSignal(groupId, remoteId, {
@@ -527,26 +531,47 @@ async function syncScreenVideoOut() {
 }
 
 async function handleHostOffer(remoteId, groupId, offer) {
+  const rid = peerNum(remoteId);
+  const remoteOffer = normalizeSdp(offer);
+  if (!remoteOffer || remoteOffer.type !== 'offer') return;
+
   if (!localStream) {
-    pendingHostOffers.set(peerNum(remoteId), offer);
+    pendingHostOffers.set(rid, remoteOffer);
     return;
   }
-  await resumeVoiceAudioContexts();
-  const pc = await createHostPeer(remoteId, groupId);
-  attachHostLocalMic();
-  await pc.setRemoteDescription(offer);
-  await flushHostIce(remoteId, pc);
-  const outTrack = buildMixMinusTrack(remoteId);
-  const fallback = localStream?.getAudioTracks()[0];
-  await setPcAudioTrack(pc, outTrack || fallback);
-  const answer = await pc.createAnswer();
-  await pc.setLocalDescription(answer);
-  await sendSignal(groupId, remoteId, {
-    signalKind: 'answer',
-    sdp: { type: pc.localDescription.type, sdp: pc.localDescription.sdp },
-  });
-  ensureHostPlayback();
-  await pushMixedAudioToPeer(remoteId);
+
+  if (hostOfferInFlight.has(rid)) {
+    pendingHostOffers.set(rid, remoteOffer);
+    return;
+  }
+  hostOfferInFlight.add(rid);
+
+  try {
+    disconnectHostPeer(rid);
+    const pc = await createHostPeer(rid, groupId);
+    localStream.getTracks().forEach((tr) => pc.addTrack(tr, localStream));
+    await pc.setRemoteDescription(remoteOffer);
+    await flushHostIce(rid, pc);
+    if (pc.signalingState !== 'have-remote-offer') {
+      throw new Error(`host offer: expected have-remote-offer, got ${pc.signalingState}`);
+    }
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    await sendSignal(groupId, rid, {
+      signalKind: 'answer',
+      sdp: { type: pc.localDescription.type, sdp: pc.localDescription.sdp },
+    });
+  } catch (err) {
+    console.warn('[voice-ch] host offer:', err?.message || err);
+    disconnectHostPeer(rid);
+  } finally {
+    hostOfferInFlight.delete(rid);
+    const queued = pendingHostOffers.get(rid);
+    if (queued) {
+      pendingHostOffers.delete(rid);
+      void handleHostOffer(rid, groupId, queued);
+    }
+  }
 }
 
 function disconnectMeshPeer(peerId) {
@@ -557,7 +582,7 @@ function disconnectMeshPeer(peerId) {
     meshPeers.delete(n);
   }
   meshPendingIce.delete(n);
-  removePlaybackPeer(n);
+  stopRemotePeerAudio(n);
 }
 
 async function flushMeshIce(peerId, pc) {
@@ -577,7 +602,8 @@ function wireMeshPc(pc, remoteId, groupId) {
   const rid = peerNum(remoteId);
   pc.ontrack = (ev) => {
     if (ev.track.kind === 'audio') {
-      attachPlaybackTrack(rid, ev.track);
+      if (isPcLoopbackTrack(ev.track, pc)) return;
+      playRemoteStream(rid, ev.streams[0] || new MediaStream([ev.track]), pc);
       sounds.stopOutgoingRing();
       sounds.callConnected();
       stageRefresh?.();
@@ -616,22 +642,31 @@ async function createMeshOffer(remoteId, groupId) {
 
 async function handleMeshOffer(remoteId, groupId, offer) {
   const rid = peerNum(remoteId);
-  let pc = meshPeers.get(rid);
-  if (!pc) {
-    pc = new RTCPeerConnection({ iceServers: ICE });
+  const remoteOffer = normalizeSdp(offer);
+  if (!remoteOffer || remoteOffer.type !== 'offer' || !localStream) return;
+
+  try {
+    disconnectMeshPeer(rid);
+    const pc = new RTCPeerConnection({ iceServers: ICE });
     meshPeers.set(rid, pc);
     meshPendingIce.set(rid, []);
     wireMeshPc(pc, rid, groupId);
-    localStream?.getTracks().forEach((tr) => pc.addTrack(tr, localStream));
+    localStream.getTracks().forEach((tr) => pc.addTrack(tr, localStream));
+    await pc.setRemoteDescription(remoteOffer);
+    await flushMeshIce(rid, pc);
+    if (pc.signalingState !== 'have-remote-offer') {
+      throw new Error(`mesh offer: expected have-remote-offer, got ${pc.signalingState}`);
+    }
+    const answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
+    await sendSignal(groupId, rid, {
+      signalKind: 'answer',
+      sdp: { type: pc.localDescription.type, sdp: pc.localDescription.sdp },
+    });
+  } catch (err) {
+    console.warn('[voice-ch] mesh offer:', err?.message || err);
+    disconnectMeshPeer(rid);
   }
-  await pc.setRemoteDescription(offer);
-  await flushMeshIce(rid, pc);
-  const answer = await pc.createAnswer();
-  await pc.setLocalDescription(answer);
-  await sendSignal(groupId, rid, {
-    signalKind: 'answer',
-    sdp: { type: pc.localDescription.type, sdp: pc.localDescription.sdp },
-  });
 }
 
 async function ensureMeshVoice(group, activeSet) {
@@ -650,60 +685,72 @@ async function ensureMeshVoice(group, activeSet) {
 async function ensureClientToHost(group, { force = false } = {}) {
   const hostId = peerNum(group.hostId);
   if (!Number.isFinite(hostId) || hostId === myId()) return;
-  if (clientPc && !force) {
+  if (!force && clientPc) {
     const st = clientPc.connectionState;
-    if (st === 'connected') return;
-    if (st === 'connecting' || st === 'new') return;
+    if (st === 'connected' || st === 'connecting' || st === 'new') return;
   }
-  if (clientPc) {
-    clientPc.close();
-    clientPc = null;
-    clientPendingIce = [];
-  }
+  if (clientConnectInFlight) return;
+  clientConnectInFlight = true;
 
-  clientPc = new RTCPeerConnection({ iceServers: ICE });
-  clientPendingIce = [];
-
-  localStream?.getTracks().forEach((tr) => clientPc.addTrack(tr, localStream));
-
-  clientPc.ontrack = (ev) => {
-    if (ev.track.kind === 'audio') {
-      playRemoteMixedStream(ev.streams[0] || new MediaStream([ev.track]));
-      sounds.stopOutgoingRing();
-      sounds.callConnected();
-      stageRefresh?.();
-    }
-    if (ev.track.kind === 'video') {
-      peerVideoStreams.set(hostId, ev.streams[0] || new MediaStream([ev.track]));
-      stageRefresh?.();
-    }
-  };
-
-  clientPc.onconnectionstatechange = () => {
-    if (clientPc?.connectionState === 'connected') {
-      sounds.stopOutgoingRing();
-      sounds.callConnected();
-    }
-    if (clientPc?.connectionState === 'failed') {
-      clientPc?.close();
+  try {
+    if (clientPc) {
+      clientPc.close();
       clientPc = null;
+      clientPendingIce = [];
     }
-  };
+    stopRemotePeerAudio(hostId);
 
-  clientPc.onicecandidate = (ev) => {
-    if (!ev.candidate) return;
-    void sendSignal(activeGroupId, hostId, {
-      signalKind: 'candidate',
-      candidate: ev.candidate.toJSON(),
+    clientPc = new RTCPeerConnection({ iceServers: ICE });
+    clientPendingIce = [];
+
+    localStream.getTracks().forEach((tr) => clientPc.addTrack(tr, localStream));
+
+    clientPc.ontrack = (ev) => {
+      if (ev.track.kind === 'audio') {
+        if (isPcLoopbackTrack(ev.track, clientPc)) return;
+        playRemoteStream(hostId, ev.streams[0] || new MediaStream([ev.track]), clientPc);
+        sounds.stopOutgoingRing();
+        sounds.callConnected();
+        stageRefresh?.();
+      }
+      if (ev.track.kind === 'video') {
+        peerVideoStreams.set(hostId, ev.streams[0] || new MediaStream([ev.track]));
+        stageRefresh?.();
+      }
+    };
+
+    clientPc.oniceconnectionstatechange = () => {
+      const ice = clientPc?.iceConnectionState;
+      if (ice === 'connected' || ice === 'completed') {
+        void resumeVoiceAudioContexts();
+      }
+    };
+
+    clientPc.onconnectionstatechange = () => {
+      if (clientPc?.connectionState === 'connected') {
+        sounds.stopOutgoingRing();
+        sounds.callConnected();
+        void resumeVoiceAudioContexts();
+      }
+    };
+
+    clientPc.onicecandidate = (ev) => {
+      if (!ev.candidate) return;
+      void sendSignal(activeGroupId, hostId, {
+        signalKind: 'candidate',
+        candidate: ev.candidate.toJSON(),
+      });
+    };
+
+    const offer = await clientPc.createOffer();
+    await clientPc.setLocalDescription(offer);
+    await sendSignal(activeGroupId, hostId, {
+      signalKind: 'offer',
+      sdp: { type: clientPc.localDescription.type, sdp: clientPc.localDescription.sdp },
     });
-  };
-
-  const offer = await clientPc.createOffer();
-  await clientPc.setLocalDescription(offer);
-  await sendSignal(activeGroupId, hostId, {
-    signalKind: 'offer',
-    sdp: { type: clientPc.localDescription.type, sdp: clientPc.localDescription.sdp },
-  });
+  } finally {
+    clientConnectInFlight = false;
+  }
 }
 
 export function registerVoiceStageRefresh(fn) {
@@ -749,21 +796,13 @@ export async function joinVoiceChannel(groupId, channelId, api, config) {
   deafened = false;
 
   await resumeVoiceAudioContexts();
+  clearAllRemotePeerAudio();
 
   addChannelParticipant(groupId, channelId, myId());
   await broadcastRoster(groupId, channelId);
 
   if (isHost(group)) {
-    ensureMixer();
-    attachHostLocalMic();
-    ensureHostPlayback();
-    void pushMixedAudioToAll();
     sounds.callConnected();
-    const participants = channelParticipants(groupId, channelId);
-    for (const pid of participants) {
-      if (pid === myId()) continue;
-      void sendSignal(groupId, pid, { signalKind: 'reconnect' });
-    }
     for (const [rid, off] of pendingHostOffers) {
       await handleHostOffer(rid, groupId, off);
     }
@@ -774,7 +813,6 @@ export async function joinVoiceChannel(groupId, channelId, api, config) {
   }
 
   startHeartbeat(groupId, channelId);
-  dispatchReactiveAudio({ active: true, stream: localStream });
   stageRefresh?.();
 }
 
@@ -811,9 +849,8 @@ export async function leaveVoiceChannel() {
   meshPeers.clear();
   meshPendingIce.clear();
 
-  clearPlayback();
-  const audio = document.getElementById('voice-ch-remote-audio');
-  if (audio) audio.remove();
+  clearAllRemotePeerAudio();
+  stopSilentTrack();
 
   if (audioCtx) {
     try {
@@ -822,22 +859,17 @@ export async function leaveVoiceChannel() {
       /* ignore */
     }
     audioCtx = null;
-    mixerGain = null;
-    mixDestination = null;
-    mixerSources.clear();
     mixerTracks.clear();
-    mixerTaps.clear();
-    mixedTrack = null;
   }
 
   peerMediaState.clear();
   peerVideoStreams.clear();
   pendingHostOffers.clear();
+  hostOfferInFlight.clear();
   localScreenPreview = null;
   activeGroupId = null;
   activeChannelId = null;
   sounds.stopOutgoingRing();
-  dispatchReactiveAudio({ active: false });
   stageRefresh?.();
 }
 
@@ -860,8 +892,7 @@ export async function toggleVoiceMute() {
 
 export async function toggleVoiceDeafen() {
   deafened = !deafened;
-  const audio = document.getElementById('voice-ch-remote-audio');
-  if (audio) audio.muted = deafened;
+  for (const el of peerAudioEls.values()) el.muted = deafened;
   if (activeGroupId && activeChannelId) void broadcastRoster(activeGroupId, activeChannelId);
   stageRefresh?.();
 }
@@ -907,14 +938,9 @@ export async function handleVoiceChRoster(msg, api, config) {
     for (const rid of [...hostPeers.keys()]) {
       if (!activeSet.has(rid)) disconnectHostPeer(rid);
     }
-    attachHostLocalMic();
-    ensureHostPlayback();
-    await pushMixedAudioToAll();
   } else if (hostIn) {
     for (const pid of [...meshPeers.keys()]) disconnectMeshPeer(pid);
-    await ensureClientToHost(group, {
-      force: !clientPc || clientPc.connectionState !== 'connected',
-    });
+    await ensureClientToHost(group, { force: clientPcNeedsRebuild() });
   } else {
     if (clientPc) {
       clientPc.close();
@@ -947,11 +973,7 @@ export async function handleVoiceChSignal(msg, api, config) {
     activeGroupId === msg.groupId && activeChannelId === msg.channelId && localStream;
 
   if (msg.signalKind === 'reconnect' && !isHost(group) && inChannel && hostIn) {
-    if (clientPc) {
-      clientPc.close();
-      clientPc = null;
-      clientPendingIce = [];
-    }
+    if (!clientPcNeedsRebuild() && clientPc?.connectionState === 'connected') return;
     sounds.outgoingCall();
     await ensureClientToHost(group, { force: true });
     return;
@@ -968,14 +990,28 @@ export async function handleVoiceChSignal(msg, api, config) {
   }
 
   if (msg.signalKind === 'answer' && !isHost(group) && clientPc && offer) {
-    await clientPc.setRemoteDescription(offer);
-    await flushClientIce(clientPc);
-    await resumeVoiceAudioContexts();
+    const answer = normalizeSdp(msg.sdp);
+    if (!answer || answer.type !== 'answer') return;
+    if (clientPc.signalingState !== 'have-local-offer') return;
+    try {
+      await clientPc.setRemoteDescription(answer);
+      await flushClientIce(clientPc);
+      const stream = new MediaStream();
+      for (const r of clientPc.getReceivers?.() || []) {
+        if (r.track?.kind === 'audio' && !isPcLoopbackTrack(r.track, clientPc)) {
+          stream.addTrack(r.track);
+        }
+      }
+      if (stream.getAudioTracks().length) playRemoteStream(hostId, stream, clientPc);
+    } catch (err) {
+      console.warn('[voice-ch] client answer:', err?.message || err);
+    }
     return;
   }
 
   if (msg.signalKind === 'answer' && isHost(group) && hostPeers.get(remoteId) && offer) {
     const pc = hostPeers.get(remoteId);
+    if (pc.signalingState !== 'have-local-offer') return;
     await pc.setRemoteDescription(offer);
     await flushHostIce(remoteId, pc);
     return;
@@ -991,24 +1027,37 @@ export async function handleVoiceChSignal(msg, api, config) {
   }
 
   if (msg.signalKind === 'ren-offer' && offer) {
+    const remoteOffer = normalizeSdp(msg.sdp);
+    if (!remoteOffer || remoteOffer.type !== 'offer') return;
     let pc = isHost(group)
       ? hostPeers.get(remoteId)
       : meshPeers.get(remoteId) || (origin === hostId ? clientPc : null);
-    if (!pc) return;
-    await pc.setRemoteDescription(offer);
-    const answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
-    await sendSignal(msg.groupId, remoteId, {
-      signalKind: 'ren-answer',
-      sdp: { type: answer.type, sdp: answer.sdp },
-    });
+    if (!pc || pc.signalingState !== 'stable') return;
+    try {
+      await pc.setRemoteDescription(remoteOffer);
+      if (pc.signalingState !== 'have-remote-offer') return;
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      await sendSignal(msg.groupId, remoteId, {
+        signalKind: 'ren-answer',
+        sdp: { type: answer.type, sdp: answer.sdp },
+      });
+    } catch (err) {
+      console.warn('[voice-ch] ren-offer:', err?.message || err);
+    }
     return;
   }
 
   if (msg.signalKind === 'ren-answer' && offer) {
+    const answer = normalizeSdp(msg.sdp);
+    if (!answer || answer.type !== 'answer') return;
     const pc = hostPeers.get(remoteId) || meshPeers.get(remoteId) || clientPc;
-    if (!pc) return;
-    await pc.setRemoteDescription(offer);
+    if (!pc || pc.signalingState !== 'have-local-offer') return;
+    try {
+      await pc.setRemoteDescription(answer);
+    } catch (err) {
+      console.warn('[voice-ch] ren-answer:', err?.message || err);
+    }
     return;
   }
 

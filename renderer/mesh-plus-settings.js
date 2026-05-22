@@ -219,6 +219,13 @@ export function buildSettingsMeshPlusPanel(state, onConfigChange) {
     statusCard.classList.toggle('mesh-plus-status-card--active', active);
     pixelHero.setSubscriptionActive(active);
     carouselPixelStrip.setSubscriptionActive(active);
+    const unofficialLabel = active && meshTrust === MESH_TRUST.UNVERIFIED_MESH_PLUS;
+    pixelHero.hero
+      .querySelector('.mesh-plus-pixel-banner__label')
+      ?.classList.toggle('mesh-plus-pixel-banner__label--unverified', unofficialLabel);
+    carouselPixelStrip.strip
+      .querySelector('.mesh-plus-pixel-banner__label')
+      ?.classList.toggle('mesh-plus-pixel-banner__label--unverified', unofficialLabel);
     if (meshTrust === MESH_TRUST.UNVERIFIED_MESH_PLUS && active) {
       statusCard.classList.add('mesh-plus-status-card--trust-unverified');
     } else {

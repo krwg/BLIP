@@ -2,7 +2,9 @@ import { t } from './i18n.js';
 import { createAvatarElement } from './avatar.js';
 import { formatPeerDisplayName } from './peer-labels.js';
 import { getPeerPrivateNote, setPeerPrivateNote } from './peer-private-notes.js';
-import { getPeerProfileGifDataUrl } from './peer-gif-cache.js';
+import {
+  getPeerProfileGifDisplayUrl,
+} from './peer-gif-cache.js';
 import { appendMeshPlusBadgeToNameRow } from './mesh-plus.js';
 import { computeGifFramePx } from './gif-frame-size.js';
 
@@ -206,7 +208,7 @@ export function buildProfileCard(peerInput, hooks = {}) {
     if (selfBlipId != null && Number(peer.blipId) === Number(selfBlipId)) {
       return (await window.blip?.getProfileGifActiveUrl?.()) || null;
     }
-    return getPeerProfileGifDataUrl(peer.blipId);
+    return getPeerProfileGifDisplayUrl(peer.blipId);
   }
 
   function setPeer(nextPeer) {
@@ -219,6 +221,8 @@ export function buildProfileCard(peerInput, hooks = {}) {
       pulseTimer = null;
     }
   }
+
+  let gifResolveGen = 0;
 
   function refresh() {
     const pClass = presenceClass(peer);
@@ -237,34 +241,68 @@ export function buildProfileCard(peerInput, hooks = {}) {
     if (callBtn) callBtn.disabled = !peer.online;
     syncBlockBtn();
 
-    void resolveGifUrl()
-      .then((url) => {
-        if (url) {
-          cloudWrap.classList.remove('hidden');
-          cloudImg.onload = () => applyGifCloudSize(cloud, cloudImg);
-          cloudImg.decoding = 'async';
-          cloudImg.src = url;
-          cloudImg.classList.remove('hidden');
-          cloud.classList.add('profile-gif-cloud--active');
-          if (cloudImg.complete && cloudImg.naturalWidth) {
-            applyGifCloudSize(cloud, cloudImg);
-          }
-        } else {
-          cloudWrap.classList.add('hidden');
-          cloudImg.removeAttribute('src');
-          cloudImg.onload = null;
+    const wantsGif = !!peer.hasProfileGif;
+
+    const applyGifUrl = (url) => {
+      cloudWrap.classList.remove('profile-gif-cloud-wrap--loading');
+      if (url) {
+        cloudWrap.classList.remove('hidden');
+        const sameSrc = cloudImg.getAttribute('src') === url;
+        cloudImg.onload = () => applyGifCloudSize(cloud, cloudImg);
+        cloudImg.decoding = 'async';
+        cloudImg.onerror = () => {
+          cloudImg.onerror = null;
           cloudImg.classList.add('hidden');
           cloud.classList.remove('profile-gif-cloud--active');
-          cloud.style.width = '';
-          cloud.style.height = '';
+          cloudWrap.classList.add('profile-gif-cloud-wrap--loading');
+        };
+        if (!sameSrc) cloudImg.src = url;
+        cloudImg.classList.remove('hidden');
+        cloud.classList.add('profile-gif-cloud--active');
+        if (cloudImg.complete && cloudImg.naturalWidth) {
+          applyGifCloudSize(cloud, cloudImg);
         }
-      })
-      .catch(() => {
+      } else if (wantsGif) {
+        cloudWrap.classList.remove('hidden');
+        cloudWrap.classList.add('profile-gif-cloud-wrap--loading');
+        cloudImg.removeAttribute('src');
+        cloudImg.classList.add('hidden');
+        cloud.classList.remove('profile-gif-cloud--active');
+      } else {
         cloudWrap.classList.add('hidden');
         cloudImg.removeAttribute('src');
         cloudImg.onload = null;
         cloudImg.classList.add('hidden');
         cloud.classList.remove('profile-gif-cloud--active');
+        cloud.style.width = '';
+        cloud.style.height = '';
+      }
+    };
+
+    const hideGif = () => {
+      cloudWrap.classList.remove('profile-gif-cloud-wrap--loading');
+      cloudWrap.classList.add('hidden');
+      cloudImg.removeAttribute('src');
+      cloudImg.onload = null;
+      cloudImg.classList.add('hidden');
+      cloud.classList.remove('profile-gif-cloud--active');
+    };
+
+    const gen = ++gifResolveGen;
+    void resolveGifUrl()
+      .then((url) => {
+        if (gen !== gifResolveGen) return;
+        requestAnimationFrame(() => {
+          if (gen !== gifResolveGen) return;
+          applyGifUrl(url);
+        });
+      })
+      .catch(() => {
+        if (gen !== gifResolveGen) return;
+        requestAnimationFrame(() => {
+          if (gen !== gifResolveGen) return;
+          hideGif();
+        });
       });
   }
 

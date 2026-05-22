@@ -7,6 +7,7 @@
   <title>BLIP — Group call</title>
   <link rel="stylesheet" href="./themes.css" />
   <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="./groups-ui.css" />
   <link rel="stylesheet" href="./trust.css" />
   <style>
     html, body { height: 100%; margin: 0; overflow: hidden; }
@@ -26,15 +27,16 @@
     .group-call-window-titlebar {
       display: flex;
       align-items: center;
-      height: 36px;
-      padding: 0 8px;
-      background: var(--blip-bg);
+      height: 40px;
+      padding: 0 10px;
+      gap: 8px;
+      background: color-mix(in srgb, var(--blip-glass) 90%, var(--blip-bg));
       border-bottom: 2px solid var(--blip-accent);
       -webkit-app-region: drag;
-      font-size: 11px;
+      font-size: 0.68rem;
       text-transform: uppercase;
       color: var(--blip-accent);
-      letter-spacing: 2px;
+      letter-spacing: 0.14em;
     }
     .group-call-window-titlebar .title-spacer { flex: 1; }
     .group-call-window-titlebar .win-controls {

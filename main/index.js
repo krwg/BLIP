@@ -122,6 +122,8 @@ let discovery = null;
 let tcpServer = null;
 let config = null;
 const peerSockets = new Map();
+/** @type {Map<string, Promise<import('net').Socket>>} */
+const peerSocketConnectInflight = new Map();
 /** Set in `before-quit` so the main window can distinguish Quit from close-to-tray hide. */
 let appIsQuitting = false;
 
@@ -540,21 +542,11 @@ function findPeer(blipId) {
   return peers.find((p) => p.blipId === blipId && p.online) || null;
 }
 
-async function ensurePeerSocket(blipId) {
-  const peer = findPeer(blipId);
-  if (!peer) throw new Error('Peer not found');
+function wirePeerSocket(socket, socketKey, peerIp) {
+  if (socket._blipPeerWired) return;
+  socket._blipPeerWired = true;
 
-  const tcpPort = peer.tcpPort || resolvePorts(config).tcpPort;
-  const socketKey = `${peer.ip}:${blipId}:${tcpPort}`;
-
-  if (peerSockets.has(socketKey)) {
-    const s = peerSockets.get(socketKey);
-    if (!s.destroyed) return s;
-    peerSockets.delete(socketKey);
-  }
-
-  const socket = await connectToPeer(peer.ip, blipId, tcpPort);
-  initInboundSession(socket, peer.ip);
+  initInboundSession(socket, peerIp || socket.remoteAddress || '');
 
   const reader = createTcpLineReader(() => {
     try {
@@ -591,11 +583,36 @@ async function ensurePeerSocket(blipId) {
   socket.on('close', () => {
     clearSocketSession(socket);
     peerSockets.delete(socketKey);
+    socket._blipPeerWired = false;
+  });
+}
+
+async function ensurePeerSocket(blipId) {
+  const peer = findPeer(blipId);
+  if (!peer) throw new Error('Peer not found');
+
+  const tcpPort = peer.tcpPort || resolvePorts(config).tcpPort;
+  const socketKey = `${peer.ip}:${blipId}:${tcpPort}`;
+
+  const cached = peerSockets.get(socketKey);
+  if (cached && !cached.destroyed) return cached;
+
+  const inflight = peerSocketConnectInflight.get(socketKey);
+  if (inflight) return inflight;
+
+  const connectPromise = (async () => {
+    peerSockets.delete(socketKey);
+    const socket = await connectToPeer(peer.ip, blipId, tcpPort);
+    wirePeerSocket(socket, socketKey, peer.ip);
+    await performOutboundHandshake(socket, config, blipId, discovery);
+    peerSockets.set(socketKey, socket);
+    return socket;
+  })().finally(() => {
+    peerSocketConnectInflight.delete(socketKey);
   });
 
-  await performOutboundHandshake(socket, config, blipId, discovery);
-  peerSockets.set(socketKey, socket);
-  return socket;
+  peerSocketConnectInflight.set(socketKey, connectPromise);
+  return connectPromise;
 }
 
 function sendCallToPeer(peerBlipId, payload) {
@@ -645,6 +662,8 @@ function handleTcpPayload(msg, fromBlipId) {
     case 'file-abort':
     case 'clipboard-push':
     case 'avatar-share':
+    case 'group-avatar-share':
+    case 'group-avatar-request':
     case 'profile-gif-share':
     case 'profile-gif-request':
       sendToRenderer('tcp-message', msg);
