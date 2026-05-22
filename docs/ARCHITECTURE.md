@@ -159,6 +159,7 @@ Codename **Handshake**. Each client has an Ed25519 keypair in `blip-config.json`
 | TCP | `mesh-handshake` → `mesh-handshake-ack` before any other app packet |
 | Binding | Peer IP must match discovery; `msg.from` must match authenticated session |
 | TOFU | `knownPeerKeys[blipId]` updated after successful handshake |
+| IP route | If TCP `remoteAddress` ≠ discovery IP (VPN/Tailscale), handshake logs a warning, calls `discovery.noteObservedPeerIp`, and continues when the packet signature is valid |
 | Policy | `blockedPeerIds` dropped in main; `trustedPeerIds` for UI chat gate |
 
 Legacy peers without `meshProto` appear with `meshLegacy` — TCP mesh with 0.5 requires both sides on Handshake.
@@ -218,16 +219,17 @@ UDP/mDNS announce includes optional `presenceText` (max 48 chars, sanitized). Sh
 
 ## Voice channels (0.7.0+)
 
-Persistent voice rooms inside a group (Discord-style), separate from the legacy **group call window**.
+Persistent voice rooms inside a group (Discord-style), rendered in **`group-community-view.js`** on the main window. Separate from the legacy **group call window** (`group-call.js`).
 
 | Piece | Role |
 |--------|------|
-| `renderer/voice-channel.js` | WebRTC mesh / SFU-style audio routing, screen share renegotiation, reconnect signals. |
-| `renderer/voice-channel-ui.js` | Channel bar, join/leave, mute/deafen, screen picker. |
-| `renderer/voice-channel-roster.js` | Live roster in group hub. |
-| `groups-wire.js` | Routes `voice-ch-*` TCP types; `handleVoiceChSignal`. |
+| `renderer/voice-channel.js` | Star topology: non-host sends offer to **group host**; host answers with `addTrack(localStream)` (same as 1:1). Remote audio plays on per-peer `<audio>` elements (no WebAudio playback mixer). Mesh fallback when host is not in the channel. Screen share uses `ren-offer` / `ren-answer`. |
+| `renderer/voice-channel-ui.js` | Voice stage tiles, join/leave, mute/deafen, screen picker. |
+| `renderer/voice-channel-roster.js` | Live roster; `voice-ch-roster` TCP merge. |
+| `renderer/group-avatar.js` | Compress + `group-avatar-share` / `group-avatar-request` for member avatars. |
+| `groups-wire.js` | Routes `voice-ch-roster`, `voice-ch-signal`, group avatar TCP types. |
 
-Wire types include `voice-ch-join`, `voice-ch-leave`, `voice-ch-state`, `voice-ch-signal` (see `groups-wire.js`).
+Wire types: `voice-ch-roster`, `voice-ch-signal` (`offer` / `answer` / `candidate` / `reconnect` / `ren-offer` / `ren-answer`), `group-avatar-share`, `group-avatar-request` (see `groups-wire.js`, `main/index.js` forward to renderer).
 
 ## Group mesh
 
@@ -272,5 +274,5 @@ Static showcase: [`docs/index.html`](index.html) → [krwg.github.io/BLIP](https
 
 ## Future seams
 
-- CI packaging smoke jobs, mobile client, optional STUN for routed VPN edge cases.
+- CI packaging smoke jobs, mobile client, optional STUN/TURN only if LAN host candidates fail across complex VPN topologies (1.0.3 stays host-candidate / no public STUN).
 - macOS/Linux autostart parity beyond Windows login items.

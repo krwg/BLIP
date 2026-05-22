@@ -77,7 +77,7 @@ Quick VM flow: host runs BLIP (ID **1**), VM runs BLIP (ID **2**), same subnet v
 | **BLIP ID** | Pick a number on the 8×8 grid; conflicts resolved via TCP ping |
 | **Discovery** | UDP `42069` + mDNS fallback |
 | **Chat** | TCP messages, receipts (✓/✓✓), reactions, LAN images, linkify, emoji picker, **Ctrl+F** search, export, typing, unread |
-| **Groups** | Group chat (beta), custom name & avatar, voice channels; host relay and invites |
+| **Groups** | Group chat (beta), custom name & avatar, **voice channels** in the community view (host star relay); LAN avatar sync; legacy **group call** window still available |
 | **Favorites** | Star peers locally; sorted first on Peers and Chat |
 | **Presence** | Online / Away / Busy in Profile (UDP announce) |
 | **Calls** | Separate **1:1** and **group** call windows; WebRTC voice/video (LAN, no STUN/TURN) |
@@ -90,7 +90,7 @@ Quick VM flow: host runs BLIP (ID **1**), VM runs BLIP (ID **2**), same subnet v
 | **Files** | P2P send in chat (1–100 GB limit in Settings, chunked); drag & drop; group inline ≤768 KB + chunked to all members |
 | **Clipboard** | Optional LAN clipboard sync — **Settings → Network** (off / active chat / trusted peers) |
 | **Status** | Custom status line on LAN (Profile) — “In game”, AFK, etc. |
-| **Handshake** | Ed25519 signed announce + TCP mesh handshake (0.5+); block list enforced in main |
+| **Handshake** | Ed25519 signed announce + TCP mesh handshake (0.5+); VPN/Tailscale IP routes update discovery; block list enforced in main |
 | **Shortcuts** | In-window + system-wide (**Alt+1–4**, tray-safe) |
 | **Languages** | Full **English / Russian** UI (including group call chrome and badges) |
 | **Settings** | Profile, privacy/block list, appearance, network, shortcuts, call devices, transfers |
@@ -270,7 +270,7 @@ Icons: root `icon.svg` → `npm run build:icons` → `build/icon.ico`.
 4. **DIAL** — enter a BLIP ID (centered); **MESSAGE** opens chat, **CALL** starts a voice call.
 5. **PEERS** — online list with **Mesh Pulse** latency (auto refresh every minute); click to chat; right-click for Mesh label, ping, block.
 6. **CHAT** — typing indicator when the peer composes; unread badge on the nav until you open the thread; **Ctrl+F** search in the open thread; hub shows **GRP** / **VOICE** for groups.
-7. **Groups** — create from chat hub; **GRP CALL** starts voice; ongoing calls show a join bar; group voice runs in a **separate window** titled **Group call**.
+7. **Groups** — open a group from the chat hub: text channels + **voice channels** (join/leave in the main window, mute/deafen/share). **GRP CALL** opens the legacy **Group call** window (separate mesh call); ongoing group calls show a join bar in the hub.
 8. **Calls (1:1)** — separate window: **M** mute, **D** deafen, **S** screen share, **F** fullscreen, **Esc** hang up.
 9. **Profile** — upload an avatar; peers on the LAN receive it automatically. **Settings → System** — optional **Start BLIP when Windows starts**.
 
@@ -386,7 +386,7 @@ The **Minecraft** font is licensed separately under [MIT](https://github.com/bs-
 | **BLIP ID** | Выбор номера на сетке 8×8, конфликты через TCP ping |
 | **Discovery** | UDP `42069` + mDNS fallback |
 | **Чат** | TCP: доставка/прочтение (✓/✓✓), реакции, фото по LAN, ссылки, эмодзи, **Ctrl+F** поиск, экспорт, «печатает…», непрочитанное |
-| **Группы** | Групповой чат (бета), имя и аватар, голосовые каналы |
+| **Группы** | Групповой чат (бета), имя и аватар, **голосовые каналы** в community view (релей хоста); синхронизация аватарки по LAN; отдельное окно **группового звонка** |
 | **Избранное** | Звёздочка в меню абонента; сортировка вверху на Peers и в Chat |
 | **Статус** | В сети / Отошёл / Занят в профиле (UDP announce) |
 | **Звонки** | Отдельные окна **1:1** и **группового** звонка; WebRTC (LAN, без STUN/TURN) |
@@ -399,7 +399,7 @@ The **Minecraft** font is licensed separately under [MIT](https://github.com/bs-
 | **Файлы** | P2P в чате (лимит 1–100 ГБ в настройках, чанки); drag & drop; в группе ≤768 КБ inline + чанки всем |
 | **Буфер обмена** | Синхронизация по LAN — **Настройки → Сеть** (выкл / активный чат / доверенные) |
 | **Статус-текст** | Своя строка в LAN (Профиль) — «в игре», AFK и т.д. |
-| **Handshake** | Подписанный announce + TCP mesh-handshake (0.5+); блокировка в main |
+| **Handshake** | Подписанный announce + TCP mesh-handshake (0.5+); IP VPN/Tailscale обновляет discovery; блокировка в main |
 | **Горячие клавиши** | В окне + системные (**Alt+1–4**, из трея) |
 | **Языки** | Полный интерфейс **EN / RU** (включая групповой звонок и бейджи) |
 | **Настройки** | Профиль, конфиденциальность/блок, вид, сеть, горячие клавиши, звонок, передачи |
@@ -549,7 +549,7 @@ npx electron .
 4. **НАБОР** — введите BLIP ID (по центру); **СООБЩЕНИЕ** — чат, **ЗВОНОК** — голосовой звонок.
 5. **АБОНЕНТЫ** — список в сети, **Пульс · N мс** (автораз в минуту); клик — чат; ПКМ — Mesh label, пинг, блок.
 6. **ЧАТ** — «печатает…»; непрочитанное на **Чат**; **Ctrl+F** — поиск в открытом чате; в hub — **ГРП** / **ГОЛОС** у групп.
-7. **Группы** — создать из hub; **ГРП ЗВОНОК** — голос; активный звонок — полоса «войти»; окно **Групповой звонок** с кнопками **— □ ×**.
+7. **Группы** — из hub: текстовые и **голосовые** каналы (вход/выход в главном окне, mute/deafen/экран). **ГРП ЗВОНОК** — legacy-окно **Групповой звонок**; активный звонок — полоса «войти» в hub.
 8. **Звонок 1:1** — отдельное окно: **M** / **D** / **S** / **F** / **Esc**.
 9. **Профиль** — аватар уходит абонентам по LAN. **Настройки → Система** — **запуск при старте Windows** (опционально).
 
