@@ -9,6 +9,22 @@ Release **version numbers** track [`app-metadata.json`](app-metadata.json) (sync
 
 ## [Unreleased]
 
+### Added (1.1.0 Beacon — in progress)
+
+- **BEACON / Mesh Library** — content-addressed LAN file sharing: `seed-announce`, `seed-pulse`, parallel multi-peer chunk download (see [`docs/ROADMAP-1.1-BEACON.md`](docs/ROADMAP-1.1-BEACON.md)).
+- **Chat** — Reply polish, Forward (lite), Pinned messages (planned).
+- **UX** — Compact mode, font size sliders, idle → Away, typing sound (planned).
+
+### Fixed
+
+- **Toasts** — default auto-dismiss; close (×) and swipe-to-dismiss; message toasts no longer stay forever when actions are shown.
+- **MESH TRANSFER hub** — completed transfers auto-clear after 5s; manual dismiss per row and “clear all” on header.
+
+### Changed
+
+- **BEACON / МАЯК** — main nav entry with [BETA] badge; EN **BEACON**, RU **МАЯК** (consistent naming).
+- **Video lightbox** — adjustable volume (saved in settings as `videoVolume`).
+
 ## [1.0.3] — Echo — 2026-05-23
 
 Stable release (codename **Echo**). Focus: profiles with GIF status, reliable chats, MESH PLUS UI, group community polish, and group **voice channels** aligned with working 1:1 WebRTC.

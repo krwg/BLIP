@@ -38,6 +38,8 @@ export class Discovery {
     this.announceTimer = null;
     this.cleanupTimer = null;
     this.udpPort = resolvePorts(config).udpPort;
+    /** @type {((data: object) => void) | null} */
+    this.onSeedPacket = null;
   }
 
   async start() {
@@ -180,9 +182,23 @@ export class Discovery {
     this.announceMdns();
   }
 
+  /** @param {object} obj Beacon / seed UDP packet (`seed-announce`, `seed-pulse`, …). */
+  broadcastPacket(obj) {
+    if (!this.config.blipId || !this.socket || !obj) return;
+    const payload = JSON.stringify(obj);
+    const buf = Buffer.from(payload);
+    for (const port of getDiscoveryBroadcastPorts(this.config)) {
+      this.socket.send(buf, 0, buf.length, port, '255.255.255.255');
+    }
+  }
+
   handleUdpMessage(msg) {
     try {
       const data = JSON.parse(msg.toString());
+      if (data.type === 'seed-announce' || data.type === 'seed-pulse' || data.type === 'seed-gone') {
+        this.onSeedPacket?.(data);
+        return;
+      }
       if (data.type === 'announce' && data.blipId) {
         this.registerPeer(data);
       }

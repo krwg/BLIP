@@ -197,7 +197,7 @@ export async function fileToDataUrl(file) {
   });
 }
 
-export function handleFileTransferTcp(msg, { config, onComplete, onProgress }) {
+export function handleFileTransferTcp(msg, { config, onComplete, onProgress, onAbort }) {
   const type = msg.type;
   const peerId = Number(msg.from === config.blipId ? msg.to : msg.from);
   if (!Number.isFinite(peerId)) return false;
@@ -239,6 +239,7 @@ export function handleFileTransferTcp(msg, { config, onComplete, onProgress }) {
 
   if (type === 'file-abort') {
     incoming.delete(transferKey(peerId, msg.transferId));
+    onAbort?.(peerId, msg.transferId);
     return true;
   }
 

@@ -2,13 +2,49 @@ import { t } from './i18n.js';
 import { formatFileSize } from './file-transfer.js';
 import { formatTransferSpeed } from './file-transfer-speed.js';
 
+const AUTO_CLEAR_MS = 5000;
+
 /** @type {Map<string, { id: string, peerId: number, transferId: string, name: string, direction: string, progress: number, size: number, speedBps?: number, startedAt?: number, cancellable?: boolean, onCancel?: () => void }>} */
 const active = new Map();
+/** @type {Map<string, ReturnType<typeof setTimeout>>} */
+const autoClearTimers = new Map();
 let rootEl = null;
 let listEl = null;
+let clearBtnEl = null;
 
 function transferKey(peerId, transferId) {
   return `${peerId}:${transferId}`;
+}
+
+function cancelAutoClear(id) {
+  const timer = autoClearTimers.get(id);
+  if (timer) {
+    clearTimeout(timer);
+    autoClearTimers.delete(id);
+  }
+}
+
+function scheduleAutoClear(id) {
+  if (autoClearTimers.has(id)) return;
+  const timer = setTimeout(() => {
+    autoClearTimers.delete(id);
+    active.delete(id);
+    render();
+  }, AUTO_CLEAR_MS);
+  autoClearTimers.set(id, timer);
+}
+
+function dismissTransfer(id) {
+  cancelAutoClear(id);
+  active.delete(id);
+  render();
+}
+
+function clearAllTransfers() {
+  for (const timer of autoClearTimers.values()) clearTimeout(timer);
+  autoClearTimers.clear();
+  active.clear();
+  render();
 }
 
 function ensureDom() {
@@ -19,11 +55,24 @@ function ensureDom() {
 
   const head = document.createElement('div');
   head.className = 'transfer-hub-head';
+
   const title = document.createElement('span');
   title.className = 'transfer-hub-title';
   title.dataset.i18n = 'transfer.hub_title';
   title.textContent = t('transfer.hub_title');
   head.appendChild(title);
+
+  clearBtnEl = document.createElement('button');
+  clearBtnEl.type = 'button';
+  clearBtnEl.className = 'btn btn-lang transfer-hub-clear';
+  clearBtnEl.dataset.i18n = 'transfer.hub_clear';
+  clearBtnEl.setAttribute('aria-label', t('transfer.hub_clear'));
+  clearBtnEl.textContent = '×';
+  clearBtnEl.addEventListener('click', (e) => {
+    e.stopPropagation();
+    clearAllTransfers();
+  });
+  head.appendChild(clearBtnEl);
 
   listEl = document.createElement('div');
   listEl.className = 'transfer-hub-list';
@@ -46,6 +95,9 @@ function render() {
     const row = document.createElement('div');
     row.className = 'transfer-hub-row';
 
+    const top = document.createElement('div');
+    top.className = 'transfer-hub-row-top';
+
     const meta = document.createElement('div');
     meta.className = 'transfer-hub-meta';
     const name = document.createElement('span');
@@ -64,6 +116,18 @@ function render() {
     sub.textContent = `${dir} · ${formatFileSize(job.size)}${speedPart} · ${job.progress}%`;
     meta.appendChild(name);
     meta.appendChild(sub);
+    top.appendChild(meta);
+
+    const dismissBtn = document.createElement('button');
+    dismissBtn.type = 'button';
+    dismissBtn.className = 'btn btn-lang transfer-hub-dismiss';
+    dismissBtn.setAttribute('aria-label', t('transfer.hub_dismiss'));
+    dismissBtn.textContent = '×';
+    dismissBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dismissTransfer(job.id);
+    });
+    top.appendChild(dismissBtn);
 
     const track = document.createElement('div');
     track.className = 'transfer-hub-track';
@@ -72,7 +136,7 @@ function render() {
     fill.style.width = `${Math.min(100, Math.max(0, job.progress))}%`;
     track.appendChild(fill);
 
-    row.appendChild(meta);
+    row.appendChild(top);
     row.appendChild(track);
 
     if (job.cancellable && job.progress < 100 && job.onCancel) {
@@ -95,6 +159,7 @@ function render() {
 
 export function trackTransferStart(peerId, transferId, meta = {}) {
   const id = transferKey(peerId, transferId);
+  cancelAutoClear(id);
   active.set(id, {
     id,
     peerId: Number(peerId),
@@ -127,11 +192,14 @@ export function trackTransferProgress(peerId, transferId, progress, meta = {}) {
     const elapsed = Math.max(0.001, (Date.now() - job.startedAt) / 1000);
     job.speedBps = ((job.size * job.progress) / 100) / elapsed;
   }
+  if (job.progress >= 100) scheduleAutoClear(id);
   render();
 }
 
 export function trackTransferEnd(peerId, transferId) {
-  active.delete(transferKey(peerId, transferId));
+  const id = transferKey(peerId, transferId);
+  cancelAutoClear(id);
+  active.delete(id);
   render();
 }
 
@@ -139,5 +207,8 @@ export function refreshTransferHubI18n() {
   ensureDom();
   const title = rootEl?.querySelector('.transfer-hub-title');
   if (title) title.textContent = t('transfer.hub_title');
+  if (clearBtnEl) {
+    clearBtnEl.setAttribute('aria-label', t('transfer.hub_clear'));
+  }
   render();
 }

@@ -8,6 +8,25 @@ let root = null;
 let videoEl = null;
 let ytFrame = null;
 let closeFn = null;
+let volRow = null;
+let volRange = null;
+
+async function readVideoVolume() {
+  try {
+    const cfg = await window.blip?.getConfig?.();
+    const v = Number(cfg?.videoVolume);
+    if (Number.isFinite(v)) return Math.min(1, Math.max(0, v));
+  } catch {
+    /* ignore */
+  }
+  return 1;
+}
+
+function applyVideoVolume(vol) {
+  if (!videoEl) return;
+  videoEl.volume = vol;
+  if (volRange) volRange.value = String(Math.round(vol * 100));
+}
 
 function ensureRoot() {
   if (root) return root;
@@ -92,10 +111,35 @@ function ensureRoot() {
   controls.appendChild(playBtn);
   controls.appendChild(forwardBtn);
 
+  volRow = document.createElement('div');
+  volRow.className = 'media-viewer-volume hidden';
+  const volLabel = document.createElement('span');
+  volLabel.className = 'media-viewer-volume-label';
+  volLabel.dataset.i18n = 'media.volume';
+  volLabel.textContent = t('media.volume');
+  volRange = document.createElement('input');
+  volRange.type = 'range';
+  volRange.min = '0';
+  volRange.max = '100';
+  volRange.className = 'media-viewer-volume-range';
+  volRange.setAttribute('aria-label', t('media.volume'));
+  volRange.addEventListener('input', () => {
+    applyVideoVolume(Number(volRange.value) / 100);
+  });
+  volRange.addEventListener('change', () => {
+    const vol = Number(volRange.value) / 100;
+    void window.blip?.saveConfig?.({ videoVolume: vol });
+  });
+  volRow.appendChild(volLabel);
+  volRow.appendChild(volRange);
+
   root.appendChild(toolbar);
   root.appendChild(stage);
   root.appendChild(controls);
+  root.appendChild(volRow);
   root.appendChild(seekBar);
+
+  void readVideoVolume().then(applyVideoVolume);
 
   let state = { src: null, name: '', type: 'image', ytId: null };
 
@@ -104,6 +148,7 @@ function ensureRoot() {
     videoEl.classList.add('hidden');
     ytFrame.classList.add('hidden');
     controls.classList.add('hidden');
+    volRow?.classList.add('hidden');
     seekBar.classList.add('hidden');
   }
 
@@ -228,11 +273,15 @@ function ensureRoot() {
       videoEl.src = payload.src;
       videoEl.classList.remove('hidden');
       controls.classList.remove('hidden');
+      volRow?.classList.remove('hidden');
       seekBar.classList.remove('hidden');
       playBtn.disabled = false;
       rewindBtn.disabled = false;
       forwardBtn.disabled = false;
-      void videoEl.play().catch(() => {});
+      void readVideoVolume().then((vol) => {
+        applyVideoVolume(vol);
+        return videoEl.play();
+      }).catch(() => {});
       syncPlayBtn();
     }
     root.classList.remove('hidden');

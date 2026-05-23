@@ -88,6 +88,13 @@ contextBridge.exposeInMainWorld('blip', {
     ipcRenderer.on('tcp-message', handler);
     return () => ipcRenderer.removeListener('tcp-message', handler);
   },
+  onSeedUdp: (cb) => {
+    const handler = (_, data) => cb(data);
+    ipcRenderer.on('seed-udp', handler);
+    return () => ipcRenderer.removeListener('seed-udp', handler);
+  },
+  beaconSendUdp: (payload) => ipcRenderer.invoke('beacon-udp-send', payload),
+  getBeaconPaths: () => ipcRenderer.invoke('beacon-paths'),
   onNotificationOpenChat: (cb) => {
     const handler = (_, peerId) => cb(peerId);
     ipcRenderer.on('notification-open-chat', handler);

@@ -4,6 +4,7 @@ import { pathToFileURL } from 'url';
 import { fileURLToPath } from 'url';
 import { existsSync, readFileSync } from 'fs';
 import { Discovery } from './discovery.js';
+import { ensureBeaconSeedsRoot, getBeaconSeedsRoot } from './beacon-store.js';
 import { createTcpServer } from './tcp-server.js';
 import { connectToPeer, sendOnSocket, pingPeer } from './tcp-client.js';
 import { createTcpLineReader } from './tcp-framing.js';
@@ -656,6 +657,9 @@ function handleTcpPayload(msg, fromBlipId) {
     case 'voice-ch-signal':
       sendToRenderer('tcp-message', msg);
       break;
+    case 'seed-request':
+    case 'seed-chunk':
+    case 'seed-have':
     case 'file-offer':
     case 'file-chunk':
     case 'file-done':
@@ -778,6 +782,7 @@ async function bootstrapNetworking() {
   discovery = new Discovery(config, (peers, occupiedIds) => {
     sendToRenderer('peers-updated', { peers, occupiedIds });
   });
+  discovery.onSeedPacket = (data) => sendToRenderer('seed-udp', data);
   await discovery.start();
 }
 
@@ -984,6 +989,17 @@ function setupIpc() {
       onlinePeers: peers.filter((p) => p.online).length,
       totalPeers: peers.length,
     };
+  });
+
+  ipcMain.handle('beacon-paths', async () => {
+    await ensureBeaconSeedsRoot();
+    return { seedsDir: getBeaconSeedsRoot() };
+  });
+
+  ipcMain.handle('beacon-udp-send', (_, payload) => {
+    if (!payload || typeof payload !== 'object') return false;
+    discovery?.broadcastPacket?.(payload);
+    return true;
   });
 
   ipcMain.handle('send-tcp-message', async (_, payload) => {

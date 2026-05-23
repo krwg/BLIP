@@ -133,6 +133,8 @@ import {
 import { formatPeerDisplayName } from './peer-labels.js';
 import { openMeshLabelDialog } from './mesh-label-dialog.js';
 import { showAppToast } from './toasts.js';
+import { initBeaconMesh, refreshBeaconMesh, handleBeaconTcp } from './beacon-mesh.js';
+import { renderBeaconView } from './beacon-ui.js';
 import { openConfirmDialog } from './confirm-dialog.js';
 import {
   clearRendererLocalStorage,
@@ -323,6 +325,7 @@ function showMessageToast(peerId, preview) {
   showAppToast({
     title: `${t('toast.new_message')} · ${label}`,
     body: preview || '',
+    durationMs: 9000,
     actions: [
       {
         label: t('toast.open_chat'),
@@ -715,7 +718,7 @@ function updateNavActive() {
 }
 
 function getNavKeys() {
-  const keys = ['dial', 'peers', 'chat'];
+  const keys = ['dial', 'peers', 'chat', 'beacon'];
   if (state.config?.devProjectsEnabled) keys.push('projects');
   keys.push('settings');
   return keys;
@@ -729,8 +732,21 @@ function createNav(onNavigate) {
     btn.type = 'button';
     btn.className = 'nav-btn';
     btn.dataset.view = key;
-    btn.dataset.i18n = `nav.${key}`;
-    btn.textContent = t(`nav.${key}`);
+    if (key === 'beacon') {
+      const label = document.createElement('span');
+      label.dataset.i18n = 'nav.beacon';
+      label.textContent = t('nav.beacon');
+      const beta = document.createElement('span');
+      beta.className = 'nav-beta-badge';
+      beta.dataset.i18n = 'nav.beacon_beta';
+      beta.textContent = t('nav.beacon_beta');
+      btn.appendChild(label);
+      btn.appendChild(document.createTextNode(' '));
+      btn.appendChild(beta);
+    } else {
+      btn.dataset.i18n = `nav.${key}`;
+      btn.textContent = t(`nav.${key}`);
+    }
     btn.addEventListener('click', () => onNavigate(key));
     nav.appendChild(btn);
   });
@@ -2977,6 +2993,24 @@ function buildSettingsDeveloperPanel() {
   traceRow.appendChild(createPixelHintIcon('settings.dev_mesh_trace_hint'));
   frag.appendChild(traceRow);
 
+  const beaconRow = document.createElement('div');
+  beaconRow.className = 'settings-toggle-with-hint';
+  const beaconToggle = createPixelToggle({
+    checked: !!state.config?.devBeaconEnabled,
+    labelKey: 'settings.dev_beacon',
+    onChange: async (checked) => {
+      state.config = await api.saveConfig({ devBeaconEnabled: checked });
+      refreshBeaconMesh();
+      showAppToast({
+        title: checked ? t('settings.dev_beacon_on') : t('settings.dev_beacon_off'),
+        durationMs: 4000,
+      });
+    },
+  });
+  beaconRow.appendChild(beaconToggle.el);
+  beaconRow.appendChild(createPixelHintIcon('settings.dev_beacon_hint'));
+  frag.appendChild(beaconRow);
+
   const exportBtn = document.createElement('button');
   exportBtn.type = 'button';
   exportBtn.className = 'btn btn-lang';
@@ -4124,6 +4158,9 @@ function renderView(viewName, options = {}) {
     case 'projects':
       view = renderProjectsView();
       break;
+    case 'beacon':
+      view = renderBeaconView();
+      break;
     case 'profile': {
       view = renderPeerProfileView();
       break;
@@ -4269,6 +4306,15 @@ export function initUI(config, blipApi) {
   mainContent = null;
   window.__blipShowToast = showAppToast;
 
+  initBeaconMesh({
+    api: {
+      ...blipApi,
+      onSeedUdp: (cb) => window.blip?.onSeedUdp?.(cb),
+      beaconSendUdp: (payload) => window.blip?.beaconSendUdp?.(payload),
+    },
+    getConfig: () => state.config,
+  });
+
   const titleBar = createTitleBar();
   rootEl.appendChild(titleBar);
 
@@ -4297,6 +4343,7 @@ export function initUI(config, blipApi) {
   if (typeof window.blip.onConfigUpdated === 'function') {
     window.blip.onConfigUpdated((cfg) => {
       state.config = cfg;
+      refreshBeaconMesh();
       applyTrustFromConfig(cfg);
       restartClipboardSync();
       void import('./mesh-plus-verify.js').then(({ syncPremiumTierWithHost }) =>
@@ -4459,6 +4506,7 @@ export function handleTcpMessage(msg) {
     const peerId = Number(msg.from === state.config.blipId ? msg.to : msg.from);
     if (Number.isFinite(peerId)) logPeerEvent(peerId, `tcp:${msg.type}`);
   }
+  if (handleBeaconTcp(msg, { api, config: state.config })) return;
   if (msg.type === 'profile-gif-request') {
     const from = Number(msg.from);
     if (!Number.isFinite(from) || isBlocked(from)) return;
@@ -4565,6 +4613,7 @@ export function handleTcpMessage(msg) {
       config: state.config,
       onProgress: (peerId, transferId, pct) => {
         trackTransferProgress(peerId, transferId, pct, { direction: 'in' });
+        if (pct >= 100) trackTransferEnd(peerId, transferId);
       },
       onComplete: (peerId, payload) => {
         if (payload?.transferId) trackTransferEnd(peerId, payload.transferId);
@@ -4591,9 +4640,7 @@ export function handleTcpMessage(msg) {
         };
         routePeerMessage(incoming);
       },
-      onAbort: (peerId, transferId) => {
-        trackTransferEnd(peerId, transferId);
-      },
+      onAbort: (peerId, transferId) => trackTransferEnd(peerId, transferId),
     });
     return;
   }

@@ -40,6 +40,8 @@ const DEFAULT_CONFIG = {
   doNotDisturb: false,
   uiSoundsEnabled: true,
   uiSoundsVolume: 1,
+  /** In-app video lightbox volume 0–1 */
+  videoVolume: 1,
   /** FX pack: signal | pulse */
   uiSoundPack: 'signal',
   /** Call melodies: mesh | grid */
@@ -68,6 +70,8 @@ const DEFAULT_CONFIG = {
   fileTransferSpeed: 'normal',
   /** Log every TCP frame type to the network panel (developer). */
   devMeshTrace: false,
+  /** BEACON mesh library protocol (1.1.0) */
+  devBeaconEnabled: true,
   /** Projects hub + group project channels (pad, board, canvas, clipboard). */
   devProjectsEnabled: false,
   /** Signal Corps shared clipboard (LAN mesh). Off by default. */
