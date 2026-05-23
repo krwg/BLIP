@@ -166,12 +166,12 @@ Optional: `capabilities: ['beacon','reply','pin']` in announce or first TCP hand
 - [x] UDP `seed-*` in `discovery.js`, TCP forward, `beacon-mesh.js` skeleton
 - [x] Main nav **BEACON / МАЯК** with [BETA]
 
-### Phase B — Beacon core
+### Phase B — Beacon core (in progress)
 
-- [ ] Publish file → announce + local seed
-- [ ] Single-peer download E2E
-- [ ] Multi-seed parallel download (rarity + latency)
-- [ ] `seed-pulse` while seeding
+- [x] Publish file → announce + local seed
+- [x] Single-peer download E2E
+- [x] Multi-seed parallel download (up to 3 peers, batch requests)
+- [x] `seed-pulse` while seeding (local complete seeds)
 
 ### Phase C — Chat
 

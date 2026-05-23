@@ -4,7 +4,18 @@ import { pathToFileURL } from 'url';
 import { fileURLToPath } from 'url';
 import { existsSync, readFileSync } from 'fs';
 import { Discovery } from './discovery.js';
-import { ensureBeaconSeedsRoot, getBeaconSeedsRoot } from './beacon-store.js';
+import {
+  ensureBeaconSeedsRoot,
+  getBeaconSeedsRoot,
+  writeSeedMeta,
+  readSeedMeta,
+  writeSeedChunk,
+  readSeedChunk,
+  chunkExists,
+  countLocalChunks,
+  listLocalSeedMetas,
+  promptSaveAssembledSeed,
+} from './beacon-store.js';
 import { createTcpServer } from './tcp-server.js';
 import { connectToPeer, sendOnSocket, pingPeer } from './tcp-client.js';
 import { createTcpLineReader } from './tcp-framing.js';
@@ -1000,6 +1011,53 @@ function setupIpc() {
     if (!payload || typeof payload !== 'object') return false;
     discovery?.broadcastPacket?.(payload);
     return true;
+  });
+
+  ipcMain.handle('beacon-write-meta', async (_, { seedId, meta }) => {
+    if (!seedId || !meta) return { ok: false };
+    await writeSeedMeta(seedId, meta);
+    return { ok: true };
+  });
+
+  ipcMain.handle('beacon-read-meta', async (_, { seedId }) => {
+    if (!seedId) return null;
+    return readSeedMeta(seedId);
+  });
+
+  ipcMain.handle('beacon-write-chunk', async (_, { seedId, chunkIndex, data }) => {
+    if (!seedId || chunkIndex == null || !data) return { ok: false };
+    await writeSeedChunk(seedId, Number(chunkIndex), data);
+    return { ok: true };
+  });
+
+  ipcMain.handle('beacon-read-chunk', async (_, { seedId, chunkIndex }) => {
+    if (!seedId || chunkIndex == null) return { ok: false };
+    try {
+      const data = await readSeedChunk(seedId, Number(chunkIndex));
+      return { ok: true, data };
+    } catch {
+      return { ok: false };
+    }
+  });
+
+  ipcMain.handle('beacon-chunk-exists', async (_, { seedId, chunkIndex }) => {
+    if (!seedId || chunkIndex == null) return false;
+    return chunkExists(seedId, Number(chunkIndex));
+  });
+
+  ipcMain.handle('beacon-count-chunks', async (_, { seedId, totalChunks }) => {
+    if (!seedId) return 0;
+    return countLocalChunks(seedId, Number(totalChunks) || 0);
+  });
+
+  ipcMain.handle('beacon-list-local', async () => listLocalSeedMetas());
+
+  ipcMain.handle('beacon-save-assembled', async (_, { seedId, defaultName }) => {
+    try {
+      return await promptSaveAssembledSeed(seedId, defaultName);
+    } catch (err) {
+      return { ok: false, error: err?.message || 'save_failed' };
+    }
   });
 
   ipcMain.handle('send-tcp-message', async (_, payload) => {

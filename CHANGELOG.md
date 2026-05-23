@@ -11,7 +11,7 @@ Release **version numbers** track [`app-metadata.json`](app-metadata.json) (sync
 
 ### Added (1.1.0 Beacon — in progress)
 
-- **BEACON / Mesh Library** — content-addressed LAN file sharing: `seed-announce`, `seed-pulse`, parallel multi-peer chunk download (see [`docs/ROADMAP-1.1-BEACON.md`](docs/ROADMAP-1.1-BEACON.md)).
+- **BEACON / Mesh Library** — publish files to LAN (`seed-announce`), download via `seed-request`/`seed-chunk` (multi-peer, up to 3 seeds), save assembled file; see [`docs/ROADMAP-1.1-BEACON.md`](docs/ROADMAP-1.1-BEACON.md).
 - **Chat** — Reply polish, Forward (lite), Pinned messages (planned).
 - **UX** — Compact mode, font size sliders, idle → Away, typing sound (planned).
 

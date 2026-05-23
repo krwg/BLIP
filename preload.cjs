@@ -95,6 +95,14 @@ contextBridge.exposeInMainWorld('blip', {
   },
   beaconSendUdp: (payload) => ipcRenderer.invoke('beacon-udp-send', payload),
   getBeaconPaths: () => ipcRenderer.invoke('beacon-paths'),
+  beaconWriteMeta: (payload) => ipcRenderer.invoke('beacon-write-meta', payload),
+  beaconReadMeta: (payload) => ipcRenderer.invoke('beacon-read-meta', payload),
+  beaconWriteChunk: (payload) => ipcRenderer.invoke('beacon-write-chunk', payload),
+  beaconReadChunk: (payload) => ipcRenderer.invoke('beacon-read-chunk', payload),
+  beaconChunkExists: (payload) => ipcRenderer.invoke('beacon-chunk-exists', payload),
+  beaconCountChunks: (payload) => ipcRenderer.invoke('beacon-count-chunks', payload),
+  beaconListLocal: () => ipcRenderer.invoke('beacon-list-local'),
+  beaconSaveAssembled: (payload) => ipcRenderer.invoke('beacon-save-assembled', payload),
   onNotificationOpenChat: (cb) => {
     const handler = (_, peerId) => cb(peerId);
     ipcRenderer.on('notification-open-chat', handler);

@@ -132,11 +132,11 @@ function ensureRoot() {
   });
   volRow.appendChild(volLabel);
   volRow.appendChild(volRange);
+  controls.appendChild(volRow);
 
   root.appendChild(toolbar);
   root.appendChild(stage);
   root.appendChild(controls);
-  root.appendChild(volRow);
   root.appendChild(seekBar);
 
   void readVideoVolume().then(applyVideoVolume);

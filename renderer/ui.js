@@ -732,21 +732,8 @@ function createNav(onNavigate) {
     btn.type = 'button';
     btn.className = 'nav-btn';
     btn.dataset.view = key;
-    if (key === 'beacon') {
-      const label = document.createElement('span');
-      label.dataset.i18n = 'nav.beacon';
-      label.textContent = t('nav.beacon');
-      const beta = document.createElement('span');
-      beta.className = 'nav-beta-badge';
-      beta.dataset.i18n = 'nav.beacon_beta';
-      beta.textContent = t('nav.beacon_beta');
-      btn.appendChild(label);
-      btn.appendChild(document.createTextNode(' '));
-      btn.appendChild(beta);
-    } else {
-      btn.dataset.i18n = `nav.${key}`;
-      btn.textContent = t(`nav.${key}`);
-    }
+    btn.dataset.i18n = `nav.${key}`;
+    btn.textContent = t(`nav.${key}`);
     btn.addEventListener('click', () => onNavigate(key));
     nav.appendChild(btn);
   });
@@ -4311,8 +4298,18 @@ export function initUI(config, blipApi) {
       ...blipApi,
       onSeedUdp: (cb) => window.blip?.onSeedUdp?.(cb),
       beaconSendUdp: (payload) => window.blip?.beaconSendUdp?.(payload),
+      beaconWriteMeta: (payload) => window.blip?.beaconWriteMeta?.(payload),
+      beaconReadMeta: (payload) => window.blip?.beaconReadMeta?.(payload),
+      beaconWriteChunk: (payload) => window.blip?.beaconWriteChunk?.(payload),
+      beaconReadChunk: (payload) => window.blip?.beaconReadChunk?.(payload),
+      beaconChunkExists: (payload) => window.blip?.beaconChunkExists?.(payload),
+      beaconCountChunks: (payload) => window.blip?.beaconCountChunks?.(payload),
+      beaconListLocal: () => window.blip?.beaconListLocal?.(),
+      beaconSaveAssembled: (payload) => window.blip?.beaconSaveAssembled?.(payload),
     },
     getConfig: () => state.config,
+    getPeers: () => state.peers,
+    getPeerLatency: (id) => peerLatencyMs.get(id) ?? 9999,
   });
 
   const titleBar = createTitleBar();

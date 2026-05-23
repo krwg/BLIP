@@ -1,7 +1,7 @@
 {
   "issuer": "krwg-official",
   "version": "1.1.0-alpha",
-  "buildTimestamp": 1779495364933,
-  "buildSignature": "6TeNLdbIlNiRGparcpERhTdwSUMfEkrgzwdLcSff6kjuvUBJDbS/Ce327ji3Ompu7vkLPgSAX/PQqEiZcpk5Aw==",
+  "buildTimestamp": 1779497301162,
+  "buildSignature": "QCgkfpiGph0aEx2BTh1AwWmlwU93kbMv3bIoA3PrT2m4unmwX9+UdjRYcqlt3gFi8dywRymyVYp5f2dZMiIUAQ==",
   "meshPlusPublicKeyHash": "b91e80f821881373"
 }

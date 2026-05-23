@@ -1,57 +1,173 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>BLIP — GitHub</title>
-    <meta
-      name="description"
-      content="BLIP 1.0.1 Mesh Plus — P2P LAN messenger: chat, voice, MESH+, Signal Corps. Electron + Vite, WebRTC. krwg/BLIP."
-    />
+    <title>BLIP — P2P LAN Messenger</title>
+    <meta name="description" content="BLIP 1.1.0 Beacon — P2P LAN messenger + mesh file library (МАЯК): chat, voice, BEACON seeds. Electron + Vite, WebRTC. No cloud." />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://krwg.github.io/BLIP/" />
+    <meta property="og:title" content="BLIP — P2P LAN Messenger" />
+    <meta property="og:description" content="Desktop messenger for LAN / Hamachi / Radmin VPN. No cloud, no servers, no internet. BLIP IDs 1–64." />
+    <meta property="og:image" content="https://krwg.github.io/BLIP/og-image.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+
     <style>
+      /* ─── Design Tokens ─── */
       :root {
-        --bg0: #050508;
-        --bg1: #0a0a0c;
-        --glass: rgba(148, 163, 184, 0.07);
-        --border: rgba(148, 163, 184, 0.22);
-        --text: rgba(212, 228, 255, 0.94);
-        --muted: rgba(148, 163, 184, 0.62);
-        --accent: #94a3b8;
-        --accent2: #cbd5e1;
-        --on-accent: #050508;
-        --ease: cubic-bezier(0.4, 0, 0.2, 1);
         --font-pixel: 'Press Start 2P', ui-monospace, monospace;
+        --font-mono: ui-monospace, 'Cascadia Code', Consolas, monospace;
+
+        --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+        --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+        --radius: 0px;
+        --border-width: 2px;
+
+        /* Dark (default) */
+        --bg-0: #030304;
+        --bg-1: #0a0a0c;
+        --bg-2: #111118;
+        --glass: rgba(148, 163, 184, 0.06);
+        --glass-border: rgba(148, 163, 184, 0.18);
+        --text: rgba(212, 228, 255, 0.94);
+        --text-muted: rgba(148, 163, 184, 0.65);
+        --accent: #94a3b8;
+        --accent-bright: #cbd5e1;
+        --accent-glow: rgba(148, 163, 184, 0.25);
+        --on-accent: #050508;
+        --danger: #ff3366;
+        --success: #00ffc8;
       }
-      * {
+
+      [data-theme="light"] {
+        --bg-0: #e2e8f0;
+        --bg-1: #f1f5f9;
+        --bg-2: #ffffff;
+        --glass: rgba(148, 163, 184, 0.12);
+        --glass-border: rgba(148, 163, 184, 0.35);
+        --text: #0f172a;
+        --text-muted: #64748b;
+        --accent: #475569;
+        --accent-bright: #1e293b;
+        --accent-glow: rgba(71, 85, 105, 0.15);
+        --on-accent: #f8fafc;
+        --danger: #dc2626;
+        --success: #059669;
+      }
+
+      /* ─── Reset ─── */
+      *, *::before, *::after {
         box-sizing: border-box;
         margin: 0;
         padding: 0;
       }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html { scroll-behavior: auto; }
+        *, *::before, *::after {
+          animation-duration: 0.01ms !important;
+          animation-iteration-count: 1 !important;
+          transition-duration: 0.01ms !important;
+        }
+      }
+
       body {
         font-family: var(--font-pixel);
-        background: linear-gradient(180deg, var(--bg1) 0%, var(--bg0) 55%, #030304 100%);
-        background-attachment: fixed;
+        background: var(--bg-0);
         color: var(--text);
-        line-height: 1.75;
+        line-height: 1.7;
         letter-spacing: 0.04em;
         font-size: 13px;
         min-height: 100vh;
+        overflow-x: hidden;
+        -webkit-font-smoothing: antialiased;
       }
+
+      /* ─── CRT / Grid Background ─── */
+      body::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        background-image:
+          linear-gradient(rgba(148, 163, 184, 0.03) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(148, 163, 184, 0.03) 1px, transparent 1px);
+        background-size: 32px 32px;
+        mask-image: radial-gradient(ellipse at center, black 40%, transparent 80%);
+        -webkit-mask-image: radial-gradient(ellipse at center, black 40%, transparent 80%);
+      }
+
+      /* Scanlines (subtle) */
+      body::after {
+        content: '';
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        pointer-events: none;
+        background: repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 2px,
+          rgba(0, 0, 0, 0.03) 2px,
+          rgba(0, 0, 0, 0.03) 4px
+        );
+        opacity: 0.4;
+      }
+
+      [data-theme="light"] body::after {
+        background: repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 2px,
+          rgba(0, 0, 0, 0.015) 2px,
+          rgba(0, 0, 0, 0.015) 4px
+        );
+      }
+
+      /* ─── Skip Link ─── */
+      .skip-link {
+        position: absolute;
+        top: -40px;
+        left: 0;
+        background: var(--accent);
+        color: var(--on-accent);
+        padding: 8px 16px;
+        font-size: 9px;
+        z-index: 100;
+        text-decoration: none;
+        transition: top 0.2s;
+      }
+      .skip-link:focus { top: 0; }
+
+      /* ─── Header ─── */
       .header {
         position: fixed;
         inset: 0 0 auto 0;
         z-index: 50;
-        background: rgba(10, 10, 12, 0.58);
+        background: rgba(var(--bg-1-rgb, 10, 10, 12), 0.65);
         backdrop-filter: blur(24px) saturate(160%);
         -webkit-backdrop-filter: blur(24px) saturate(160%);
-        border-bottom: 1px solid var(--border);
+        border-bottom: 1px solid var(--glass-border);
+        transition: box-shadow 0.3s var(--ease-out);
       }
+
+      .header.scrolled {
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+      }
+
       .header-inner {
         max-width: 980px;
         margin: 0 auto;
@@ -62,53 +178,96 @@
         gap: 14px;
         flex-wrap: wrap;
       }
+
       .logo {
         font-size: 11px;
         text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: var(--accent2);
+        letter-spacing: 0.1em;
+        color: var(--accent-bright);
         text-decoration: none;
+        position: relative;
+        transition: color 0.2s;
       }
+
+      .logo::after {
+        content: '';
+        position: absolute;
+        bottom: -4px;
+        left: 0;
+        width: 0;
+        height: 2px;
+        background: var(--accent);
+        transition: width 0.3s var(--ease-out);
+      }
+
+      .logo:hover::after { width: 100%; }
+
       .header-actions {
         display: flex;
         align-items: center;
         gap: 10px;
         flex-wrap: wrap;
       }
+
       .lang {
         display: inline-flex;
-        border: 1px solid var(--border);
-        background: rgba(0, 0, 0, 0.35);
+        border: var(--border-width) solid var(--glass-border);
+        background: rgba(0, 0, 0, 0.25);
       }
+
+      [data-theme="light"] .lang {
+        background: rgba(255, 255, 255, 0.5);
+      }
+
       .lang button {
         font-family: var(--font-pixel);
         font-size: 9px;
-        padding: 8px 10px;
+        padding: 8px 12px;
         border: none;
         background: transparent;
-        color: var(--muted);
+        color: var(--text-muted);
         cursor: pointer;
         letter-spacing: 0.06em;
+        transition: all 0.15s;
+        position: relative;
       }
+
       .lang button:hover {
         color: var(--text);
+        background: rgba(148, 163, 184, 0.08);
       }
-      .lang button[aria-pressed='true'] {
-        background: rgba(148, 163, 184, 0.18);
-        color: var(--accent2);
+
+      .lang button[aria-pressed="true"] {
+        background: rgba(148, 163, 184, 0.2);
+        color: var(--accent-bright);
+        box-shadow: inset 0 -2px 0 var(--accent);
       }
+
+      .lang button:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: -2px;
+      }
+
       .nav-link {
         font-family: var(--font-pixel);
         font-size: 9px;
         letter-spacing: 0.06em;
-        color: var(--muted);
+        color: var(--text-muted);
         text-decoration: none;
         margin-left: 10px;
+        transition: color 0.2s;
+        position: relative;
       }
-      .nav-link:hover {
-        color: var(--text);
+
+      .nav-link:hover { color: var(--text); }
+      .nav-link:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 4px;
       }
+
+      /* ─── Hero ─── */
       .hero {
+        position: relative;
         min-height: 92vh;
         display: flex;
         flex-direction: column;
@@ -116,49 +275,104 @@
         justify-content: center;
         text-align: center;
         padding: 96px 16px 40px;
+        z-index: 1;
       }
+
       .hero-badge {
         display: inline-flex;
-        padding: 8px 12px;
+        padding: 8px 14px;
         background: var(--glass);
-        border: 1px solid var(--border);
+        border: 1px solid var(--glass-border);
         font-size: 9px;
-        color: var(--muted);
-        margin-bottom: 20px;
-        letter-spacing: 0.06em;
+        color: var(--text-muted);
+        margin-bottom: 24px;
+        letter-spacing: 0.08em;
         text-transform: uppercase;
         max-width: 40rem;
         line-height: 1.6;
+        opacity: 0;
+        animation: fadeInUp 0.6s var(--ease-out) 0.2s forwards;
       }
+
       .hero-title {
-        font-size: clamp(12px, 2.8vw, 18px);
-        line-height: 1.55;
-        max-width: 22em;
-        margin-bottom: 18px;
-        text-shadow: 0 2px 24px rgba(148, 163, 184, 0.14);
+        font-size: clamp(12px, 2.8vw, 20px);
+        line-height: 1.6;
+        max-width: 24em;
+        margin-bottom: 20px;
+        text-shadow: 0 2px 24px var(--accent-glow);
+        opacity: 0;
+        animation: fadeInUp 0.6s var(--ease-out) 0.4s forwards;
+        min-height: 3.2em;
       }
+
+      .hero-title .cursor {
+        display: inline-block;
+        width: 8px;
+        height: 1.2em;
+        background: var(--accent);
+        margin-left: 2px;
+        vertical-align: text-bottom;
+        animation: blink 1s step-end infinite;
+      }
+
+      @keyframes blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0; }
+      }
+
       .hero-sub {
         font-size: clamp(9px, 1.7vw, 11px);
-        line-height: 1.65;
-        color: var(--muted);
-        max-width: 44rem;
-        margin-bottom: 32px;
+        line-height: 1.7;
+        color: var(--text-muted);
+        max-width: 46rem;
+        margin-bottom: 36px;
+        opacity: 0;
+        animation: fadeInUp 0.6s var(--ease-out) 0.6s forwards;
       }
+
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(16px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* ─── Code Box ─── */
       .code-box {
         width: 100%;
-        max-width: 520px;
+        max-width: 540px;
         background: var(--glass);
-        border: 1px solid var(--border);
-        padding: 12px 14px;
-        margin-bottom: 24px;
+        border: 1px solid var(--glass-border);
+        padding: 14px 16px;
+        margin-bottom: 28px;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 10px;
+        gap: 12px;
         flex-wrap: wrap;
+        opacity: 0;
+        animation: fadeInUp 0.6s var(--ease-out) 0.8s forwards;
+        position: relative;
+        overflow: hidden;
       }
+
+      .code-box::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, var(--accent), transparent);
+        opacity: 0.5;
+      }
+
       .code-text {
-        font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+        font-family: var(--font-mono);
         font-size: 11px;
         letter-spacing: 0;
         color: var(--text);
@@ -167,137 +381,376 @@
         flex: 1;
         min-width: 0;
       }
+
       .copy-btn {
         font-family: var(--font-pixel);
-        border: 2px solid var(--border);
-        background: rgba(0, 0, 0, 0.45);
-        color: var(--muted);
-        padding: 8px 10px;
+        border: var(--border-width) solid var(--glass-border);
+        background: rgba(0, 0, 0, 0.35);
+        color: var(--text-muted);
+        padding: 8px 12px;
         font-size: 7px;
         cursor: pointer;
         flex-shrink: 0;
         box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.4);
+        transition: all 0.2s var(--ease-out);
+        position: relative;
+        overflow: hidden;
       }
+
+      [data-theme="light"] .copy-btn {
+        background: rgba(255, 255, 255, 0.6);
+        box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.1);
+      }
+
       .copy-btn:hover {
         color: var(--text);
         border-color: var(--accent);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
       }
+
+      .copy-btn:active {
+        transform: translateY(0);
+        box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.4);
+      }
+
       .copy-btn.copied {
-        color: var(--accent2);
-        border-color: rgba(148, 163, 184, 0.55);
+        color: var(--success);
+        border-color: var(--success);
+        animation: pulse 0.4s var(--ease-spring);
       }
+
+      @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+      }
+
+      .copy-btn:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      /* ─── CTA Row ─── */
       .cta-row {
         display: flex;
         flex-wrap: wrap;
-        gap: 10px;
+        gap: 12px;
         justify-content: center;
+        opacity: 0;
+        animation: fadeInUp 0.6s var(--ease-out) 1s forwards;
       }
+
       .btn {
         font-family: var(--font-pixel);
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        padding: 12px 18px;
+        padding: 12px 20px;
         text-decoration: none;
-        border: 2px solid transparent;
-        transition: transform 0.2s var(--ease), box-shadow 0.2s var(--ease);
+        border: var(--border-width) solid transparent;
+        transition: all 0.25s var(--ease-out);
         font-size: 8px;
         letter-spacing: 0.04em;
+        position: relative;
+        overflow: hidden;
+        cursor: pointer;
       }
+
+      .btn::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+        transform: translateX(-100%);
+        transition: transform 0.5s;
+      }
+
+      .btn:hover::before {
+        transform: translateX(100%);
+      }
+
       .btn-primary {
         background: var(--accent);
         color: var(--on-accent);
         border-color: rgba(148, 163, 184, 0.5);
-        box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.28);
+        box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.28), 0 4px 16px var(--accent-glow);
       }
+
       .btn-primary:hover {
         transform: translateY(-2px);
-        box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+        box-shadow: 0 12px 32px var(--accent-glow), inset 0 -3px 0 rgba(0, 0, 0, 0.28);
       }
+
+      .btn-primary:active {
+        transform: translateY(0);
+        box-shadow: 0 4px 8px var(--accent-glow), inset 0 -1px 0 rgba(0, 0, 0, 0.28);
+      }
+
       .btn-secondary {
         background: rgba(0, 0, 0, 0.22);
         color: var(--text);
-        border: 2px solid var(--border);
+        border: var(--border-width) solid var(--glass-border);
         box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.35);
       }
+
+      [data-theme="light"] .btn-secondary {
+        background: rgba(255, 255, 255, 0.4);
+        box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.1);
+      }
+
       .btn-secondary:hover {
         border-color: var(--accent);
-        color: var(--accent2);
+        color: var(--accent-bright);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
       }
+
+      .btn:focus-visible {
+        outline: 2px solid var(--accent-bright);
+        outline-offset: 3px;
+      }
+
+      /* ─── Features ─── */
       .features {
+        position: relative;
+        z-index: 1;
         max-width: 980px;
         margin: 0 auto;
-        padding: 40px 18px 88px;
+        padding: 48px 18px 96px;
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 16px;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 18px;
       }
+
       .feature {
-        border: 1px solid var(--border);
-        background: rgba(8, 10, 16, 0.45);
-        padding: 20px;
+        border: 1px solid var(--glass-border);
+        background: var(--glass);
+        padding: 24px;
         text-align: left;
+        transition: all 0.3s var(--ease-out);
+        position: relative;
+        overflow: hidden;
+        opacity: 0;
+        transform: translateY(20px);
       }
+
+      .feature.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .feature::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background: linear-gradient(90deg, var(--accent), transparent);
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+
+      .feature:hover {
+        border-color: rgba(148, 163, 184, 0.35);
+        transform: translateY(-4px);
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3), 0 0 0 1px var(--glass-border);
+      }
+
+      .feature:hover::before {
+        opacity: 1;
+      }
+
+      .feature-icon {
+        width: 32px;
+        height: 32px;
+        margin-bottom: 14px;
+        color: var(--accent);
+        transition: transform 0.3s var(--ease-spring);
+      }
+
+      .feature:hover .feature-icon {
+        transform: scale(1.1) rotate(-2deg);
+      }
+
       .feature h3 {
         font-size: 9px;
-        margin-bottom: 10px;
-        color: var(--accent2);
-        letter-spacing: 0.06em;
+        margin-bottom: 12px;
+        color: var(--accent-bright);
+        letter-spacing: 0.08em;
         text-transform: uppercase;
       }
+
       .feature p {
         font-size: 9px;
-        line-height: 1.65;
-        color: var(--muted);
+        line-height: 1.7;
+        color: var(--text-muted);
       }
+
+      /* ─── Footer ─── */
       .foot {
-        border-top: 1px solid var(--border);
-        padding: 24px 18px;
+        position: relative;
+        z-index: 1;
+        border-top: 1px solid var(--glass-border);
+        padding: 28px 18px;
         text-align: center;
         font-size: 7px;
-        color: var(--muted);
-        line-height: 1.7;
+        color: var(--text-muted);
+        line-height: 1.8;
       }
+
       .foot a {
-        color: var(--accent2);
+        color: var(--accent-bright);
         text-decoration: none;
+        position: relative;
+        transition: color 0.2s;
       }
-      .foot a:hover {
-        text-decoration: underline;
+
+      .foot a::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        width: 0;
+        height: 1px;
+        background: var(--accent);
+        transition: width 0.3s var(--ease-out);
       }
+
+      .foot a:hover::after { width: 100%; }
+      .foot a:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
       .joke {
         font-size: 7px;
-        color: var(--muted);
-        max-width: 40rem;
-        margin-top: 16px;
-        line-height: 1.65;
+        color: var(--text-muted);
+        max-width: 42rem;
+        margin: 18px auto 0;
+        line-height: 1.7;
+        opacity: 0.8;
       }
+
       .arch-link {
-        margin-top: 14px;
+        margin-top: 16px;
         font-size: 8px;
       }
-      .arch-link a {
-        color: var(--accent2);
-        text-decoration: none;
+
+      /* ─── Scroll to top ─── */
+      .scroll-top {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        z-index: 40;
+        width: 40px;
+        height: 40px;
+        background: var(--glass);
+        border: 1px solid var(--glass-border);
+        color: var(--text-muted);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transform: translateY(10px);
+        pointer-events: none;
+        transition: all 0.3s var(--ease-out);
+        font-family: var(--font-pixel);
+        font-size: 10px;
       }
-      .arch-link a:hover {
-        text-decoration: underline;
+
+      .scroll-top.visible {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
       }
-      [hidden] {
-        display: none !important;
+
+      .scroll-top:hover {
+        border-color: var(--accent);
+        color: var(--text);
+        transform: translateY(-2px);
+      }
+
+      .scroll-top:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      /* ─── Responsive ─── */
+      @media (max-width: 640px) {
+        .header-inner {
+          padding: 10px 14px;
+        }
+
+        .hero {
+          padding: 80px 14px 32px;
+          min-height: 85vh;
+        }
+
+        .hero-title {
+          font-size: 14px;
+        }
+
+        .code-box {
+          padding: 12px;
+        }
+
+        .features {
+          grid-template-columns: 1fr;
+          padding: 32px 14px 64px;
+        }
+
+        .feature {
+          padding: 20px;
+        }
+
+        .btn {
+          padding: 10px 16px;
+        }
+      }
+
+      /* ─── Reduced motion ─── */
+      @media (prefers-reduced-motion: reduce) {
+        .hero-badge, .hero-title, .hero-sub, .code-box, .cta-row {
+          opacity: 1;
+          animation: none;
+          transform: none;
+        }
+
+        .feature {
+          opacity: 1;
+          transform: none;
+        }
+
+        .hero-title .cursor {
+          animation: none;
+          opacity: 1;
+        }
+      }
+
+      /* ─── Selection ─── */
+      ::selection {
+        background: rgba(148, 163, 184, 0.3);
+        color: var(--text);
       }
     </style>
-  </head>
+  <base target="_blank">
+</head>
+
   <body>
-    <header class="header">
+    <a href="#main" class="skip-link">Skip to content</a>
+
+    <header class="header" id="header">
       <div class="header-inner">
-        <a class="logo" href="https://krwg.github.io/BLIP/">BLIP</a>
+        <a class="logo" href="https://krwg.github.io/BLIP/" aria-label="BLIP Home">BLIP</a>
         <div class="header-actions">
-          <div class="lang" role="group" aria-label="Language">
-            <button type="button" id="lang-ru" aria-pressed="true">RU</button>
-            <button type="button" id="lang-en" aria-pressed="false">EN</button>
+          <div class="lang" role="group" aria-label="Language switcher">
+            <button type="button" id="lang-ru" aria-pressed="true" aria-label="Русский">RU</button>
+            <button type="button" id="lang-en" aria-pressed="false" aria-label="English">EN</button>
           </div>
-          <nav>
+          <nav aria-label="External links">
             <a class="nav-link" data-i18n="navGh" href="https://github.com/krwg/BLIP">GitHub</a>
             <a class="nav-link" data-i18n="navIssues" href="https://github.com/krwg/BLIP/issues">Issues</a>
           </nav>
@@ -305,10 +758,12 @@
       </div>
     </header>
 
-    <main>
-      <section class="hero">
-        <div class="hero-badge" data-i18n="badge">v1.0.3 Echo · LAN · GPLv3</div>
-        <h1 class="hero-title" data-i18n="title">Ты в сети. Ты сигнал.</h1>
+    <main id="main">
+      <section class="hero" aria-label="Introduction">
+        <div class="hero-badge" data-i18n="badge">v1.1.0 Beacon · LAN · GPLv3</div>
+        <h1 class="hero-title" data-i18n="title">
+          <span id="typewriter-text"></span><span class="cursor" aria-hidden="true"></span>
+        </h1>
         <p class="hero-sub" data-i18n="sub">
           Десктоп-мессенджер для LAN / Hamachi / Radmin VPN: чат, группы, голосовые каналы, звонки 1:1 и
           групповые — без облака. UDP + TCP + WebRTC, BLIP ID 1–64.
@@ -322,24 +777,22 @@
             id="copy-btn"
             data-i18n-copy="copy"
             data-i18n-copied="copied"
-            aria-label="Copy"
+            aria-label="Copy clone command"
           >
             Copy
           </button>
         </div>
 
         <div class="cta-row">
-          <a class="btn btn-primary" href="https://github.com/krwg/BLIP">
+          <a class="btn btn-primary" href="https://github.com/krwg/BLIP" aria-label="Star BLIP on GitHub">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-              <path
-                d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"
-              />
+              <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
             </svg>
             <span data-i18n="star">Star on GitHub</span>
           </a>
-          <a class="btn btn-secondary" href="https://github.com/krwg/BLIP/releases"
-            ><span data-i18n="releases">Releases</span></a
-          >
+          <a class="btn btn-secondary" href="https://github.com/krwg/BLIP/releases" aria-label="View releases">
+            <span data-i18n="releases">Releases</span>
+          </a>
         </div>
 
         <p class="joke" data-i18n="joke">
@@ -347,32 +800,62 @@
           разработка — CONTRIBUTING в репозитории.
         </p>
         <p class="arch-link">
-          <a href="https://github.com/krwg/BLIP/blob/main/docs/ARCHITECTURE.md" data-i18n="arch">Архитектура · Architecture</a>
+          <a href="https://github.com/krwg/BLIP/blob/main/docs/ARCHITECTURE.md" data-i18n="arch">Архитектура →</a>
         </p>
       </section>
 
-      <section class="features">
+      <section class="features" aria-label="Features">
         <article class="feature">
+          <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M12 1v6m0 6v6m4.22-10.22l4.24-4.24M6.34 6.34L2.1 2.1m17.9 9.9h-6m-6 0H1.9m16.32 4.24l4.24 4.24M6.34 17.66l-4.24 4.24"/>
+          </svg>
           <h3 data-i18n="f1h">P2P LAN</h3>
           <p data-i18n="f1p">UDP broadcast + mDNS, TCP между пирами, Mesh Handshake (Ed25519). Без регистрации и без серверов.</p>
         </article>
+
         <article class="feature">
+          <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            <line x1="12" y1="19" x2="12" y2="23"/>
+            <line x1="8" y1="23" x2="16" y2="23"/>
+          </svg>
           <h3 data-i18n="f2h">Звонки</h3>
           <p data-i18n="f2p">Окна 1:1 и группового звонка, голосовые каналы в группах, демонстрация экрана 720p+, chiptune СИГНАЛ / ПУЛЬС.</p>
         </article>
+
         <article class="feature">
+          <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
           <h3 data-i18n="f3h">Чат</h3>
           <p data-i18n="f3p">Цитаты, медиа-просмотр и YouTube в чате, реакции, Ctrl+F, файлы до 100 ГБ, буфер обмена по LAN.</p>
         </article>
+
         <article class="feature">
+          <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true">
+            <rect x="3" y="3" width="18" height="18" rx="0" ry="0"/>
+            <line x1="3" y1="9" x2="21" y2="9"/>
+            <line x1="9" y1="21" x2="9" y2="9"/>
+          </svg>
           <h3 data-i18n="f4h">Облик</h3>
           <p data-i18n="f4p">Свет / тьма / авто, 16 акцентов (Сланец), арт-обои, своё фото профиля по LAN, пиксельные переключатели.</p>
         </article>
+
         <article class="feature">
+          <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
           <h3 data-i18n="f5h">Mesh Pulse</h3>
           <p data-i18n="f5p">Пинг раз в минуту, задержка под абонентом, статус-текст в LAN, избранные и блокировка в настройках.</p>
         </article>
+
         <article class="feature">
+          <svg class="feature-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" aria-hidden="true">
+            <polyline points="16 18 22 12 16 6"/>
+            <polyline points="8 6 2 12 8 18"/>
+          </svg>
           <h3 data-i18n="f6h">Стек</h3>
           <p data-i18n="f6p">Electron 35, Vite 6, vanilla JS/CSS. Windows — NSIS и portable; полный интерфейс EN / RU.</p>
         </article>
@@ -388,24 +871,26 @@
       </p>
     </footer>
 
+    <button class="scroll-top" id="scroll-top" aria-label="Scroll to top" title="Scroll to top">↑</button>
+
     <script>
-      (function () {
-        var STR = {
+      (() => {
+        'use strict';
+
+        // ─── i18n Data ───
+        const STR = {
           ru: {
-            badge: 'v1.0.3 Echo · LAN · GPLv3',
+            badge: 'v1.1.0 Beacon · LAN · GPLv3',
             title: 'Ты в сети. Ты сигнал.',
-            sub:
-              'Десктоп-мессенджер для LAN / Hamachi / Radmin VPN: чат, группы, голосовые каналы, звонки 1:1 и групповые — без облака. UDP + TCP + WebRTC, BLIP ID 1–64.',
+            sub: 'Десктоп-мессенджер для LAN / Hamachi / Radmin VPN: чат, группы, голосовые каналы, звонки 1:1 и групповые — без облака. UDP + TCP + WebRTC, BLIP ID 1–64.',
             star: 'Star на GitHub',
             releases: 'Релизы',
-            joke:
-              'Статическая витрина GitHub Pages в акценте «Сланец» (#94a3b8), как в приложении. Сборка — Electron; разработка — CONTRIBUTING в репозитории.',
+            joke: 'Статическая витрина GitHub Pages в акценте «Сланец» (#94a3b8), как в приложении. Сборка — Electron; разработка — CONTRIBUTING в репозитории.',
             arch: 'Архитектура →',
             f1h: 'P2P LAN',
             f1p: 'UDP broadcast + mDNS, TCP между пирами, Mesh Handshake (Ed25519). Без регистрации и без серверов.',
             f2h: 'Звонки',
-            f2p:
-              'Окна 1:1 и группового звонка, голосовые каналы в группах, демонстрация экрана 720p+, chiptune СИГНАЛ / ПУЛЬС.',
+            f2p: 'Окна 1:1 и группового звонка, голосовые каналы в группах, демонстрация экрана 720p+, chiptune СИГНАЛ / ПУЛЬС.',
             f3h: 'Чат',
             f3p: 'Цитаты, медиа-просмотр и YouTube в чате, реакции, Ctrl+F, файлы до 100 ГБ, буфер обмена по LAN.',
             f4h: 'Облик',
@@ -422,20 +907,17 @@
             navIssues: 'Issues',
           },
           en: {
-            badge: 'v1.0.3 Echo · LAN · GPLv3',
+            badge: 'v1.1.0 Beacon · LAN · GPLv3',
             title: "You're on the grid. You're the signal.",
-            sub:
-              'Desktop messenger for LAN / Hamachi / Radmin VPN: chat, groups, voice channels, 1:1 and group calls — no cloud. UDP + TCP + WebRTC, BLIP IDs 1–64.',
+            sub: 'Desktop messenger for LAN / Hamachi / Radmin VPN: chat, groups, voice channels, 1:1 and group calls — no cloud. UDP + TCP + WebRTC, BLIP IDs 1–64.',
             star: 'Star on GitHub',
             releases: 'Releases',
-            joke:
-              'Static GitHub Pages showcase using the Slate accent (#94a3b8), matching the app. Built with Electron; dev setup in CONTRIBUTING.',
+            joke: 'Static GitHub Pages showcase using the Slate accent (#94a3b8), matching the app. Built with Electron; dev setup in CONTRIBUTING.',
             arch: 'Architecture →',
             f1h: 'P2P LAN',
             f1p: 'UDP broadcast + mDNS, peer TCP, Mesh Handshake (Ed25519). No sign-up, no servers.',
             f2h: 'Calls',
-            f2p:
-              'Separate 1:1 and group call windows, group voice channels, 720p+ screen share, chiptune SIGNAL / PULSE packs.',
+            f2p: 'Separate 1:1 and group call windows, group voice channels, 720p+ screen share, chiptune SIGNAL / PULSE packs.',
             f3h: 'Chat',
             f3p: 'Quote replies, in-chat media + YouTube viewer, reactions, Ctrl+F search, files up to 100 GB, optional LAN clipboard.',
             f4h: 'Look',
@@ -453,73 +935,173 @@
           },
         };
 
-        var LANG_KEY = 'blip_pages_lang';
+        const LANG_KEY = 'blip_pages_lang';
+        const TYPEWRITER_SPEED = 60;
 
-        function getLang() {
+        // ─── DOM refs ───
+        const header = document.getElementById('header');
+        const ruBtn = document.getElementById('lang-ru');
+        const enBtn = document.getElementById('lang-en');
+        const copyBtn = document.getElementById('copy-btn');
+        const cloneLine = document.getElementById('clone-line');
+        const scrollTopBtn = document.getElementById('scroll-top');
+        const typewriterEl = document.getElementById('typewriter-text');
+
+        // ─── Helpers ───
+        const getLang = () => {
           try {
-            var v = localStorage.getItem(LANG_KEY);
+            const v = localStorage.getItem(LANG_KEY);
             return v === 'en' ? 'en' : 'ru';
-          } catch (e) {
+          } catch {
             return 'ru';
           }
-        }
+        };
 
-        function setLang(lang) {
-          var next = lang === 'en' ? 'en' : 'ru';
-          try {
-            localStorage.setItem(LANG_KEY, next);
-          } catch (e) {}
+        const setLang = (lang) => {
+          const next = lang === 'en' ? 'en' : 'ru';
+          try { localStorage.setItem(LANG_KEY, next); } catch {}
           document.documentElement.lang = next === 'en' ? 'en' : 'ru';
           apply(next);
-        }
+        };
 
-        function apply(lang) {
-          var pack = STR[lang];
-          document.querySelectorAll('[data-i18n]').forEach(function (el) {
-            var k = el.getAttribute('data-i18n');
-            if (pack[k] !== undefined && pack[k] !== '') el.textContent = pack[k];
+        let typewriterTimeout;
+
+        const typewrite = (text) => {
+          clearTimeout(typewriterTimeout);
+          typewriterEl.textContent = '';
+          let i = 0;
+
+          const step = () => {
+            if (i < text.length) {
+              typewriterEl.textContent += text.charAt(i);
+              i++;
+              typewriterTimeout = setTimeout(step, TYPEWRITER_SPEED);
+            }
+          };
+
+          step();
+        };
+
+        const apply = (lang) => {
+          const pack = STR[lang];
+
+          document.querySelectorAll('[data-i18n]').forEach(el => {
+            const k = el.getAttribute('data-i18n');
+            if (pack[k] !== undefined) {
+              el.textContent = pack[k];
+            }
           });
-          var btnRu = document.getElementById('lang-ru');
-          var btnEn = document.getElementById('lang-en');
-          if (btnRu) btnRu.setAttribute('aria-pressed', lang === 'ru' ? 'true' : 'false');
-          if (btnEn) btnEn.setAttribute('aria-pressed', lang === 'en' ? 'true' : 'false');
-          var copyBtn = document.getElementById('copy-btn');
-          if (copyBtn && !copyBtn.classList.contains('copied')) copyBtn.textContent = pack.copy;
-          if (copyBtn) {
-            copyBtn.setAttribute('data-i18n-copy', pack.copy);
-            copyBtn.setAttribute('data-i18n-copied', pack.copied);
+
+          // Update typewriter with new title
+          const titleText = pack.title || '';
+          typewrite(titleText);
+
+          if (ruBtn) ruBtn.setAttribute('aria-pressed', lang === 'ru' ? 'true' : 'false');
+          if (enBtn) enBtn.setAttribute('aria-pressed', lang === 'en' ? 'true' : 'false');
+
+          if (copyBtn && !copyBtn.classList.contains('copied')) {
+            copyBtn.textContent = pack.copy;
           }
-        }
+          copyBtn?.setAttribute('data-i18n-copy', pack.copy);
+          copyBtn?.setAttribute('data-i18n-copied', pack.copied);
+        };
 
-        var ruBtn = document.getElementById('lang-ru');
-        if (ruBtn)
-          ruBtn.addEventListener('click', function () {
-            setLang('ru');
-          });
-        var enBtn = document.getElementById('lang-en');
-        if (enBtn)
-          enBtn.addEventListener('click', function () {
-            setLang('en');
-          });
+        // ─── Event Listeners ───
+        ruBtn?.addEventListener('click', () => setLang('ru'));
+        enBtn?.addEventListener('click', () => setLang('en'));
 
+        // Keyboard shortcut: Ctrl/Cmd + L to toggle language
+        document.addEventListener('keydown', (e) => {
+          if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
+            e.preventDefault();
+            setLang(getLang() === 'ru' ? 'en' : 'ru');
+          }
+        });
+
+        // ─── Copy to clipboard ───
+        const fallbackCopy = (text) => {
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          ta.style.position = 'fixed';
+          ta.style.opacity = '0';
+          document.body.appendChild(ta);
+          ta.select();
+          try {
+            document.execCommand('copy');
+            return true;
+          } catch {
+            return false;
+          } finally {
+            document.body.removeChild(ta);
+          }
+        };
+
+        copyBtn?.addEventListener('click', async () => {
+          const text = cloneLine?.innerText || '';
+          const langNow = getLang();
+          const copiedText = STR[langNow].copied;
+
+          let ok = false;
+          if (navigator.clipboard?.writeText) {
+            try {
+              await navigator.clipboard.writeText(text);
+              ok = true;
+            } catch {
+              ok = fallbackCopy(text);
+            }
+          } else {
+            ok = fallbackCopy(text);
+          }
+
+          if (ok) {
+            copyBtn.textContent = copiedText;
+            copyBtn.classList.add('copied');
+            setTimeout(() => {
+              copyBtn.textContent = STR[getLang()].copy;
+              copyBtn.classList.remove('copied');
+            }, 2000);
+          }
+        });
+
+        // ─── Scroll effects ───
+        let lastScroll = 0;
+
+        window.addEventListener('scroll', () => {
+          const y = window.scrollY;
+
+          // Header shadow
+          header?.classList.toggle('scrolled', y > 10);
+
+          // Scroll-to-top button
+          scrollTopBtn?.classList.toggle('visible', y > 400);
+
+          lastScroll = y;
+        }, { passive: true });
+
+        scrollTopBtn?.addEventListener('click', () => {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        // ─── Intersection Observer for features ───
+        const featureObserver = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('visible');
+              featureObserver.unobserve(entry.target);
+            }
+          });
+        }, {
+          threshold: 0.1,
+          rootMargin: '0px 0px -40px 0px'
+        });
+
+        document.querySelectorAll('.feature').forEach(f => {
+          featureObserver.observe(f);
+        });
+
+        // ─── Init ───
         apply(getLang());
 
-        var btn = document.getElementById('copy-btn');
-        var line = document.getElementById('clone-line');
-        if (!btn || !line) return;
-        btn.addEventListener('click', function () {
-          var text = line.innerText;
-          var langNow = getLang();
-          var copied = STR[langNow].copied;
-          navigator.clipboard.writeText(text).then(function () {
-            btn.textContent = copied;
-            btn.classList.add('copied');
-            setTimeout(function () {
-              btn.textContent = STR[getLang()].copy;
-              btn.classList.remove('copied');
-            }, 2000);
-          });
-        });
       })();
     </script>
   </body>
