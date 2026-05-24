@@ -9,7 +9,13 @@ Release **version numbers** track [`app-metadata.json`](app-metadata.json) (sync
 
 ## [Unreleased]
 
-_No changes yet._
+### Fixed
+
+- **BEACON publish** — `beaconPublishFromPath` was missing from `initBeaconMesh` API (always failed with «browser file» for large ZIP); native file dialog + main-process ingest.
+- **DM file transfer** — main-process send from disk path (`send-file-from-path`), 1 MiB chunks, serialized TCP write queue (fixes interleaved JSON lines under parallel IPC).
+- **BEACON throughput** — serve chunks from main (`beacon-serve-chunks-tcp`), single-pass ingest with parallel disk writes; publish overlay + row in Downloads tab.
+- **Call/stream quality (LAN)** — higher RTP bitrates, `maintain-resolution` on camera and screen; voice-channel screen share now calls `tuneVideoSender`.
+- **Windows auto-update** — `verifyUpdateCodeSignature = false` was ignored by electron-updater; use async verifier that skips unsigned NSIS installers so download + install complete.
 
 ## [1.1.1] — Beacon — 2026-05-24
 

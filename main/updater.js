@@ -94,8 +94,10 @@ async function applyUpdateFeed(config) {
   autoUpdater.autoInstallOnAppQuit = config?.autoDownloadUpdates !== false;
   autoUpdater.disableDifferentialDownload = true;
 
+  // electron-updater ignores `false` — setter only applies truthy values (NsisUpdater.js).
+  // Unsigned GitHub installers must skip Authenticode verification explicitly.
   if (process.platform === 'win32') {
-    autoUpdater.verifyUpdateCodeSignature = false;
+    autoUpdater.verifyUpdateCodeSignature = async () => null;
   }
 
   const feed = await resolveUpdateFeedUrl(config);

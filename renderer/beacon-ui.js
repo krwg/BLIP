@@ -2,6 +2,7 @@ import { t } from './i18n.js';
 import {
   getBeaconCatalog,
   publishBeaconFile,
+  publishBeaconFilePath,
   downloadBeaconSeed,
   refreshBeaconLocalState,
   setSeedPaused,
@@ -33,8 +34,79 @@ let statsRootEl = null;
 let bwUnsub = null;
 let searchQuery = '';
 let publishBusy = false;
+/** @type {HTMLElement | null} */
+let publishOverlayEl = null;
 /** @type {() => object} */
 let getUiConfig = () => ({});
+
+function ensurePublishOverlay(wrap) {
+  if (publishOverlayEl?.isConnected) return publishOverlayEl;
+  const host = wrap.querySelector('.beacon-view') || wrap;
+  const overlay = document.createElement('div');
+  overlay.className = 'beacon-publish-overlay hidden';
+  overlay.setAttribute('role', 'status');
+  overlay.setAttribute('aria-live', 'polite');
+  overlay.innerHTML = `
+    <div class="beacon-publish-overlay-card glass">
+      <div class="beacon-publish-overlay-spinner" aria-hidden="true"></div>
+      <strong class="beacon-publish-overlay-title" data-i18n="beacon.publishing"></strong>
+      <span class="beacon-publish-overlay-name"></span>
+      <div class="beacon-progress-track beacon-progress-track--pixel beacon-publish-overlay-track">
+        <div class="beacon-progress-fill beacon-publish-overlay-fill"></div>
+      </div>
+      <span class="beacon-publish-overlay-pct beacon-sub">0%</span>
+      <span class="beacon-publish-overlay-phase beacon-sub" data-i18n="beacon.status_hashing"></span>
+    </div>
+  `;
+  host.appendChild(overlay);
+  publishOverlayEl = overlay;
+  return overlay;
+}
+
+function showPublishOverlay(wrap, filename) {
+  const overlay = ensurePublishOverlay(wrap);
+  overlay.classList.remove('hidden');
+  const title = overlay.querySelector('.beacon-publish-overlay-title');
+  if (title) title.textContent = t('beacon.publishing');
+  const nameEl = overlay.querySelector('.beacon-publish-overlay-name');
+  if (nameEl) nameEl.textContent = filename || '';
+  const fill = overlay.querySelector('.beacon-publish-overlay-fill');
+  if (fill) fill.style.width = '0%';
+  const pct = overlay.querySelector('.beacon-publish-overlay-pct');
+  if (pct) pct.textContent = '0%';
+  const phase = overlay.querySelector('.beacon-publish-overlay-phase');
+  if (phase) {
+    phase.dataset.i18n = 'beacon.status_hashing';
+    phase.textContent = t('beacon.status_hashing');
+  }
+  activeTab = 'downloads';
+  setActiveTab('downloads', wrap);
+  renderTableRows();
+}
+
+function updatePublishOverlay(progress, phase) {
+  if (!publishOverlayEl || publishOverlayEl.classList.contains('hidden')) return;
+  const pctVal = Math.max(0, Math.min(100, Math.round(Number(progress) || 0)));
+  const fill = publishOverlayEl.querySelector('.beacon-publish-overlay-fill');
+  if (fill) fill.style.width = `${pctVal}%`;
+  const pct = publishOverlayEl.querySelector('.beacon-publish-overlay-pct');
+  if (pct) pct.textContent = `${pctVal}%`;
+  const phaseEl = publishOverlayEl.querySelector('.beacon-publish-overlay-phase');
+  if (phaseEl) {
+    const key =
+      phase === 'publishing'
+        ? 'beacon.status_publishing'
+        : phase === 'hashing'
+          ? 'beacon.status_hashing'
+          : 'beacon.publishing';
+    phaseEl.dataset.i18n = key;
+    phaseEl.textContent = t(key);
+  }
+}
+
+function hidePublishOverlay() {
+  publishOverlayEl?.classList.add('hidden');
+}
 
 async function copySeedLink(seedId) {
   const link = buildBeaconSeedLink(seedId);
@@ -371,7 +443,7 @@ function renderTableRows() {
 
   for (const item of items) {
     const row = document.createElement('div');
-    row.className = `beacon-table-row glass${item.paused ? ' beacon-table-row--paused' : ''}${item.phase === 'downloading' || item.phase === 'publishing' ? ' beacon-table-row--active' : ''}`;
+    row.className = `beacon-table-row glass${item.paused ? ' beacon-table-row--paused' : ''}${item.phase === 'downloading' || item.phase === 'publishing' || item.phase === 'hashing' ? ' beacon-table-row--active' : ''}${item.pendingIngest ? ' beacon-table-row--ingest' : ''}`;
 
     const nameCell = document.createElement('div');
     nameCell.className = 'beacon-col beacon-col-name';
@@ -476,12 +548,60 @@ function handleBlipFile(file) {
   return true;
 }
 
+async function runPublishPath(filePath, wrap) {
+  const btn = wrap.querySelector('.beacon-publish-btn');
+  if (!filePath || publishBusy) return;
+  const displayName = filePath.replace(/^.*[/\\]/, '');
+  publishBusy = true;
+  if (btn) btn.disabled = true;
+  showPublishOverlay(wrap, displayName);
+  void publishBeaconFilePath(filePath)
+    .then(() => {
+      const name = filePath.replace(/^.*[/\\]/, '');
+      showAppToast({ title: t('beacon.published'), body: name, durationMs: 4500 });
+      activeTab = 'mine';
+      setActiveTab('mine', wrap);
+    })
+    .catch((err) => {
+      const code = err?.message || '';
+      let body = code;
+      if (code === 'not_readable' || /could not be read/i.test(code)) {
+        body = t('beacon.err_not_readable');
+      } else if (code === 'no_path') {
+        body = t('beacon.err_no_path');
+      } else if (code === 'too_large') {
+        body = t('beacon.err_too_large');
+      }
+      showAppToast({
+        title: t('beacon.failed'),
+        body,
+        variant: 'danger',
+        durationMs: 7000,
+      });
+    })
+    .finally(() => {
+      publishBusy = false;
+      if (btn) btn.disabled = false;
+      hidePublishOverlay();
+      renderTableRows();
+    });
+}
+
 function runPublish(file, wrap) {
   if (handleBlipFile(file)) return;
   const btn = wrap.querySelector('.beacon-publish-btn');
   if (!file || publishBusy) return;
+  const diskPath =
+    typeof window.blip?.getPathForFile === 'function'
+      ? window.blip.getPathForFile(file)
+      : file.path;
+  if (diskPath && window.blip?.beaconPublishFromPath) {
+    void runPublishPath(diskPath, wrap);
+    return;
+  }
   publishBusy = true;
   if (btn) btn.disabled = true;
+  showPublishOverlay(wrap, file.name);
   void publishBeaconFile(file)
     .then(() => {
       showAppToast({ title: t('beacon.published'), body: file.name, durationMs: 4500 });
@@ -508,6 +628,7 @@ function runPublish(file, wrap) {
     .finally(() => {
       publishBusy = false;
       if (btn) btn.disabled = false;
+      hidePublishOverlay();
       renderTableRows();
     });
 }
@@ -515,14 +636,34 @@ function runPublish(file, wrap) {
 function wirePublishInput(wrap) {
   const input = wrap.querySelector('.beacon-file-input');
   const btn = wrap.querySelector('.beacon-publish-btn');
-  if (!input || !btn) return;
+  if (!btn) return;
 
-  btn.addEventListener('click', () => {
+  btn.addEventListener('click', async () => {
     if (publishBusy) return;
-    input.click();
+    if (!window.blip?.beaconPickPublishFile) {
+      showAppToast({
+        title: t('beacon.failed'),
+        body: t('beacon.err_no_path'),
+        variant: 'danger',
+        durationMs: 6000,
+      });
+      return;
+    }
+    const pick = await window.blip.beaconPickPublishFile();
+    if (pick?.cancelled) return;
+    if (pick?.ok && pick.filePath) {
+      void runPublishPath(pick.filePath, wrap);
+      return;
+    }
+    showAppToast({
+      title: t('beacon.failed'),
+      body: t('beacon.err_no_path'),
+      variant: 'danger',
+      durationMs: 6000,
+    });
   });
 
-  input.addEventListener('change', () => {
+  input?.addEventListener('change', () => {
     const file = input.files?.[0];
     input.value = '';
     runPublish(file, wrap);
@@ -806,6 +947,13 @@ function onCatalogUpdate() {
   renderTableRows();
 }
 
+function onBeaconProgress(ev) {
+  const seedId = ev?.detail?.seedId;
+  if (seedId !== 'path-ingest') return;
+  updatePublishOverlay(ev.detail?.progress, ev.detail?.phase);
+  renderTableRows();
+}
+
 function teardownBeaconView() {
   bwUnsub?.();
   bwUnsub = null;
@@ -814,6 +962,7 @@ function teardownBeaconView() {
 if (typeof window !== 'undefined') {
   window.addEventListener('blip-beacon-catalog', onCatalogUpdate);
   window.addEventListener('blip-beacon-progress', onCatalogUpdate);
+  window.addEventListener('blip-beacon-progress', onBeaconProgress);
 }
 
 export function renderBeaconView(config) {

@@ -11,11 +11,11 @@ export function normalizeFileTransferSpeed(value) {
  * @param {boolean} [callActive]
  */
 export function getChunkDelayMs(config, callActive = false) {
-  if (callActive) return 36;
+  if (callActive) return 12;
   const speed = normalizeFileTransferSpeed(config?.fileTransferSpeed);
   if (speed === 'fast') return 0;
-  if (speed === 'slow') return 28;
-  return 10;
+  if (speed === 'slow') return 8;
+  return 0;
 }
 
 /** @param {number} bytesPerSec */

@@ -8,7 +8,38 @@ import {
 import { getChunkDelayMs } from './file-transfer-speed.js';
 import { recordBandwidthSample } from './bandwidth-monitor.js';
 
-const CHUNK_RAW_BYTES = 48 * 1024;
+/** Raw bytes per chunk (~1 MiB on wire after base64, under 4 MiB TCP line cap). */
+const CHUNK_RAW_BYTES = 1024 * 1024;
+/** Multiple chunks per TCP line (fewer IPC round-trips). */
+const CHUNKS_PER_TCP_BATCH = 2;
+/** In-flight TCP batch sends without waiting for each to finish. */
+const SEND_PIPELINE_DEPTH = 12;
+
+function resolveFileDiskPath(file) {
+  if (!file) return '';
+  if (typeof window !== 'undefined' && window.blip?.getPathForFile) {
+    const p = window.blip.getPathForFile(file);
+    if (typeof p === 'string' && p.trim()) return p.trim();
+  }
+  if (typeof file.path === 'string' && file.path.trim()) return file.path.trim();
+  return '';
+}
+
+function buildChunkedAttachment(file, transferId, opts) {
+  return {
+    chunked: true,
+    transferId,
+    attachment: {
+      kind: 'file',
+      name: file.name || 'file',
+      mime: file.type || 'application/octet-stream',
+      size: file.size,
+      transferId,
+      groupId: opts.groupId,
+      msgId: opts.msgId,
+    },
+  };
+}
 
 function delay(ms) {
   return ms > 0 ? new Promise((r) => setTimeout(r, ms)) : Promise.resolve();
@@ -105,12 +136,51 @@ function assembleIncoming(entry) {
  * @param {{ transferId?: string, groupId?: string, msgId?: string }} [opts]
  * @returns {{ attachment, messageText } | { chunked: true, transferId }}
  */
+async function sendChatFileFromDisk(api, config, peerId, file, diskPath, onProgress, opts) {
+  const transferId = opts.transferId || createMessageId();
+  const key = transferKey(peerId, transferId);
+  clearTransferCancel(peerId, transferId);
+
+  let unsub = () => {};
+  if (typeof window !== 'undefined' && window.blip?.onFileSendProgress) {
+    unsub = window.blip.onFileSendProgress((p) => {
+      if (p?.transferId !== transferId) return;
+      if (p.speedBps) recordBandwidthSample({ upBps: p.speedBps });
+      onProgress?.(p.percent ?? 0, { speedBps: p.speedBps, bytesSent: p.bytesSent });
+    });
+  }
+
+  try {
+    const res = await window.blip.sendFileFromPath({
+      filePath: diskPath,
+      to: peerId,
+      transferId,
+      name: file.name || 'file',
+      mime: file.type || 'application/octet-stream',
+      size: file.size,
+      groupId: opts.groupId,
+      msgId: opts.msgId,
+    });
+    if (!res?.ok) throw new Error(res?.error || 'send_failed');
+    if (cancelRequested.has(key)) throw new Error('cancelled');
+    clearTransferCancel(peerId, transferId);
+    return buildChunkedAttachment(file, transferId, opts);
+  } finally {
+    unsub();
+  }
+}
+
 export async function sendChatFile(api, config, peerId, file, onProgress, opts = {}) {
   validateChatFile(file);
 
   if (file.size <= INLINE_FILE_BYTES) {
     const attachment = await encodeInlineFileAttachment(file, config);
     return { inline: true, attachment };
+  }
+
+  const diskPath = resolveFileDiskPath(file);
+  if (diskPath && typeof window !== 'undefined' && window.blip?.sendFileFromPath) {
+    return sendChatFileFromDisk(api, config, peerId, file, diskPath, onProgress, opts);
   }
 
   const transferId = opts.transferId || createMessageId();
@@ -139,27 +209,42 @@ export async function sendChatFile(api, config, peerId, file, onProgress, opts =
   const chunkDelay = getChunkDelayMs(config, callActive);
   const startedAt = Date.now();
   let bytesSent = 0;
+  const inFlight = [];
 
-  for (let i = 0; i < chunkCount; i++) {
+  for (let i = 0; i < chunkCount; ) {
     if (cancelRequested.has(key)) {
       await abortFileTransfer(api, config, peerId, transferId);
       throw new Error('cancelled');
     }
-    const start = i * CHUNK_RAW_BYTES;
-    const end = Math.min(file.size, start + CHUNK_RAW_BYTES);
-    const data = await readFileSliceAsBase64(file, start, end);
-    await api.sendTcpMessage({
-      type: 'file-chunk',
+
+    const batch = [];
+    for (let b = 0; b < CHUNKS_PER_TCP_BATCH && i < chunkCount; b++, i++) {
+      const start = i * CHUNK_RAW_BYTES;
+      const end = Math.min(file.size, start + CHUNK_RAW_BYTES);
+      const data = await readFileSliceAsBase64(file, start, end);
+      batch.push({ index: i, data });
+      bytesSent = end;
+    }
+
+    const sendPromise = api.sendTcpMessage({
+      type: 'file-chunks-batch',
       ...base,
-      index: i,
-      data,
+      chunks: batch,
     });
-    bytesSent = end;
+    inFlight.push(sendPromise);
+    if (inFlight.length >= SEND_PIPELINE_DEPTH) {
+      await inFlight.shift();
+    }
+
     const elapsed = Math.max(0.001, (Date.now() - startedAt) / 1000);
     const speedBps = bytesSent / elapsed;
     recordBandwidthSample({ upBps: speedBps });
-    onProgress?.(Math.round(((i + 1) / chunkCount) * 100), { speedBps, bytesSent });
+    onProgress?.(Math.round((bytesSent / file.size) * 100), { speedBps, bytesSent });
     await delay(chunkDelay);
+  }
+
+  while (inFlight.length) {
+    await inFlight.shift();
   }
 
   if (cancelRequested.has(key)) {
@@ -174,19 +259,7 @@ export async function sendChatFile(api, config, peerId, file, onProgress, opts =
 
   clearTransferCancel(peerId, transferId);
 
-  return {
-    chunked: true,
-    transferId,
-    attachment: {
-      kind: 'file',
-      name: file.name || 'file',
-      mime: file.type || 'application/octet-stream',
-      size: file.size,
-      transferId,
-      groupId: opts.groupId,
-      msgId: opts.msgId,
-    },
-  };
+  return buildChunkedAttachment(file, transferId, opts);
 }
 
 /** Build a local data URL for UI after send/receive. */
@@ -197,6 +270,16 @@ export async function fileToDataUrl(file) {
     reader.onerror = () => reject(new Error('read'));
     reader.readAsDataURL(file);
   });
+}
+
+function applyIncomingChunks(entry, chunks) {
+  if (!Array.isArray(chunks)) return;
+  for (const part of chunks) {
+    const idx = Number(part?.index);
+    if (!Number.isFinite(idx) || idx < 0) continue;
+    entry.chunks[idx] = String(part.data || '');
+    entry.received += 1;
+  }
 }
 
 export function handleFileTransferTcp(msg, { config, onComplete, onProgress, onAbort }) {
@@ -224,16 +307,25 @@ export function handleFileTransferTcp(msg, { config, onComplete, onProgress, onA
     return true;
   }
 
+  if (type === 'file-chunks-batch') {
+    const key = transferKey(peerId, msg.transferId);
+    const entry = incoming.get(key);
+    if (!entry) return true;
+    applyIncomingChunks(entry, msg.chunks);
+    const pct = entry.meta.chunkCount
+      ? Math.min(100, Math.round((entry.received / entry.meta.chunkCount) * 100))
+      : 0;
+    onProgress?.(peerId, msg.transferId, pct);
+    return true;
+  }
+
   if (type === 'file-chunk') {
     const key = transferKey(peerId, msg.transferId);
     const entry = incoming.get(key);
     if (!entry) return true;
-    const idx = Number(msg.index);
-    if (!Number.isFinite(idx) || idx < 0) return true;
-    entry.chunks[idx] = String(msg.data || '');
-    entry.received += 1;
+    applyIncomingChunks(entry, [{ index: msg.index, data: msg.data }]);
     const pct = entry.meta.chunkCount
-      ? Math.round((entry.received / entry.meta.chunkCount) * 100)
+      ? Math.min(100, Math.round((entry.received / entry.meta.chunkCount) * 100))
       : 0;
     onProgress?.(peerId, msg.transferId, pct);
     return true;

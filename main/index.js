@@ -27,6 +27,8 @@ import {
   ingestPublishFromPath,
   tryReadImagePreviewB64,
 } from './beacon-ingest.js';
+import { serveSeedChunksOnSocket } from './beacon-tcp-serve.js';
+import { sendFileFromPathOnSocket } from './file-tcp-send.js';
 import { createTcpServer } from './tcp-server.js';
 import { connectToPeer, sendOnSocket, pingPeer } from './tcp-client.js';
 import { createTcpLineReader } from './tcp-framing.js';
@@ -778,6 +780,7 @@ function handleTcpPayload(msg, fromBlipId) {
     case 'seed-have-request':
     case 'file-offer':
     case 'file-chunk':
+    case 'file-chunks-batch':
     case 'file-done':
     case 'file-abort':
     case 'clipboard-push':
@@ -1118,6 +1121,17 @@ function setupIpc() {
     return true;
   });
 
+  ipcMain.handle('beacon-pick-publish-file', async () => {
+    const { canceled, filePaths } = await dialog.showOpenDialog({
+      properties: ['openFile'],
+      title: 'BEACON — publish file',
+    });
+    if (canceled || !filePaths?.[0]) {
+      return { ok: false, cancelled: true };
+    }
+    return { ok: true, filePath: filePaths[0] };
+  });
+
   ipcMain.handle('beacon-publish-from-path', async (event, { filePath, maxBytes, chunkSize }) => {
     if (typeof filePath !== 'string' || !filePath.trim()) {
       return { ok: false, error: 'no_path' };
@@ -1201,6 +1215,59 @@ function setupIpc() {
     if (!seedId || !Array.isArray(chunkIndices)) return { ok: false, chunks: [] };
     const chunks = await readSeedChunksBatch(seedId, chunkIndices.map(Number));
     return { ok: true, chunks };
+  });
+
+  ipcMain.handle('beacon-serve-chunks-tcp', async (_, payload) => {
+    try {
+      const to = Number(payload?.to);
+      const seedId = String(payload?.seedId || '');
+      const chunkIndices = Array.isArray(payload?.chunkIndices) ? payload.chunkIndices : [];
+      if (!Number.isFinite(to) || !seedId || !chunkIndices.length) {
+        return { ok: false, error: 'invalid' };
+      }
+      const socket = await ensurePeerSocket(to);
+      return await serveSeedChunksOnSocket(socket, config.blipId, {
+        to,
+        seedId,
+        chunkIndices,
+      });
+    } catch (err) {
+      return { ok: false, error: err?.message || 'serve_failed' };
+    }
+  });
+
+  ipcMain.handle('send-file-from-path', async (event, payload) => {
+    const wc = event.sender;
+    try {
+      const to = Number(payload?.to);
+      const filePath = String(payload?.filePath || '').trim();
+      const transferId = String(payload?.transferId || '');
+      if (!Number.isFinite(to) || !filePath || !transferId) {
+        return { ok: false, error: 'invalid' };
+      }
+      const socket = await ensurePeerSocket(to);
+      await sendFileFromPathOnSocket(socket, config.blipId, {
+        filePath,
+        to,
+        transferId,
+        name: payload.name,
+        mime: payload.mime,
+        size: payload.size,
+        groupId: payload.groupId,
+        msgId: payload.msgId,
+        onProgress: (p) => {
+          try {
+            wc.send('file-send-progress', { transferId, to, ...p });
+          } catch {
+            /* gone */
+          }
+        },
+      });
+      return { ok: true };
+    } catch (err) {
+      const msg = err?.message || 'send_failed';
+      return { ok: false, error: msg };
+    }
   });
 
   ipcMain.handle('beacon-have-bitmap', async (_, { seedId, totalChunks }) => {

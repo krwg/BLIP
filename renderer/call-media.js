@@ -6,48 +6,52 @@ const PRESETS = {
   low: {
     camera: { width: { ideal: 640, min: 480 }, height: { ideal: 480, min: 360 }, frameRate: { ideal: 24, max: 24 } },
     screen: { width: { ideal: 1280, max: 1280 }, height: { ideal: 720, max: 720 }, frameRate: { ideal: 24, max: 24 } },
-    camBitrate: 900_000,
-    screenBitrate: 2_500_000,
+    camBitrate: 2_000_000,
+    screenBitrate: 6_000_000,
     screenMax: { w: 1280, h: 720 },
     screenFps: 24,
   },
   hd: {
-    camera: { width: { ideal: 1280, min: 640 }, height: { ideal: 720, min: 480 }, frameRate: { ideal: 24, max: 30 } },
-    screen: { width: { ideal: 1280, max: 1920 }, height: { ideal: 720, max: 1080 }, frameRate: { ideal: 30, max: 30 } },
-    camBitrate: 1_800_000,
-    screenBitrate: 5_000_000,
-    screenMax: { w: 1280, h: 720 },
+    camera: { width: { ideal: 1280, min: 960 }, height: { ideal: 720, min: 540 }, frameRate: { ideal: 30, max: 30 } },
+    screen: { width: { ideal: 1920, max: 1920 }, height: { ideal: 1080, max: 1080 }, frameRate: { ideal: 30, max: 30 } },
+    camBitrate: 5_000_000,
+    screenBitrate: 12_000_000,
+    screenMax: { w: 1920, h: 1080 },
     screenFps: 30,
   },
   fhd: {
     camera: { width: { ideal: 1920, min: 1280 }, height: { ideal: 1080, min: 720 }, frameRate: { ideal: 30, max: 30 } },
     screen: { width: { ideal: 1920, max: 1920 }, height: { ideal: 1080, max: 1080 }, frameRate: { ideal: 30, max: 30 } },
-    camBitrate: 3_000_000,
-    screenBitrate: 8_000_000,
+    camBitrate: 8_000_000,
+    screenBitrate: 18_000_000,
     screenMax: { w: 1920, h: 1080 },
     screenFps: 30,
   },
   max: {
     camera: { width: { ideal: 1920, min: 1280 }, height: { ideal: 1080, min: 720 }, frameRate: { ideal: 30, max: 60 } },
     screen: { width: { ideal: 1920, max: 1920 }, height: { ideal: 1080, max: 1080 }, frameRate: { ideal: 30, max: 60 } },
-    camBitrate: 4_500_000,
-    screenBitrate: 12_000_000,
+    camBitrate: 12_000_000,
+    screenBitrate: 28_000_000,
     screenMax: { w: 1920, h: 1080 },
     screenFps: 60,
   },
   qhd: {
     camera: { width: { ideal: 1920, min: 1280 }, height: { ideal: 1080, min: 720 }, frameRate: { ideal: 30, max: 60 } },
     screen: { width: { ideal: 2560, max: 2560 }, height: { ideal: 1440, max: 1440 }, frameRate: { ideal: 30, max: 60 } },
-    camBitrate: 4_500_000,
-    screenBitrate: 16_000_000,
+    camBitrate: 14_000_000,
+    screenBitrate: 35_000_000,
     screenMax: { w: 2560, h: 1440 },
     screenFps: 60,
   },
   uhd: {
-    camera: { width: { ideal: 1920, min: 1280 }, height: { ideal: 1080, min: 720 }, frameRate: { ideal: 30, max: 60 } },
+    camera: {
+      width: { ideal: 3840, min: 1920 },
+      height: { ideal: 2160, min: 1080 },
+      frameRate: { ideal: 30, max: 60 },
+    },
     screen: { width: { ideal: 3840, max: 3840 }, height: { ideal: 2160, max: 2160 }, frameRate: { ideal: 30, max: 60 } },
-    camBitrate: 5_000_000,
-    screenBitrate: 25_000_000,
+    camBitrate: 16_000_000,
+    screenBitrate: 45_000_000,
     screenMax: { w: 3840, h: 2160 },
     screenFps: 60,
   },
@@ -173,15 +177,13 @@ export async function tuneVideoSender(sender, { screenShare = false, config } = 
     enc.maxFramerate = screenShare
       ? screenFps
       : p.camera.frameRate?.max || 30;
-    if (screenShare) {
-      enc.scaleResolutionDownBy = 1;
-      try {
-        enc.degradationPreference = 'maintain-resolution';
-        enc.priority = 'high';
-        enc.networkPriority = 'high';
-      } catch {
-        /* optional RTP fields */
-      }
+    enc.scaleResolutionDownBy = 1;
+    try {
+      enc.degradationPreference = 'maintain-resolution';
+      enc.priority = 'high';
+      enc.networkPriority = 'high';
+    } catch {
+      /* optional RTP fields */
     }
     await sender.setParameters(params);
   } catch (err) {

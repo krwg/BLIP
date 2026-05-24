@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
 let groupCallActive = false;
 let groupCallGroupId = null;
@@ -96,7 +96,26 @@ contextBridge.exposeInMainWorld('blip', {
   },
   beaconSendUdp: (payload) => ipcRenderer.invoke('beacon-udp-send', payload),
   getBeaconPaths: () => ipcRenderer.invoke('beacon-paths'),
+  beaconPickPublishFile: () => ipcRenderer.invoke('beacon-pick-publish-file'),
+  getPathForFile: (file) => {
+    try {
+      if (file && typeof webUtils?.getPathForFile === 'function') {
+        return webUtils.getPathForFile(file) || '';
+      }
+    } catch {
+      /* ignore */
+    }
+    if (file && typeof file.path === 'string') return file.path;
+    return '';
+  },
   beaconPublishFromPath: (payload) => ipcRenderer.invoke('beacon-publish-from-path', payload),
+  beaconServeChunksTcp: (payload) => ipcRenderer.invoke('beacon-serve-chunks-tcp', payload),
+  sendFileFromPath: (payload) => ipcRenderer.invoke('send-file-from-path', payload),
+  onFileSendProgress: (cb) => {
+    const handler = (_, data) => cb(data);
+    ipcRenderer.on('file-send-progress', handler);
+    return () => ipcRenderer.removeListener('file-send-progress', handler);
+  },
   onBeaconIngestProgress: (cb) => {
     const handler = (_, data) => cb(data);
     ipcRenderer.on('beacon-ingest-progress', handler);

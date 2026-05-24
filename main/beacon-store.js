@@ -16,10 +16,20 @@ export function getBeaconSeedsRoot() {
 }
 
 export function getSeedDir(seedId) {
-  const safe = String(seedId || '')
-    .replace(/[^a-f0-9]/gi, '')
-    .slice(0, 64);
+  const raw = String(seedId || '').trim();
+  const safe = raw.startsWith('ing_')
+    ? raw.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64)
+    : raw.replace(/[^a-f0-9]/gi, '').slice(0, 64);
   return join(getBeaconSeedsRoot(), safe || 'unknown');
+}
+
+export async function seedDirExists(seedId) {
+  try {
+    await access(getSeedDir(seedId), constants.F_OK);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function chunkPath(seedDir, chunkIndex) {

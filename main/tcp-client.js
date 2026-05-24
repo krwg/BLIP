@@ -32,17 +32,10 @@ export function connectToPeer(ip, blipId, tcpPort = DEFAULT_TCP_PORT) {
   return promise;
 }
 
+import { sendOnSocketQueued } from './tcp-write-queue.js';
+
 export function sendOnSocket(socket, payload) {
-  return new Promise((resolve, reject) => {
-    if (!socket || socket.destroyed) {
-      reject(new Error('Socket not available'));
-      return;
-    }
-    socket.write(JSON.stringify(payload) + '\n', (err) => {
-      if (err) reject(err);
-      else resolve();
-    });
-  });
+  return sendOnSocketQueued(socket, payload);
 }
 
 /** @returns {Promise<{ ok: boolean, ms: number | null }>} */

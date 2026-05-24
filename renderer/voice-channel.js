@@ -517,13 +517,18 @@ async function syncScreenVideoOut() {
   if (!track) return;
   const group = getGroup(activeGroupId);
   if (!group) return;
+  const cfg = configRef || {};
   if (isHost(group)) {
     for (const [rid, pc] of hostPeers) {
       await setVideoOnPc(pc, track, screenStream);
+      const sender = pc.getSenders().find((s) => s.track?.kind === 'video');
+      if (sender) void tuneVideoSender(sender, { screenShare: true, config: cfg });
       if (pc.signalingState === 'stable') await sendRenegotiateOffer(pc, activeGroupId, rid);
     }
   } else if (clientPc) {
     await setVideoOnPc(clientPc, track, screenStream);
+    const sender = clientPc.getSenders().find((s) => s.track?.kind === 'video');
+    if (sender) void tuneVideoSender(sender, { screenShare: true, config: cfg });
     if (clientPc.signalingState === 'stable') {
       await sendRenegotiateOffer(clientPc, activeGroupId, peerNum(group.hostId));
     }

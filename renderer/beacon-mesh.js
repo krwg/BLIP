@@ -4,11 +4,12 @@
 
 import { getMaxFileBytes } from './file-transfer-limits.js';
 import { parseBlipSeedFile } from './beacon-seed-file.js';
+import { recordBandwidthSample } from './bandwidth-monitor.js';
 
 export const BEACON_CHUNK_SIZE = 1048576;
 const PULSE_INTERVAL_MS = 30_000;
 const CHUNK_REQUEST_BATCH = 16;
-const MAX_PARALLEL_PEERS = 6;
+const MAX_PARALLEL_PEERS = 8;
 const PIPELINED_BATCHES_PER_PEER = 3;
 /** Max chunks per TCP JSON line (stay under 4 MiB framing limit). */
 const SEED_TCP_BATCH = 2;
@@ -35,12 +36,24 @@ const stoppedSeeding = new Set();
 /** @type {Map<string, { progress: number, phase: string }>} */
 const jobProgress = new Map();
 
+/** In-flight publish before catalog entry exists. */
+let pendingIngest = null;
+
 /** @type {Map<string, { resolve: (data: string) => void, reject: (err: Error) => void, timer: ReturnType<typeof setTimeout> }>} */
 const pendingChunks = new Map();
 
 let pulseTimer = null;
 let meshApi = null;
 let getConfig = () => ({});
+
+/** IPC surface (initBeaconMesh may omit newer methods — always fall back to preload). */
+function beaconIpc() {
+  if (meshApi?.beaconPublishFromPath) return meshApi;
+  if (typeof window !== 'undefined' && window.blip?.beaconPublishFromPath) {
+    return window.blip;
+  }
+  return meshApi;
+}
 let getPeers = () => [];
 let getPeerLatency = () => 9999;
 
@@ -97,6 +110,25 @@ function syncTrayProgress() {
 
 function emitCatalog() {
   window.dispatchEvent(new CustomEvent('blip-beacon-catalog'));
+}
+
+function beginPendingIngest(seedId, { filename, size }) {
+  pendingIngest = {
+    seedId,
+    filename: String(filename || 'file'),
+    size: Number(size) || 0,
+  };
+  setJobProgress(seedId, 0, 'hashing');
+  emitCatalog();
+}
+
+function endPendingIngest() {
+  pendingIngest = null;
+  emitCatalog();
+}
+
+export function getPendingBeaconIngest() {
+  return pendingIngest;
 }
 
 function emitProgress(seedId) {
@@ -307,8 +339,12 @@ function readFileSliceAsBase64(file, start, end) {
 /** @param {File} file */
 function resolvePublishFilePath(file) {
   if (!file) return '';
-  const p = file.path;
-  if (typeof p === 'string' && p.trim()) return p.trim();
+  if (typeof file.path === 'string' && file.path.trim()) return file.path.trim();
+  const api = beaconIpc();
+  if (typeof api?.getPathForFile === 'function') {
+    const p = api.getPathForFile(file);
+    if (typeof p === 'string' && p.trim()) return p.trim();
+  }
   return '';
 }
 
@@ -326,9 +362,14 @@ async function computeSeedId(file) {
 async function publishBeaconFileFromPath(filePath, file) {
   const cfg = getConfig();
   const maxBytes = getMaxFileBytes(cfg);
+  const displayName =
+    file?.name || String(filePath || '').replace(/^.*[/\\]/, '') || 'file';
+  const displaySize = Number(file?.size) || 0;
+  beginPendingIngest('path-ingest', { filename: displayName, size: displaySize });
   let unsub = () => {};
-  if (typeof meshApi?.onBeaconIngestProgress === 'function') {
-    unsub = meshApi.onBeaconIngestProgress((p) => {
+  const api = beaconIpc();
+  if (typeof api?.onBeaconIngestProgress === 'function') {
+    unsub = api.onBeaconIngestProgress((p) => {
       if (p?.phase === 'hashing') setJobProgress('path-ingest', 5, 'hashing');
       else if (p?.phase === 'publishing' && p.percent != null) {
         setJobProgress('path-ingest', p.percent, 'publishing');
@@ -336,7 +377,7 @@ async function publishBeaconFileFromPath(filePath, file) {
     });
   }
   try {
-    const res = await meshApi.beaconPublishFromPath({
+    const res = await api.beaconPublishFromPath({
       filePath,
       maxBytes,
       chunkSize: BEACON_CHUNK_SIZE,
@@ -362,6 +403,7 @@ async function publishBeaconFileFromPath(filePath, file) {
   } finally {
     unsub();
     clearJobProgress('path-ingest');
+    endPendingIngest();
   }
 }
 
@@ -608,6 +650,16 @@ async function serveSeedRequest(msg, api, config) {
 
   await acquireServeSlot();
   try {
+    const ipc = beaconIpc();
+    if (typeof ipc?.beaconServeChunksTcp === 'function') {
+      const res = await ipc.beaconServeChunksTcp({ to: from, seedId, chunkIndices: chunks });
+      const sent = Number(res?.sent) || 0;
+      if (sent > 0) {
+        recordBandwidthSample({ upBps: sent * BEACON_CHUNK_SIZE * 8 });
+      }
+      return;
+    }
+
     let payloads = [];
     if (meshApi?.beaconReadChunksBatch) {
       const res = await meshApi.beaconReadChunksBatch({ seedId, chunkIndices: chunks });
@@ -906,7 +958,7 @@ export function isSeedLocalComplete(seedId) {
 
 export function getBeaconCatalog() {
   const cfg = getConfig();
-  return [...catalog.values()].map((e) => {
+  const rows = [...catalog.values()].map((e) => {
     const local = localComplete.has(e.seedId);
     const job = jobProgress.get(e.seedId);
     const paused = pausedSeeds.has(e.seedId);
@@ -938,6 +990,34 @@ export function getBeaconCatalog() {
           : job?.phase || (activelySeeding ? 'seeding' : local ? 'local' : 'available'),
     };
   });
+
+  if (pendingIngest) {
+    const job = jobProgress.get(pendingIngest.seedId);
+    rows.unshift({
+      seedId: pendingIngest.seedId,
+      filename: pendingIngest.filename,
+      size: pendingIngest.size,
+      chunkSize: BEACON_CHUNK_SIZE,
+      totalChunks: 0,
+      seederCount: 0,
+      leechers: 0,
+      updatedAt: Date.now(),
+      local: false,
+      mine: true,
+      canSave: false,
+      paused: false,
+      stopped: false,
+      progress: job?.progress ?? 0,
+      phase: job?.phase || 'hashing',
+      previewB64: '',
+      previewUrl: null,
+      hasLocalData: false,
+      status: job?.phase || 'hashing',
+      pendingIngest: true,
+    });
+  }
+
+  return rows;
 }
 
 /**
@@ -989,8 +1069,21 @@ export async function announceSeed(meta) {
  * Publish a file into the mesh library.
  * @param {File} file
  */
-/** Renderer-only publish for small files without a disk path (e.g. some browser-like picks). */
-const RENDERER_PUBLISH_MAX = 48 * 1024 * 1024;
+/** Renderer-only publish for tiny files without a disk path. */
+const RENDERER_PUBLISH_MAX = 4 * 1024 * 1024;
+
+/**
+ * Publish from absolute path (main-process read). Preferred for all sizes.
+ * @param {string} filePath
+ */
+export async function publishBeaconFilePath(filePath) {
+  const cfg = getConfig();
+  if (!cfg?.devBeaconEnabled) throw new Error('disabled');
+  const p = String(filePath || '').trim();
+  if (!p) throw new Error('no_path');
+  if (!beaconIpc()?.beaconPublishFromPath) throw new Error('no_path');
+  return publishBeaconFileFromPath(p, null);
+}
 
 export async function publishBeaconFile(file) {
   const cfg = getConfig();
@@ -1000,7 +1093,7 @@ export async function publishBeaconFile(file) {
   if (file.size > maxBytes) throw new Error('too_large');
 
   const diskPath = resolvePublishFilePath(file);
-  if (diskPath && meshApi?.beaconPublishFromPath) {
+  if (diskPath && beaconIpc()?.beaconPublishFromPath) {
     return publishBeaconFileFromPath(diskPath, file);
   }
   if (!diskPath && file.size > RENDERER_PUBLISH_MAX) {

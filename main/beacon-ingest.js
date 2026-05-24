@@ -1,10 +1,11 @@
-import { createHash } from 'crypto';
-import { createReadStream } from 'fs';
+import { createHash, randomBytes } from 'crypto';
 import { stat, open, readFile } from 'fs/promises';
-import { basename, extname } from 'path';
-import { getSeedDir, writeSeedMeta } from './beacon-store.js';
+import { rename, rm } from 'fs/promises';
+import { basename, extname, join } from 'path';
+import { getSeedDir, writeSeedMeta, seedDirExists } from './beacon-store.js';
 import { mkdir, writeFile } from 'fs/promises';
-import { join } from 'path';
+
+const WRITE_POOL = 8;
 
 function chunkFilePath(seedDir, chunkIndex) {
   return join(seedDir, `chunk-${String(chunkIndex).padStart(5, '0')}`);
@@ -16,19 +17,31 @@ async function writeRawChunk(seedId, chunkIndex, buf) {
   await writeFile(chunkFilePath(dir, chunkIndex), buf);
 }
 
-/**
- * Streaming SHA-256 (full hex).
- * @param {string} filePath
- * @param {number} chunkSize
- */
-export function hashFilePath(filePath, chunkSize) {
-  return new Promise((resolve, reject) => {
-    const hash = createHash('sha256');
-    const rs = createReadStream(filePath, { highWaterMark: chunkSize });
-    rs.on('data', (chunk) => hash.update(chunk));
-    rs.on('end', () => resolve(hash.digest('hex')));
-    rs.on('error', reject);
-  });
+async function finalizeStagingSeed(stagingId, seedId, meta) {
+  const stagingDir = getSeedDir(stagingId);
+  const targetDir = getSeedDir(seedId);
+  if (stagingId === seedId) {
+    await writeSeedMeta(seedId, meta);
+    return;
+  }
+  if (await seedDirExists(seedId)) {
+    try {
+      await rm(stagingDir, { recursive: true, force: true });
+    } catch {
+      /* ignore */
+    }
+  } else {
+    try {
+      await rename(stagingDir, targetDir);
+    } catch {
+      try {
+        await rm(stagingDir, { recursive: true, force: true });
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+  await writeSeedMeta(seedId, meta);
 }
 
 function guessMime(filename) {
@@ -52,7 +65,7 @@ function guessMime(filename) {
 }
 
 /**
- * Ingest a file from disk into seed storage (no renderer File API).
+ * Ingest a file from disk into seed storage (single pass: hash + write).
  * @param {string} filePath
  * @param {{ chunkSize?: number, maxBytes?: number, onProgress?: (p: { phase: string, percent?: number }) => void }} [opts]
  */
@@ -63,19 +76,48 @@ export async function ingestPublishFromPath(filePath, opts = {}) {
   let st;
   try {
     st = await stat(filePath);
-  } catch {
-    throw new Error('not_found');
+  } catch (e) {
+    const code = e && typeof e === 'object' && 'code' in e ? e.code : '';
+    if (code === 'ENOENT') throw new Error('not_found');
+    if (code === 'EACCES' || code === 'EPERM') throw new Error('not_readable');
+    throw new Error('not_readable');
   }
   if (!st.isFile()) throw new Error('not_file');
   if (st.size <= 0) throw new Error('empty');
   if (opts.maxBytes && st.size > opts.maxBytes) throw new Error('too_large');
 
-  onProgress?.({ phase: 'hashing', percent: 2 });
-  const fullHash = await hashFilePath(filePath, chunkSize);
-  const seedId = fullHash.slice(0, 16);
-
   const filename = basename(filePath);
   const totalChunks = Math.ceil(st.size / chunkSize);
+  const stagingId = `ing_${randomBytes(8).toString('hex')}`;
+  const hash = createHash('sha256');
+
+  onProgress?.({ phase: 'hashing', percent: 4 });
+
+  const fh = await open(filePath, 'r');
+
+  try {
+    for (let batchStart = 0; batchStart < totalChunks; batchStart += WRITE_POOL) {
+      const writes = [];
+      const batchEnd = Math.min(batchStart + WRITE_POOL, totalChunks);
+      for (let i = batchStart; i < batchEnd; i++) {
+        const offset = i * chunkSize;
+        const len = Math.min(chunkSize, st.size - offset);
+        const buf = Buffer.allocUnsafe(len);
+        const { bytesRead } = await fh.read(buf, 0, len, offset);
+        if (bytesRead <= 0) throw new Error('read');
+        const slice = buf.subarray(0, bytesRead);
+        hash.update(slice);
+        writes.push(writeRawChunk(stagingId, i, slice));
+      }
+      await Promise.all(writes);
+      const pct = Math.round(4 + (batchEnd / totalChunks) * 88);
+      onProgress?.({ phase: 'publishing', percent: pct });
+    }
+  } finally {
+    await fh.close();
+  }
+
+  const seedId = hash.digest('hex').slice(0, 16);
   const meta = {
     seedId,
     filename,
@@ -86,25 +128,7 @@ export async function ingestPublishFromPath(filePath, opts = {}) {
     publishedAt: Date.now(),
   };
 
-  onProgress?.({ phase: 'publishing', percent: 8 });
-
-  const fh = await open(filePath, 'r');
-  try {
-    for (let i = 0; i < totalChunks; i++) {
-      const offset = i * chunkSize;
-      const len = Math.min(chunkSize, st.size - offset);
-      const buf = Buffer.allocUnsafe(len);
-      const { bytesRead } = await fh.read(buf, 0, len, offset);
-      if (bytesRead <= 0) throw new Error('read');
-      await writeRawChunk(seedId, i, buf.subarray(0, bytesRead));
-      const pct = Math.round(8 + ((i + 1) / totalChunks) * 82);
-      onProgress?.({ phase: 'publishing', percent: pct });
-    }
-  } finally {
-    await fh.close();
-  }
-
-  await writeSeedMeta(seedId, meta);
+  await finalizeStagingSeed(stagingId, seedId, meta);
   onProgress?.({ phase: 'ready', percent: 100 });
   return meta;
 }

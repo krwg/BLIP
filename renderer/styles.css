@@ -3364,6 +3364,80 @@ select.blip-select:focus {
   letter-spacing: 0.06em;
 }
 
+.beacon-publish-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--blip-bg, #0a0a12) 72%, transparent);
+  backdrop-filter: blur(4px);
+}
+
+.beacon-publish-overlay.hidden {
+  display: none;
+}
+
+.beacon-publish-overlay-card {
+  min-width: min(420px, 92vw);
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: stretch;
+  border: 2px solid var(--blip-accent);
+  animation: beacon-publish-pulse 1.2s steps(4) infinite;
+}
+
+.beacon-publish-overlay-spinner {
+  width: 28px;
+  height: 28px;
+  margin: 0 auto 4px;
+  border: 3px solid color-mix(in srgb, var(--blip-accent) 35%, transparent);
+  border-top-color: var(--blip-accent);
+  border-radius: 50%;
+  animation: beacon-spin 0.9s linear infinite;
+}
+
+.beacon-publish-overlay-title {
+  text-align: center;
+  letter-spacing: 0.08em;
+  font-size: 12px;
+}
+
+.beacon-publish-overlay-name {
+  text-align: center;
+  font-size: 11px;
+  color: var(--blip-muted);
+  word-break: break-all;
+}
+
+.beacon-publish-overlay-track {
+  margin-top: 4px;
+}
+
+.beacon-publish-overlay-pct,
+.beacon-publish-overlay-phase {
+  text-align: center;
+}
+
+.beacon-table-row--ingest {
+  outline: 1px dashed var(--blip-accent);
+}
+
+@keyframes beacon-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes beacon-publish-pulse {
+  50% {
+    border-color: color-mix(in srgb, var(--blip-accent) 55%, #fff);
+  }
+}
+
 .beacon-sub {
   font-size: 10px;
   color: var(--blip-muted);
@@ -3376,6 +3450,7 @@ select.blip-select:focus {
 }
 
 .beacon-view {
+  position: relative;
   padding: 16px 20px 24px;
   display: flex;
   flex-direction: column;
