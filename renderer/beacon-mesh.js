@@ -16,6 +16,9 @@ const catalog = new Map();
 /** @type {Set<string>} */
 const localComplete = new Set();
 
+/** Seeds we have on disk but are not actively sharing (stop seeding). */
+const stoppedSeeding = new Set();
+
 /** @type {Map<string, { progress: number, phase: string }>} */
 const jobProgress = new Map();
 
@@ -27,6 +30,9 @@ let meshApi = null;
 let getConfig = () => ({});
 let getPeers = () => [];
 let getPeerLatency = () => 9999;
+
+/** @type {Set<string>} UI+mesh pause until TCP seed control ships */
+const pausedSeeds = new Set();
 
 function emitCatalog() {
   window.dispatchEvent(new CustomEvent('blip-beacon-catalog'));
@@ -89,12 +95,22 @@ function ingestSeedUdp(data) {
       }
       emitCatalog();
       break;
-    case 'seed-gone':
-      if (data.seedId && !localComplete.has(String(data.seedId))) {
-        catalog.delete(String(data.seedId));
-        emitCatalog();
+    case 'seed-gone': {
+      const seedId = String(data.seedId || '');
+      const blipId = Number(data.blipId);
+      if (!seedId) break;
+      const entry = catalog.get(seedId);
+      if (entry && Number.isFinite(blipId) && blipId > 0) {
+        entry.seeders.delete(blipId);
+        if (entry.seeders.size === 0 && !localComplete.has(seedId)) {
+          catalog.delete(seedId);
+        }
+      } else if (!localComplete.has(seedId)) {
+        catalog.delete(seedId);
       }
+      emitCatalog();
       break;
+    }
     default:
       break;
   }
@@ -113,6 +129,7 @@ function startBeaconPulse() {
   if (!cfg?.devBeaconEnabled) return;
   pulseTimer = setInterval(() => {
     const seeds = [...localComplete]
+      .filter((seedId) => !stoppedSeeding.has(seedId) && !pausedSeeds.has(seedId))
       .map((seedId) => {
         const entry = catalog.get(seedId);
         return {
@@ -283,6 +300,8 @@ async function serveSeedRequest(msg, api, config) {
   const seedId = String(msg.seedId || '');
   const chunks = Array.isArray(msg.chunks) ? msg.chunks.map(Number).filter(Number.isFinite) : [];
   if (!seedId || !Number.isFinite(from) || !chunks.length) return;
+  if (pausedSeeds.has(seedId)) return;
+  if (stoppedSeeding.has(seedId)) return;
   if (!localComplete.has(seedId)) return;
 
   for (const idx of chunks) {
@@ -328,6 +347,75 @@ export function refreshBeaconMesh() {
   void loadLocalSeeds().then(() => startBeaconPulse());
 }
 
+export function isSeedPaused(seedId) {
+  return pausedSeeds.has(seedId);
+}
+
+export function setSeedPaused(seedId, paused) {
+  if (paused) pausedSeeds.add(seedId);
+  else pausedSeeds.delete(seedId);
+  emitCatalog();
+}
+
+export function setAllSeedsPaused(paused) {
+  pausedSeeds.clear();
+  if (paused) {
+    for (const seedId of localComplete) pausedSeeds.add(seedId);
+  }
+  emitCatalog();
+}
+
+/** Stop sharing chunks on the mesh; local files stay for Save / re-seed. */
+export async function stopBeaconSeed(seedId) {
+  const cfg = getConfig();
+  if (!cfg?.devBeaconEnabled) throw new Error('disabled');
+  seedId = String(seedId || '');
+  if (!seedId || !localComplete.has(seedId)) throw new Error('not_seeding');
+
+  pausedSeeds.delete(seedId);
+  stoppedSeeding.add(seedId);
+
+  const entry = catalog.get(seedId);
+  if (entry) {
+    entry.seeders.delete(cfg.blipId);
+    if (entry.seeders.size === 0) catalog.delete(seedId);
+  }
+
+  jobProgress.delete(seedId);
+
+  if (meshApi?.beaconSendUdp) {
+    await meshApi.beaconSendUdp({
+      type: 'seed-gone',
+      seedId,
+      blipId: cfg.blipId,
+      timestamp: Date.now(),
+    });
+  }
+
+  emitCatalog();
+  startBeaconPulse();
+  return true;
+}
+
+export function isSeedStopped(seedId) {
+  return stoppedSeeding.has(String(seedId || ''));
+}
+
+/** Re-announce a locally complete seed after stop. */
+export async function resumeBeaconSeeding(seedId) {
+  const cfg = getConfig();
+  if (!cfg?.devBeaconEnabled) throw new Error('disabled');
+  seedId = String(seedId || '');
+  if (!localComplete.has(seedId)) throw new Error('not_local');
+  const meta = await meshApi?.beaconReadMeta?.({ seedId });
+  if (!meta?.seedId) throw new Error('no_meta');
+  stoppedSeeding.delete(seedId);
+  pausedSeeds.delete(seedId);
+  await announceSeed(meta);
+  startBeaconPulse();
+  return true;
+}
+
 export function getBeaconJobProgress(seedId) {
   return jobProgress.get(seedId) || null;
 }
@@ -341,6 +429,9 @@ export function getBeaconCatalog() {
   return [...catalog.values()].map((e) => {
     const local = localComplete.has(e.seedId);
     const job = jobProgress.get(e.seedId);
+    const paused = pausedSeeds.has(e.seedId);
+    const stopped = stoppedSeeding.has(e.seedId);
+    const activelySeeding = local && !stopped && !paused;
     return {
       seedId: e.seedId,
       filename: e.filename,
@@ -351,11 +442,17 @@ export function getBeaconCatalog() {
       leechers: e.leechers || 0,
       updatedAt: e.updatedAt,
       local,
-      mine: local && e.seeders.has(cfg.blipId),
+      mine: activelySeeding && e.seeders.has(cfg.blipId),
       canSave: local,
+      paused,
+      stopped,
       progress: job?.progress ?? (local ? 100 : 0),
       phase: job?.phase || (local ? 'ready' : ''),
-      status: job?.phase || (local ? 'seeding' : 'available'),
+      status: stopped
+        ? 'stopped'
+        : paused
+          ? 'paused'
+          : job?.phase || (activelySeeding ? 'seeding' : local ? 'local' : 'available'),
     };
   });
 }
@@ -441,6 +538,7 @@ export async function publishBeaconFile(file) {
     }
 
     localComplete.add(seedId);
+    stoppedSeeding.delete(seedId);
     upsertCatalogEntry({ ...meta, blipId: cfg.blipId });
     await announceSeed(meta);
     setJobProgress(seedId, 100, 'ready');
@@ -487,6 +585,7 @@ export async function downloadBeaconSeed(seedId) {
   if (missing.size === 0) {
     await ensureLocalMeta(seedId, entry);
     localComplete.add(seedId);
+    stoppedSeeding.delete(seedId);
     upsertCatalogEntry({ ...entry, blipId: cfg.blipId });
     await announceSeed({
       seedId,
@@ -543,6 +642,7 @@ export async function downloadBeaconSeed(seedId) {
   if (meta) await meshApi.beaconWriteMeta?.({ seedId, meta });
 
   localComplete.add(seedId);
+  stoppedSeeding.delete(seedId);
   upsertCatalogEntry({ ...entry, blipId: cfg.blipId });
   await ensureLocalMeta(seedId, entry);
   await announceSeed({

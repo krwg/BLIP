@@ -565,6 +565,7 @@ function ensureChatView(peerId) {
           timestamp: msg.timestamp,
           attachment: msg.attachment,
           replyTo: msg.replyTo,
+          forwardFrom: msg.forwardFrom,
         }),
       () => {
         state.activePeer = null;
@@ -645,7 +646,14 @@ function ensureChatView(peerId) {
           editedAt: payload.editedAt,
         }),
       (profilePeerId) => openPeerProfileFromUi(profilePeerId),
-      () => findPeerByBlipId(id)
+      () => findPeerByBlipId(id),
+      () =>
+        state.peers
+          .filter((p) => p.online && !isBlocked(p.blipId) && p.blipId !== id)
+          .map((p) => ({
+            id: p.blipId,
+            label: formatPeerDisplayName(p, p.blipId),
+          }))
     );
     } catch (err) {
       console.error('[BLIP] createChatView', id, err);

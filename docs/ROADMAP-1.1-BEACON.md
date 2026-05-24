@@ -172,12 +172,16 @@ Optional: `capabilities: ['beacon','reply','pin']` in announce or first TCP hand
 - [x] Single-peer download E2E
 - [x] Multi-seed parallel download (up to 3 peers, batch requests)
 - [x] `seed-pulse` while seeding (local complete seeds)
+- [x] Per-seed **Stop** (`seed-gone`, revoke); local files kept; **Resume seeding**
+- [x] **Pause** seeding — per-row + pause all in sidebar
 
 ### Phase C — Chat
 
-- [ ] Reply UI polish
-- [ ] Pin UI (1 pin)
-- [ ] Forward lite + seedId path
+- [x] Reply UI (DM: quote, composer, context menu)
+- [x] Pin UI (1 pin per DM via `chat-pins.js`)
+- [x] Forward lite (`forwardFrom` on `message`; DM picker)
+- [ ] Pin + Reply + Forward in **group** chat
+- [ ] Forward seed unavailable UX + re-seed prompt
 
 ### Phase D — UX + ship
 
