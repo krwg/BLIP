@@ -12,7 +12,8 @@ Release **version numbers** track [`app-metadata.json`](app-metadata.json) (sync
 ### Added (1.1.0 Beacon — in progress)
 
 - **BEACON / Mesh Library** — publish files to LAN (`seed-announce`), download via `seed-request`/`seed-chunk` (multi-peer, up to 3 seeds), save assembled file; see [`docs/ROADMAP-1.1-BEACON.md`](docs/ROADMAP-1.1-BEACON.md).
-- **Chat** — Reply polish, Forward (lite), Pinned messages (planned).
+- **Chat (DM)** — Reply, single pin, Forward lite (`forwardFrom` on wire).
+- **BEACON** — Stop seeding (`seed-gone`), pause/resume, resume local seed after stop.
 - **UX** — Compact mode, font size sliders, idle → Away, typing sound (planned).
 
 ### Fixed

@@ -17,6 +17,27 @@ function openExternalUrl(url) {
   if (window.blip?.openExternal) void window.blip.openExternal(url);
 }
 
+export function appendForwardBlock(block, forwardFrom) {
+  if (!forwardFrom) return;
+  const box = document.createElement('div');
+  box.className = 'chat-forward';
+  const label = document.createElement('span');
+  label.className = 'chat-forward-label';
+  label.dataset.i18n = 'chat.forwarded';
+  label.textContent = t('chat.forwarded');
+  const from = document.createElement('span');
+  from.className = 'chat-forward-from';
+  const who = forwardFrom.fromLabel || forwardFrom.sourceLabel || '';
+  from.textContent = who ? `${t('chat.forward_from')} ${who}` : t('chat.forward_from_unknown');
+  const body = document.createElement('span');
+  body.className = 'chat-forward-body';
+  body.textContent = forwardFrom.preview || forwardFrom.text || '';
+  box.appendChild(label);
+  box.appendChild(from);
+  box.appendChild(body);
+  block.appendChild(box);
+}
+
 export function appendQuoteBlock(block, replyTo, onQuoteClick) {
   if (!replyTo?.id) return;
   const q = document.createElement('div');
@@ -186,6 +207,7 @@ function appendTextWithEmbeds(block, text) {
  * @param {{ text?: string, attachment?: object, replyTo?: object }} m
  */
 export function appendChatMessageBody(block, m, opts = {}) {
+  if (m.forwardFrom) appendForwardBlock(block, m.forwardFrom);
   if (m.replyTo) appendQuoteBlock(block, m.replyTo, opts.onQuoteClick);
 
   const att = m.attachment;
@@ -219,4 +241,19 @@ export function buildReplyPreview(m, fromId) {
 
 export function formatReplyFromLabel(from, displayName) {
   return displayName || `BLIP-${from}`;
+}
+
+/** Lite forward snapshot (wire-safe; no blob re-upload). */
+export function buildForwardSnapshot(sourcePeerId, m, fromLabel) {
+  const snap = {
+    sourcePeerId: Number(sourcePeerId),
+    messageId: m.id || null,
+    fromLabel: fromLabel || '',
+    preview: buildReplyPreview(m, sourcePeerId),
+    text: String(m.text || '').slice(0, 500),
+  };
+  if (m.attachment?.seedId) snap.seedId = String(m.attachment.seedId);
+  if (m.attachment?.kind) snap.attachmentKind = m.attachment.kind;
+  if (m.attachment?.name) snap.attachmentName = m.attachment.name;
+  return snap;
 }

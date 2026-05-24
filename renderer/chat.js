@@ -13,8 +13,11 @@ import {
 import {
   appendChatMessageBody,
   buildReplyPreview,
+  buildForwardSnapshot,
   formatReplyFromLabel,
 } from './chat-message-content.js';
+import { openForwardPeerPicker } from './chat-forward-picker.js';
+import { showAppToast } from './toasts.js';
 import { normalizeFileLimitGb } from './file-transfer-limits.js';
 
 function formatFileLimitLabelForChat(config) {
@@ -159,7 +162,8 @@ export function createChatView(
   onPin,
   onEdit,
   onPeerProfile,
-  getPeer
+  getPeer,
+  getForwardTargets
 ) {
   registerMediaPlaceholder(t('chat.image_sent'));
   registerMediaPlaceholder(t('chat.file_sent'));
@@ -556,6 +560,7 @@ export function createChatView(
       outgoing: true,
       attachment: payload.attachment,
       replyTo: pendingReply ? { ...pendingReply } : undefined,
+      forwardFrom: payload.forwardFrom,
     };
     clearReplyTarget();
     addMessage(peerId, msg);
@@ -834,6 +839,46 @@ export function createChatView(
     });
   }
 
+  async function forwardMessage(m) {
+    if (!m?.id) return;
+    const raw =
+      typeof getForwardTargets === 'function' ? getForwardTargets() : [];
+    const targets = raw.filter((p) => Number(p.id) !== Number(peerId));
+    if (!targets.length) {
+      void openAlertDialog({ title: t('chat.forward_no_peers') });
+      return;
+    }
+    const targetId = await openForwardPeerPicker(targets);
+    if (targetId == null) return;
+    const fromLabel = m.outgoing
+      ? t('chat.reply_you')
+      : formatReplyFromLabel(peerId, name.textContent);
+    const forwardFrom = buildForwardSnapshot(peerId, m, fromLabel);
+    const outMsg = {
+      id: createMessageId(),
+      from: getConfig().blipId,
+      to: targetId,
+      text: '',
+      timestamp: Date.now(),
+      outgoing: true,
+      forwardFrom,
+    };
+    addMessage(targetId, outMsg);
+    recordMessageSent();
+    const result = await onSend?.(targetId, outMsg);
+    if (result?.ok === false) {
+      const list = getMessages(targetId);
+      const last = list.pop();
+      if (last?.id === outMsg.id) persist();
+    } else {
+      showAppToast({ title: t('chat.forward_sent'), durationMs: 3200 });
+    }
+    if (Number(targetId) === Number(peerId)) {
+      renderMessages();
+      scrollToBottom();
+    }
+  }
+
   async function startEditMessage(m) {
     if (!m?.id || !m.outgoing) return;
     const next = await openEditMessageDialog(m);
@@ -864,7 +909,9 @@ export function createChatView(
       menuEl.appendChild(btn);
     };
     if (m.id) {
+      add('chat.reply', () => setReplyTarget(m));
       add('chat.pin', () => setPinMessage(m));
+      add('chat.forward', () => void forwardMessage(m));
       if (m.outgoing && (m.text || '').trim()) {
         add('chat.edit', () => void startEditMessage(m));
       }
@@ -1061,6 +1108,7 @@ export function createChatView(
         attachment: msg.attachment,
         reactions: msg.reactions,
         replyTo: msg.replyTo,
+        forwardFrom: msg.forwardFrom,
         editedAt: msg.editedAt,
       };
       addMessage(peerId, incoming);

@@ -4,6 +4,10 @@ import {
   publishBeaconFile,
   downloadBeaconSeed,
   refreshBeaconLocalState,
+  setSeedPaused,
+  setAllSeedsPaused,
+  stopBeaconSeed,
+  resumeBeaconSeeding,
 } from './beacon-mesh.js';
 import { formatFileSize } from './file-transfer.js';
 import { showAppToast } from './toasts.js';
@@ -12,10 +16,38 @@ import { createPixelHintIcon } from './settings-ui.js';
 /** @type {'mesh' | 'mine' | 'downloads'} */
 let activeTab = 'mesh';
 let tableBodyEl = null;
+let statsRootEl = null;
 let publishBusy = false;
-let viewRoot = null;
+
+function showSoonToast(key = 'beacon.soon_feature') {
+  showAppToast({ title: t(key), durationMs: 4200 });
+}
+
+function computeStats() {
+  const items = getBeaconCatalog();
+  const mine = items.filter((i) => i.mine || i.canSave).length;
+  const mesh = items.length;
+  const seeders = items.reduce((n, i) => n + i.seederCount, 0);
+  const active = items.filter((i) => i.canSave && !i.paused).length;
+  return { mine, mesh, seeders, active };
+}
+
+function refreshStats() {
+  if (!statsRootEl) return;
+  const s = computeStats();
+  const meshEl = statsRootEl.querySelector('[data-stat="mesh"] strong');
+  if (meshEl) meshEl.textContent = String(s.mesh);
+  const mineEl = statsRootEl.querySelector('[data-stat="mine"] strong');
+  if (mineEl) mineEl.textContent = String(s.mine);
+  const seedEl = statsRootEl.querySelector('[data-stat="seeders"] strong');
+  if (seedEl) seedEl.textContent = String(s.seeders);
+  const actEl = statsRootEl.querySelector('[data-stat="active"] strong');
+  if (actEl) actEl.textContent = String(s.active);
+}
 
 function statusLabel(item) {
+  if (item.stopped) return t('beacon.status_stopped');
+  if (item.paused) return t('beacon.status_paused');
   if (item.phase === 'hashing') return t('beacon.status_hashing');
   if (item.phase === 'publishing') return t('beacon.status_publishing');
   if (item.phase === 'downloading') return t('beacon.status_downloading');
@@ -30,9 +62,33 @@ function filterItems(tab) {
   return all;
 }
 
+function mkBtn(labelKey, className, onClick, { disabled = false, soon = false } = {}) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = className;
+  btn.dataset.i18n = labelKey;
+  btn.textContent = t(labelKey);
+  btn.disabled = disabled;
+  if (soon) {
+    btn.classList.add('beacon-soon-btn');
+    btn.addEventListener('click', () => showSoonToast());
+    return btn;
+  }
+  if (onClick) btn.addEventListener('click', onClick);
+  return btn;
+}
+
+function mkActionGroup(buttons) {
+  const g = document.createElement('div');
+  g.className = 'beacon-action-group';
+  for (const b of buttons) g.appendChild(b);
+  return g;
+}
+
 function renderTableRows() {
   if (!tableBodyEl) return;
   tableBodyEl.innerHTML = '';
+  refreshStats();
 
   if (activeTab === 'downloads') {
     const soon = document.createElement('div');
@@ -55,7 +111,7 @@ function renderTableRows() {
 
   for (const item of items) {
     const row = document.createElement('div');
-    row.className = 'beacon-table-row glass';
+    row.className = `beacon-table-row glass${item.paused ? ' beacon-table-row--paused' : ''}`;
 
     const nameCell = document.createElement('div');
     nameCell.className = 'beacon-col beacon-col-name';
@@ -63,7 +119,7 @@ function renderTableRows() {
     nameStrong.textContent = item.filename;
     const nameSub = document.createElement('span');
     nameSub.className = 'beacon-sub';
-    nameSub.textContent = item.seedId.slice(0, 8);
+    nameSub.textContent = `${item.seedId.slice(0, 8)}… · ${item.mine ? t('beacon.mine') : ''}`;
     nameCell.appendChild(nameStrong);
     nameCell.appendChild(nameSub);
 
@@ -73,21 +129,18 @@ function renderTableRows() {
 
     const progCell = document.createElement('div');
     progCell.className = 'beacon-col beacon-col-progress';
-    if (item.progress > 0 && item.progress < 100 && item.phase) {
-      const track = document.createElement('div');
-      track.className = 'beacon-progress-track';
-      const fill = document.createElement('div');
-      fill.className = 'beacon-progress-fill';
-      fill.style.width = `${item.progress}%`;
-      track.appendChild(fill);
-      progCell.appendChild(track);
-      const pct = document.createElement('span');
-      pct.className = 'beacon-sub';
-      pct.textContent = `${item.progress}%`;
-      progCell.appendChild(pct);
-    } else {
-      progCell.textContent = item.canSave ? '100%' : '—';
-    }
+    const track = document.createElement('div');
+    track.className = 'beacon-progress-track';
+    const fill = document.createElement('div');
+    fill.className = 'beacon-progress-fill';
+    const pctVal = item.progress > 0 && item.progress < 100 && item.phase ? item.progress : item.canSave ? 100 : 0;
+    fill.style.width = `${pctVal}%`;
+    track.appendChild(fill);
+    progCell.appendChild(track);
+    const pct = document.createElement('span');
+    pct.className = 'beacon-sub';
+    pct.textContent = pctVal ? `${pctVal}%` : '—';
+    progCell.appendChild(pct);
 
     const seedsCell = document.createElement('div');
     seedsCell.className = 'beacon-col beacon-col-seeds';
@@ -95,23 +148,58 @@ function renderTableRows() {
 
     const statusCell = document.createElement('div');
     statusCell.className = 'beacon-col beacon-col-status';
-    statusCell.textContent = statusLabel(item);
+    const badge = document.createElement('span');
+    badge.className = `beacon-status-badge beacon-status-badge--${item.paused ? 'paused' : item.canSave ? 'seed' : 'avail'}`;
+    badge.textContent = statusLabel(item);
+    statusCell.appendChild(badge);
 
     const actionsCell = document.createElement('div');
     actionsCell.className = 'beacon-col beacon-col-actions';
 
     if (item.phase === 'hashing' || item.phase === 'publishing' || item.phase === 'downloading') {
-      const wait = document.createElement('span');
-      wait.className = 'beacon-sub';
-      wait.textContent = '…';
-      actionsCell.appendChild(wait);
+      actionsCell.appendChild(mkActionGroup([]));
     } else if (item.canSave) {
-      const saveBtn = document.createElement('button');
-      saveBtn.type = 'button';
-      saveBtn.className = 'btn btn-lang beacon-row-btn';
-      saveBtn.dataset.i18n = 'beacon.save';
-      saveBtn.textContent = t('beacon.save');
-      saveBtn.addEventListener('click', () => {
+      const actionBtns = [];
+      if (item.stopped) {
+        actionBtns.push(
+          mkBtn('beacon.resume_seed', 'btn btn-accent beacon-row-btn', () => {
+            void resumeBeaconSeeding(item.seedId)
+              .then(() => renderTableRows())
+              .catch((err) => {
+                showAppToast({
+                  title: t('beacon.failed'),
+                  body: err?.message || '',
+                  variant: 'danger',
+                  durationMs: 5000,
+                });
+              });
+          })
+        );
+      } else {
+        actionBtns.push(
+          mkBtn(
+            item.paused ? 'beacon.resume' : 'beacon.pause',
+            'btn btn-lang beacon-row-btn',
+            () => {
+              setSeedPaused(item.seedId, !item.paused);
+              renderTableRows();
+            }
+          ),
+          mkBtn('beacon.stop', 'btn btn-lang beacon-row-btn', () => {
+            void stopBeaconSeed(item.seedId)
+              .then(() => renderTableRows())
+              .catch((err) => {
+                showAppToast({
+                  title: t('beacon.failed'),
+                  body: err?.message || '',
+                  variant: 'danger',
+                  durationMs: 5000,
+                });
+              });
+          })
+        );
+      }
+      const saveBtn = mkBtn('beacon.save', 'btn btn-accent beacon-row-btn', () => {
         void downloadBeaconSeed(item.seedId)
           .then((res) => {
             if (res?.cancelled) return;
@@ -127,14 +215,10 @@ function renderTableRows() {
             void refreshBeaconLocalState().then(renderTableRows);
           });
       });
-      actionsCell.appendChild(saveBtn);
+      actionBtns.push(saveBtn);
+      actionsCell.appendChild(mkActionGroup(actionBtns));
     } else {
-      const dlBtn = document.createElement('button');
-      dlBtn.type = 'button';
-      dlBtn.className = 'btn btn-accent beacon-row-btn';
-      dlBtn.dataset.i18n = 'beacon.download';
-      dlBtn.textContent = t('beacon.download');
-      dlBtn.addEventListener('click', () => {
+      const dlBtn = mkBtn('beacon.download', 'btn btn-accent beacon-row-btn', () => {
         dlBtn.disabled = true;
         void downloadBeaconSeed(item.seedId)
           .then((res) => {
@@ -154,7 +238,10 @@ function renderTableRows() {
             renderTableRows();
           });
       });
-      actionsCell.appendChild(dlBtn);
+      const linkBtn = mkBtn('beacon.copy_link', 'btn btn-lang beacon-row-btn beacon-soon-btn', null, {
+        soon: true,
+      });
+      actionsCell.appendChild(mkActionGroup([dlBtn, linkBtn]));
     }
 
     row.appendChild(nameCell);
@@ -170,9 +257,7 @@ function renderTableRows() {
 function setActiveTab(tab, wrap) {
   activeTab = tab;
   wrap.querySelectorAll('.beacon-tab').forEach((btn) => {
-    const on = btn.dataset.tab === tab;
-    btn.classList.toggle('beacon-tab--active', on);
-    btn.classList.toggle('beacon-tab--inactive', !on && btn.classList.contains('beacon-tab--stub'));
+    btn.classList.toggle('beacon-tab--active', btn.dataset.tab === tab);
   });
   renderTableRows();
 }
@@ -195,11 +280,7 @@ function wirePublishInput(wrap) {
     btn.disabled = true;
     void publishBeaconFile(file)
       .then(() => {
-        showAppToast({
-          title: t('beacon.published'),
-          body: file.name,
-          durationMs: 4500,
-        });
+        showAppToast({ title: t('beacon.published'), body: file.name, durationMs: 4500 });
         activeTab = 'mine';
         setActiveTab('mine', wrap);
       })
@@ -219,41 +300,154 @@ function wirePublishInput(wrap) {
   });
 }
 
+function buildStatCard(statKey, labelKey, value, { muted = false } = {}) {
+  const card = document.createElement('div');
+  card.className = `beacon-stat-card glass${muted ? ' beacon-stat-card--muted' : ''}`;
+  card.dataset.stat = statKey;
+  const label = document.createElement('span');
+  label.className = 'beacon-stat-label';
+  label.dataset.i18n = labelKey;
+  label.textContent = t(labelKey);
+  const val = document.createElement('strong');
+  val.textContent = value;
+  card.appendChild(label);
+  card.appendChild(val);
+  return card;
+}
+
 function buildStatsBar() {
   const bar = document.createElement('div');
-  bar.className = 'beacon-stats glass beacon-inactive-block';
-  bar.innerHTML = `
-    <span class="beacon-stat" data-i18n="beacon.stat_down">${t('beacon.stat_down')}</span>
-    <span class="beacon-stat" data-i18n="beacon.stat_up">${t('beacon.stat_up')}</span>
-    <span class="beacon-stat" data-i18n="beacon.stat_seeds">${t('beacon.stat_seeds')}</span>
-    <span class="beacon-stat" data-i18n="beacon.stat_peers">${t('beacon.stat_peers')}</span>
-  `;
+  bar.className = 'beacon-stats-grid';
+  statsRootEl = bar;
+  bar.appendChild(buildStatCard('down', 'beacon.stat_down_label', '0 B/s', { muted: true }));
+  bar.appendChild(buildStatCard('up', 'beacon.stat_up_label', '0 B/s', { muted: true }));
+  bar.appendChild(buildStatCard('mesh', 'beacon.stat_mesh_label', '0'));
+  bar.appendChild(buildStatCard('mine', 'beacon.stat_mine_label', '0'));
+  bar.appendChild(buildStatCard('seeders', 'beacon.stat_seeders_label', '0'));
+  bar.appendChild(buildStatCard('active', 'beacon.stat_active_label', '0'));
   return bar;
 }
 
+function buildControlSection(titleKey, controls) {
+  const sec = document.createElement('div');
+  sec.className = 'beacon-control-section glass';
+  const h = document.createElement('h3');
+  h.className = 'beacon-control-title';
+  h.dataset.i18n = titleKey;
+  h.textContent = t(titleKey);
+  sec.appendChild(h);
+  for (const el of controls) sec.appendChild(el);
+  return sec;
+}
+
+function buildSliderRow(labelKey, value, { disabled = true, min = 1, max = 8 } = {}) {
+  const row = document.createElement('label');
+  row.className = `beacon-slider-row${disabled ? ' beacon-slider-row--soon' : ''}`;
+  const span = document.createElement('span');
+  span.dataset.i18n = labelKey;
+  span.textContent = t(labelKey);
+  const range = document.createElement('input');
+  range.type = 'range';
+  range.min = String(min);
+  range.max = String(max);
+  range.value = String(value);
+  range.disabled = disabled;
+  range.className = 'beacon-range';
+  const val = document.createElement('span');
+  val.className = 'beacon-slider-val';
+  val.textContent = String(value);
+  if (disabled) {
+    range.addEventListener('click', (e) => {
+      e.preventDefault();
+      showSoonToast();
+    });
+  } else {
+    range.addEventListener('input', () => {
+      val.textContent = range.value;
+    });
+  }
+  row.appendChild(span);
+  row.appendChild(range);
+  row.appendChild(val);
+  return row;
+}
+
+function buildAside(wrap) {
+  const aside = document.createElement('aside');
+  aside.className = 'beacon-aside';
+
+  const transfer = buildControlSection('beacon.panel_transfer', [
+    buildSliderRow('beacon.slider_peers', 3),
+    buildSliderRow('beacon.slider_up_cap', 50, { min: 10, max: 100 }),
+  ]);
+
+  const seeding = buildControlSection('beacon.panel_seeding', [
+    mkBtn(
+      'beacon.pause_all',
+      'btn btn-lang beacon-aside-btn',
+      () => {
+        const items = getBeaconCatalog().filter((i) => i.canSave);
+        const anyActive = items.some((i) => !i.paused);
+        setAllSeedsPaused(anyActive);
+        showAppToast({
+          title: anyActive ? t('beacon.paused_all') : t('beacon.resumed_all'),
+          durationMs: 3200,
+        });
+        renderTableRows();
+      },
+      { disabled: false }
+    ),
+    mkBtn('beacon.stop_all', 'btn btn-lang beacon-aside-btn beacon-soon-btn', null, { soon: true }),
+  ]);
+
+  const filters = buildControlSection('beacon.panel_filters', [
+    (() => {
+      const search = document.createElement('input');
+      search.type = 'search';
+      search.className = 'input beacon-search beacon-soon-input';
+      search.disabled = true;
+      search.placeholder = t('beacon.search_ph');
+      search.addEventListener('click', () => showSoonToast());
+      return search;
+    })(),
+    mkBtn('beacon.sort_name', 'btn btn-lang beacon-aside-btn beacon-soon-btn', null, { soon: true }),
+  ]);
+
+  const refreshBtn = mkBtn(
+    'beacon.refresh',
+    'btn btn-accent beacon-aside-btn beacon-aside-btn--wide',
+    () => void refreshBeaconLocalState().then(renderTableRows)
+  );
+
+  aside.appendChild(transfer);
+  aside.appendChild(seeding);
+  aside.appendChild(filters);
+  aside.appendChild(refreshBtn);
+  return aside;
+}
+
 function buildTabs(wrap) {
-  const tabs = document.createElement('div');
+  const tabs = document.createElement('nav');
   tabs.className = 'beacon-tabs';
   const defs = [
-    { id: 'mesh', key: 'beacon.tab_mesh', stub: false },
-    { id: 'mine', key: 'beacon.tab_mine', stub: false },
-    { id: 'downloads', key: 'beacon.tab_downloads', stub: true },
+    { id: 'mesh', key: 'beacon.tab_mesh' },
+    { id: 'mine', key: 'beacon.tab_mine' },
+    { id: 'downloads', key: 'beacon.tab_downloads' },
   ];
   for (const def of defs) {
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = `beacon-tab btn btn-lang${def.stub ? ' beacon-tab--stub' : ''}${def.id === activeTab ? ' beacon-tab--active' : ''}`;
+    btn.className = `beacon-tab${def.id === activeTab ? ' beacon-tab--active' : ''}`;
     btn.dataset.tab = def.id;
     btn.dataset.i18n = def.key;
     btn.textContent = t(def.key);
-    if (def.stub) btn.classList.add('beacon-tab--inactive');
     btn.addEventListener('click', () => setActiveTab(def.id, wrap));
     tabs.appendChild(btn);
   }
   return tabs;
 }
 
-function buildToolbar(wrap) {
+function buildToolbar(main, wrap) {
   const bar = document.createElement('div');
   bar.className = 'beacon-toolbar';
 
@@ -262,50 +456,29 @@ function buildToolbar(wrap) {
   input.className = 'beacon-file-input hidden';
   input.setAttribute('aria-hidden', 'true');
 
+  const primary = document.createElement('div');
+  primary.className = 'beacon-toolbar-primary';
+  primary.appendChild(input);
   const publishBtn = document.createElement('button');
   publishBtn.type = 'button';
   publishBtn.className = 'btn btn-accent beacon-publish-btn';
   publishBtn.dataset.i18n = 'beacon.publish';
   publishBtn.textContent = t('beacon.publish');
+  primary.appendChild(publishBtn);
+  primary.appendChild(mkBtn('beacon.add_folder', 'btn btn-lang beacon-soon-btn', null, { soon: true }));
+  primary.appendChild(mkBtn('beacon.clear_done', 'btn btn-lang beacon-soon-btn', null, { soon: true }));
 
-  const pauseBtn = document.createElement('button');
-  pauseBtn.type = 'button';
-  pauseBtn.className = 'btn btn-lang beacon-inactive-btn';
-  pauseBtn.disabled = true;
-  pauseBtn.dataset.i18n = 'beacon.pause_all';
-  pauseBtn.textContent = t('beacon.pause_all');
+  const drop = document.createElement('div');
+  drop.className = 'beacon-drop-compact beacon-soon-block';
+  drop.dataset.i18n = 'beacon.drop_hint';
+  drop.textContent = t('beacon.drop_hint');
+  drop.addEventListener('click', () => showSoonToast('beacon.soon_drop'));
 
-  const clearBtn = document.createElement('button');
-  clearBtn.type = 'button';
-  clearBtn.className = 'btn btn-lang beacon-inactive-btn';
-  clearBtn.disabled = true;
-  clearBtn.dataset.i18n = 'beacon.clear_done';
-  clearBtn.textContent = t('beacon.clear_done');
-
-  const search = document.createElement('input');
-  search.type = 'search';
-  search.className = 'input beacon-search beacon-inactive-input';
-  search.disabled = true;
-  search.placeholder = t('beacon.search_ph');
-  search.dataset.i18nPlaceholder = 'beacon.search_ph';
-
-  bar.appendChild(input);
-  bar.appendChild(publishBtn);
-  bar.appendChild(pauseBtn);
-  bar.appendChild(clearBtn);
-  bar.appendChild(search);
-  wrap.appendChild(bar);
+  bar.appendChild(primary);
+  bar.appendChild(drop);
+  const table = main.querySelector('.beacon-table-wrap');
+  if (table) main.insertBefore(bar, table);
   wirePublishInput(wrap);
-}
-
-function buildDropZone() {
-  const zone = document.createElement('div');
-  zone.className = 'beacon-dropzone glass beacon-inactive-block';
-  const label = document.createElement('span');
-  label.dataset.i18n = 'beacon.drop_hint';
-  label.textContent = t('beacon.drop_hint');
-  zone.appendChild(label);
-  return zone;
 }
 
 function buildTable() {
@@ -314,15 +487,14 @@ function buildTable() {
 
   const head = document.createElement('div');
   head.className = 'beacon-table-head';
-  const cols = [
+  for (const key of [
     'beacon.col_name',
     'beacon.col_size',
     'beacon.col_progress',
     'beacon.col_seeders',
     'beacon.col_status',
     'beacon.col_actions',
-  ];
-  for (const key of cols) {
+  ]) {
     const cell = document.createElement('span');
     cell.className = 'beacon-table-head-cell';
     cell.dataset.i18n = key;
@@ -347,12 +519,10 @@ if (typeof window !== 'undefined') {
   window.addEventListener('blip-beacon-progress', onCatalogUpdate);
 }
 
-/** Main nav view — BEACON / МАЯК */
 export function renderBeaconView() {
   activeTab = 'mesh';
   const wrap = document.createElement('div');
   wrap.className = 'view beacon-view';
-  viewRoot = wrap;
 
   const titleRow = document.createElement('div');
   titleRow.className = 'section-title-row';
@@ -363,19 +533,29 @@ export function renderBeaconView() {
   titleRow.appendChild(title);
   titleRow.appendChild(createPixelHintIcon('beacon.hint'));
 
+  const body = document.createElement('div');
+  body.className = 'beacon-body';
+
+  const main = document.createElement('div');
+  main.className = 'beacon-main';
+  main.appendChild(buildTabs(wrap));
+  main.appendChild(buildTable());
+
+  body.appendChild(buildAside(wrap));
+  body.appendChild(main);
+
   wrap.appendChild(titleRow);
   wrap.appendChild(buildStatsBar());
-  wrap.appendChild(buildTabs(wrap));
-  buildToolbar(wrap);
-  wrap.appendChild(buildDropZone());
-  wrap.appendChild(buildTable());
+  wrap.appendChild(body);
+
+  buildToolbar(main, wrap);
 
   void refreshBeaconLocalState().then(renderTableRows);
   renderTableRows();
   return wrap;
 }
 
-/** Legacy floating panel. */
 export function mountBeaconPanel() {
   return renderBeaconView();
 }
+
