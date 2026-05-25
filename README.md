@@ -26,7 +26,7 @@
 *You're on the grid. You're the signal.*
 [**English**](#english) · [**Русский**](#russian) · [**Сайт**](https://krwg.github.io/BLIP/)
  
-</div> with cyberpunk aesthetic -->
+</div> 
 
 ## Navigation
 
