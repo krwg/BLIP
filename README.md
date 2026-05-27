@@ -33,7 +33,6 @@
 
 | Section | English | Русский |
 |---------|---------|---------|
-| Language | [**English**](#english) | [**Русский**](#russian) |
 | Testing (one PC) | [Testing](#en-testing) | [Тестирование](#ru-testing) |
 | Overview | [Overview](#en-overview) | [Обзор](#ru-overview) |
 | Features | [Features](#en-features) | [Возможности](#ru-features) |
