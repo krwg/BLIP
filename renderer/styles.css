@@ -6396,6 +6396,54 @@ body.media-viewer-open {
   letter-spacing: 0.06em;
 }
 
+.settings-about-tagline {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--blip-text-muted, rgba(224, 224, 224, 0.72));
+  margin: 8px 0 0;
+  max-width: 320px;
+}
+
+.settings-about-meta {
+  width: 100%;
+  max-width: 320px;
+  margin: 16px auto 0;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 10px;
+  overflow: hidden;
+  text-align: left;
+}
+
+.settings-about-meta-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  font-size: 13px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.settings-about-meta-row:last-child {
+  border-bottom: none;
+}
+
+.settings-about-meta-row span:first-child {
+  color: var(--blip-text-muted, rgba(224, 224, 224, 0.65));
+}
+
+.settings-about-meta-row span:last-child {
+  color: var(--blip-text);
+  font-weight: 600;
+}
+
+.settings-empty-symbol {
+  font-size: 40px;
+  line-height: 1;
+  margin: 0 0 12px;
+  opacity: 0.45;
+  text-align: center;
+}
+
 .settings-about-links {
   display: grid;
   grid-template-columns: 1fr 1fr;

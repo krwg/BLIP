@@ -3313,6 +3313,11 @@ function showAboutIconContextMenu(e) {
   setTimeout(() => document.addEventListener('click', close, { once: true }), 0);
 }
 
+function githubRepoBase(meta) {
+  const raw = meta?.githubUrl || 'https://github.com/FlokeStudio/BLIP';
+  return String(raw).replace(/\/$/, '');
+}
+
 function buildSettingsAboutPanel() {
   const frag = document.createElement('div');
   frag.className = 'settings-panel settings-panel--about';
@@ -3350,9 +3355,29 @@ function buildSettingsAboutPanel() {
 
   const aboutVersion = document.createElement('p');
   aboutVersion.className = 'settings-about-version';
+
+  const aboutTagline = document.createElement('p');
+  aboutTagline.className = 'settings-about-tagline';
+  aboutTagline.dataset.i18n = 'settings.about_tagline';
+  aboutTagline.textContent = t('settings.about_tagline');
+
   hero.appendChild(aboutLine);
   hero.appendChild(aboutVersion);
+  hero.appendChild(aboutTagline);
   frag.appendChild(hero);
+
+  const metaBlock = document.createElement('div');
+  metaBlock.className = 'settings-about-meta';
+  metaBlock.innerHTML = `
+    <div class="settings-about-meta-row">
+      <span data-i18n="settings.about_license">${t('settings.about_license')}</span>
+      <span>GPL-3.0</span>
+    </div>
+    <div class="settings-about-meta-row">
+      <span data-i18n="settings.about_made">${t('settings.about_made')}</span>
+      <span>Floke Studio</span>
+    </div>`;
+  frag.appendChild(metaBlock);
 
   let aboutTrustNotice = appendAboutBuildTrustNotice(frag);
   window.blip?.onTrustState?.(() => {
@@ -3366,18 +3391,6 @@ function buildSettingsAboutPanel() {
   githubBtn.dataset.i18n = 'settings.github';
   githubBtn.textContent = t('settings.github');
 
-  window.blip.getAppMetadata?.().then((meta) => {
-    const name = meta?.displayName || 'BLIP';
-    aboutLine.textContent = name;
-    const code = meta?.codename ? ` · ${meta.codename}` : '';
-    aboutVersion.textContent = `v${formatAppVersion(meta)}${code}`;
-    if (meta?.githubUrl) {
-      githubBtn.addEventListener('click', () => window.blip.openExternal?.(meta.githubUrl));
-    } else {
-      githubBtn.disabled = true;
-    }
-  }).catch(() => {});
-
   const actionsCol = document.createElement('div');
   actionsCol.className = 'settings-about-actions';
 
@@ -3386,18 +3399,31 @@ function buildSettingsAboutPanel() {
   changelogBtn.className = 'btn btn-lang';
   changelogBtn.dataset.i18n = 'settings.changelog';
   changelogBtn.textContent = t('settings.changelog');
-  changelogBtn.addEventListener('click', () => {
-    window.blip.openExternal?.('https://github.com/krwg/BLIP/blob/main/CHANGELOG.md');
-  });
 
   const releasesAboutBtn = document.createElement('button');
   releasesAboutBtn.type = 'button';
   releasesAboutBtn.className = 'btn btn-lang';
   releasesAboutBtn.dataset.i18n = 'settings.updates_releases';
   releasesAboutBtn.textContent = t('settings.updates_releases');
-  releasesAboutBtn.addEventListener('click', () => {
-    window.blip.openExternal?.('https://github.com/krwg/BLIP/releases');
-  });
+
+  window.blip.getAppMetadata?.().then((meta) => {
+    const name = meta?.displayName || 'BLIP';
+    aboutLine.textContent = name;
+    const code = meta?.codename ? ` · ${meta.codename}` : '';
+    aboutVersion.textContent = `v${formatAppVersion(meta)}${code}`;
+    const repoBase = githubRepoBase(meta);
+    if (meta?.githubUrl) {
+      githubBtn.addEventListener('click', () => window.blip.openExternal?.(meta.githubUrl));
+    } else {
+      githubBtn.disabled = true;
+    }
+    changelogBtn.addEventListener('click', () => {
+      window.blip.openExternal?.(`${repoBase}/blob/main/CHANGELOG.md`);
+    });
+    releasesAboutBtn.addEventListener('click', () => {
+      window.blip.openExternal?.(`${repoBase}/releases`);
+    });
+  }).catch(() => {});
 
   const linkRow = document.createElement('div');
   linkRow.className = 'settings-about-links';
@@ -3540,8 +3566,9 @@ function buildSettingsUpdatesPanel() {
   releasesBtn.className = 'btn btn-lang';
   releasesBtn.dataset.i18n = 'settings.updates_releases';
   releasesBtn.textContent = t('settings.updates_releases');
-  releasesBtn.addEventListener('click', () => {
-    window.blip.openExternal?.('https://github.com/krwg/BLIP/releases');
+  releasesBtn.addEventListener('click', async () => {
+    const meta = await window.blip.getAppMetadata?.().catch(() => null);
+    window.blip.openExternal?.(`${githubRepoBase(meta)}/releases`);
   });
 
   const installBtn = document.createElement('button');
@@ -3680,6 +3707,11 @@ function buildSettingsPlaceholderPanel() {
   const wrap = document.createElement('div');
   wrap.className = 'settings-panel settings-panel--empty';
 
+  const sym = document.createElement('p');
+  sym.className = 'settings-empty-symbol';
+  sym.setAttribute('aria-hidden', 'true');
+  sym.textContent = '◎';
+
   const h = document.createElement('h2');
   h.className = 'section-title';
   h.dataset.i18n = 'settings.title';
@@ -3690,6 +3722,7 @@ function buildSettingsPlaceholderPanel() {
   p.dataset.i18n = 'settings.pick_section_hint';
   p.textContent = t('settings.pick_section_hint');
 
+  wrap.appendChild(sym);
   wrap.appendChild(h);
   wrap.appendChild(p);
   return wrap;

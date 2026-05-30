@@ -10,22 +10,22 @@
 
 <br>
 
-[![Version](https://img.shields.io/badge/version-1.1.1_Beacon-00ffc8?style=for-the-badge&labelColor=0a0a0a)](https://github.com/krwg/BLIP/releases)
+[![Version](https://img.shields.io/badge/version-1.1.1_Beacon-00ffc8?style=for-the-badge&labelColor=0a0a0a)](https://github.com/FlokeStudio/BLIP/releases)
 [![Electron](https://img.shields.io/badge/Electron-35-47848F?style=for-the-badge&logo=electron&logoColor=white&labelColor=0a0a0a)](https://www.electronjs.org/)
 [![License](https://img.shields.io/badge/License-GPLv3-00ffc8?style=for-the-badge&labelColor=0a0a0a)](LICENSE)
 [![Platform](https://img.shields.io/badge/Windows-10%2F11-0078D6?style=for-the-badge&logo=windows&logoColor=white&labelColor=0a0a0a)]()
 [![i18n](https://img.shields.io/badge/i18n-EN%20%7C%20RU-e0e0e0?style=for-the-badge&labelColor=0a0a0a)]()
 
 <!-- Dynamic stats row -->
-[![Stars](https://img.shields.io/github/stars/krwg/BLIP?style=for-the-badge&labelColor=0a0a0a&color=00ffc8&logo=github)](https://github.com/krwg/BLIP/stargazers)
-[![Downloads](https://img.shields.io/github/downloads/krwg/BLIP/total?style=for-the-badge&labelColor=0a0a0a&color=00ffc8&logo=github)](https://github.com/krwg/BLIP/releases)
-[![Last Commit](https://img.shields.io/github/last-commit/krwg/BLIP?style=for-the-badge&labelColor=0a0a0a&color=00ffc8&logo=github)](https://github.com/krwg/BLIP/commits/main)
-[![Issues](https://img.shields.io/github/issues/krwg/BLIP?style=for-the-badge&labelColor=0a0a0a&color=ff3366&logo=github)](https://github.com/krwg/BLIP/issues)
+[![Stars](https://img.shields.io/github/stars/FlokeStudio/BLIP?style=for-the-badge&labelColor=0a0a0a&color=00ffc8&logo=github)](https://github.com/FlokeStudio/BLIP/stargazers)
+[![Downloads](https://img.shields.io/github/downloads/FlokeStudio/BLIP/total?style=for-the-badge&labelColor=0a0a0a&color=00ffc8&logo=github)](https://github.com/FlokeStudio/BLIP/releases)
+[![Last Commit](https://img.shields.io/github/last-commit/FlokeStudio/BLIP?style=for-the-badge&labelColor=0a0a0a&color=00ffc8&logo=github)](https://github.com/FlokeStudio/BLIP/commits/main)
+[![Issues](https://img.shields.io/github/issues/FlokeStudio/BLIP?style=for-the-badge&labelColor=0a0a0a&color=ff3366&logo=github)](https://github.com/FlokeStudio/BLIP/issues)
 
 <br>
  
 *You're on the grid. You're the signal.*
-[**English**](#english) · [**Русский**](#russian) · [**Сайт**](https://krwg.github.io/BLIP/)
+[**English**](#english) · [**Русский**](#russian) · [**Сайт**](https://github.com/FlokeStudio/BLIP/)
  
 </div> 
 
@@ -50,7 +50,7 @@
 | Design tokens | [Design](#en-design) | [Дизайн](#ru-design) |
 | License | [License](#en-license) | [Лицензия](#ru-license) |
 | Community | [Community](#en-community) | [Сообщество](#ru-community) |
-| Landing | [krwg.github.io/BLIP](https://krwg.github.io/BLIP/) | [Сайт Pages](https://krwg.github.io/BLIP/) |
+| Landing | [GitHub](https://github.com/FlokeStudio/BLIP) | [Репозиторий](https://github.com/FlokeStudio/BLIP) |
 
 ---
 
@@ -74,7 +74,7 @@ Quick VM flow: host runs BLIP (ID **1**), VM runs BLIP (ID **2**), same subnet v
 | | |
 |---|---|
 | **What** | Desktop app: text, voice, and video over LAN / Hamachi / Radmin VPN |
-| **Release** | **1.1.1 — Beacon** (see [`CHANGELOG.md`](CHANGELOG.md); [Releases](https://github.com/krwg/BLIP/releases)) |
+| **Release** | **1.1.1 — Beacon** (see [`CHANGELOG.md`](CHANGELOG.md); [Releases](https://github.com/FlokeStudio/BLIP/releases)) |
 | **Identity** | BLIP ID **1–64** (8×8 grid, Minecraft-style chunk metaphor) |
 | **Servers** | None — UDP broadcast, TCP, and WebRTC peer-to-peer only |
 | **Sign-up** | None |
@@ -358,11 +358,11 @@ blip/
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Technical map |
 | [docs/ROADMAP-1.1-BEACON.md](docs/ROADMAP-1.1-BEACON.md) | 1.1.0 Beacon scope |
 | [docs/release-notes-v1.1.1-github.md](docs/release-notes-v1.1.1-github.md) | GitHub Release body (1.1.1) |
-| [Landing site (Pages)](https://krwg.github.io/BLIP/) | Static showcase (`docs/index.html`) |
+| [Landing site (Pages)](https://github.com/FlokeStudio/BLIP/) | Static showcase (`docs/index.html`) |
 
 <h3 id="en-license">License</h3>
 
-This project is licensed under **[GNU GPL v3](LICENSE)**.
+This project is licensed under **[GNU GPL v3](LICENSE)** — **Floke Studio**.
 
 The **Minecraft** font is licensed separately under [MIT](https://github.com/bs-community/typeface-minecraft) (see `renderer/assets/fonts/README.md`).
 
@@ -389,7 +389,7 @@ The **Minecraft** font is licensed separately under [MIT](https://github.com/bs-
 | | |
 |---|---|
 | **Что это** | Desktop-приложение: текст, голос и видео по LAN / Hamachi / Radmin VPN |
-| **Релиз** | **1.1.1 — Beacon** (см. [`CHANGELOG.md`](CHANGELOG.md); [Releases](https://github.com/krwg/BLIP/releases)) |
+| **Релиз** | **1.1.1 — Beacon** (см. [`CHANGELOG.md`](CHANGELOG.md); [Releases](https://github.com/FlokeStudio/BLIP/releases)) |
 | **Идентификация** | BLIP ID **1–64** (сетка 8×8) |
 | **Серверы** | Нет — только UDP broadcast, TCP и WebRTC между пирами |
 | **Регистрация** | Нет |
@@ -636,11 +636,11 @@ blip/
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Архитектура кода |
 | [docs/ROADMAP-1.1-BEACON.md](docs/ROADMAP-1.1-BEACON.md) | Скоуп 1.1.0 Beacon |
 | [docs/release-notes-v1.1.1-github.md](docs/release-notes-v1.1.1-github.md) | Текст GitHub Release (1.1.1) |
-| [Landing (Pages)](https://krwg.github.io/BLIP/) | Статический сайт-витрина (`docs/index.html`) |
+| [Landing (Pages)](https://github.com/FlokeStudio/BLIP/) | Статический сайт-витрина (`docs/index.html`) |
 
 <h3 id="ru-license">Лицензия</h3>
 
-Проект распространяется под **[GNU GPL v3](LICENSE)**.
+Проект распространяется под **[GNU GPL v3](LICENSE)** — **Floke Studio**.
 
 Шрифт **Minecraft** — отдельно, [MIT](https://github.com/bs-community/typeface-minecraft) (см. `renderer/assets/fonts/README.md`).
 

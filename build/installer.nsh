@@ -3,7 +3,7 @@
 
 !macro customWelcomePage
   !define MUI_WELCOMEPAGE_TITLE "BLIP Setup"
-  !define MUI_WELCOMEPAGE_TEXT "LAN-only P2P messenger — text, voice, and video.$\r$\n$\r$\nNo cloud. No accounts. Your mesh, your rules.$\r$\n$\r$\nPublisher: krwg"
+  !define MUI_WELCOMEPAGE_TEXT "LAN-only P2P messenger — text, voice, and video.$\r$\n$\r$\nNo cloud. No accounts. Your mesh, your rules.$\r$\n$\r$\nPublisher: Floke Studio"
   !insertmacro MUI_PAGE_WELCOME
 !macroend
 

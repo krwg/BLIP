@@ -1,5 +1,5 @@
 blank_issues_enabled: true
 contact_links:
   - name: General question
-    url: https://github.com/krwg/BLIP/discussions
+    url: https://github.com/FlokeStudio/BLIP/discussions
     about: Ask the community (discussions) if you are unsure whether this is a bug.

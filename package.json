@@ -2,11 +2,11 @@
   "name": "blip",
   "version": "1.1.1",
   "description": "P2P LAN messenger — text, voice, and video. No cloud, no servers, no accounts.",
-  "author": "krwg",
-  "homepage": "https://krwg.github.io/BLIP/",
+  "author": "Floke Studio",
+  "homepage": "https://github.com/FlokeStudio/BLIP",
   "repository": {
     "type": "git",
-    "url": "https://github.com/krwg/BLIP.git"
+    "url": "https://github.com/FlokeStudio/BLIP.git"
   },
   "main": "main/index.js",
   "type": "module",

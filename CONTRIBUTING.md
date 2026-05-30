@@ -14,14 +14,14 @@ The static landing page lives in **`docs/index.html`**. To publish:
 
 1. Repo **Settings** → **Pages** → **Build and deployment** → source: **Deploy from a branch**.
 2. Branch: **`main`**, folder: **`/docs`**, Save.
-3. Site URL: `https://krwg.github.io/BLIP/` (after the first successful deploy).
+3. Site URL: `https://github.com/FlokeStudio/BLIP` (Pages landing updates separately).
 
 Update the hardcoded clone URL in `docs/index.html` only if the repo moves.
 
 ## Quick setup
 
 ```bash
-git clone https://github.com/krwg/BLIP.git
+git clone https://github.com/FlokeStudio/BLIP.git
 cd BLIP
 npm ci
 ```
