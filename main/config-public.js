@@ -2,10 +2,6 @@ import { resolveProductTier, resolveEntitlementState } from './mesh-plus-license
 
 const SENSITIVE_KEYS = new Set(['meshPrivateKey', 'meshPlusLicenseSig']);
 
-/**
- * Config safe for renderer IPC (no private keys / raw license sig).
- * @param {object} config
- */
 export function toPublicConfig(config) {
   if (!config || typeof config !== 'object') return config;
   const pub = { ...config };

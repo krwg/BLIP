@@ -1,4 +1,3 @@
-/** Configurable LAN file transfer caps (GB → bytes). */
 
 export const FILE_LIMIT_GB_OPTIONS = [1, 10, 50, 100];
 

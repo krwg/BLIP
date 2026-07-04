@@ -66,12 +66,6 @@ function mkStatusBar() {
   return { bar, dot, text };
 }
 
-/**
- * @param {{ id: string, members?: number[] }} group
- * @param {object} config
- * @param {object} api
- * @param {{ scopeId?: string, getBroadcastTargets?: () => number[] }} [meshOpts]
- */
 export function createPadToolView(group, config, api, meshOpts = null) {
   const scopeId = meshOpts?.scopeId ?? group.id;
   const wrap = document.createElement('div');
@@ -670,7 +664,7 @@ export function createClipboardToolView(group, config, api, meshOpts = null) {
         try {
           await navigator.clipboard.writeText(e.text);
         } catch {
-          /* ignore */
+
         }
       });
       const delBtn = document.createElement('button');
@@ -736,7 +730,7 @@ export function createClipboardToolView(group, config, api, meshOpts = null) {
       broadcastClip({ entry });
       render();
     } catch {
-      /* permission */
+
     }
   });
 

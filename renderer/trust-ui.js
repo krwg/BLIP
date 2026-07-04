@@ -2,19 +2,15 @@ import { t } from './i18n.js';
 import { createAvatarElement } from './avatar.js';
 import { BUILD_TRUST, MESH_TRUST, OFFICIAL_BUILD_ISSUER } from '../shared/trust-levels.js';
 
-/** @type {{ buildTrust: string, meshPlusTrust: string } | null} */
 let localTrustState = null;
 
-/**
- * @param {{ buildTrust?: string, meshPlusTrust?: string }} state
- */
 export function setLocalTrustState(state) {
   if (!state) return;
   localTrustState = {
     buildTrust: state.buildTrust || BUILD_TRUST.UNVERIFIED_BUILD,
     meshPlusTrust: state.meshPlusTrust || MESH_TRUST.UNVERIFIED_MESH_PLUS,
   };
-  /* window.trustState is read-only (contextBridge). Updates come from preload IPC only. */
+
 }
 
 export function getLocalTrustState() {
@@ -31,11 +27,6 @@ export function isOfficialBuildTrust(buildTrust) {
   return buildTrust === BUILD_TRUST.VERIFIED_OFFICIAL;
 }
 
-/**
- * MESH+ badge / card styling: license + peer build trust (LAN announce or local).
- * @param {object} [peer]
- * @returns {string | null}
- */
 export function resolvePeerMeshPlusTrust(peer) {
   if (!peer?.meshPlus) return null;
   if (peer.meshPlusTrust === MESH_TRUST.OFFICIAL_MESH_PLUS) {
@@ -56,11 +47,6 @@ export function resolvePeerMeshPlusTrust(peer) {
   return MESH_TRUST.UNVERIFIED_MESH_PLUS;
 }
 
-/**
- * @param {HTMLElement} el
- * @param {string} [meshPlusTrust]
- * @param {boolean} [active]
- */
 export function applyMeshPlusTrustClass(el, meshPlusTrust, active = true) {
   if (!el) return;
   el.classList.remove('meshplus-official', 'meshplus-unverified');
@@ -76,10 +62,6 @@ export function applyMeshPlusTrustClass(el, meshPlusTrust, active = true) {
   }
 }
 
-/**
- * Square notice in Settings → About (build trust, not MESH+ key).
- * @param {HTMLElement} parent
- */
 export function appendAboutBuildTrustNotice(parent) {
   const trust = getLocalTrustState();
   const official = isOfficialBuildTrust(trust?.buildTrust);
@@ -96,20 +78,10 @@ export function appendAboutBuildTrustNotice(parent) {
   return box;
 }
 
-/**
- * Avatars no longer use colored build-trust rings (see About notice).
- * @param {number} blipId
- * @param {number} scale
- * @param {object} opts
- */
 export function createTrustedAvatarElement(blipId, scale, opts) {
   return createAvatarElement(blipId, scale, opts);
 }
 
-/**
- * @param {HTMLElement} badge
- * @param {object} [peer]
- */
 export function applyPeerMeshPlusBadgeTrust(badge, peer) {
   if (!badge) return;
   badge.classList.remove(

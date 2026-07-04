@@ -1,9 +1,5 @@
 import { t } from './i18n.js';
 
-/** @typedef {{ id: string, labelKey?: string }} SettingsNavItem */
-/** @typedef {{ id: string, labelKey: string, items: SettingsNavItem[] }} SettingsNavGroup */
-
-/** @type {SettingsNavGroup[]} */
 export const SETTINGS_NAV_GROUPS = [
   {
     id: 'account',
@@ -49,22 +45,12 @@ export const SETTINGS_NAV_GROUPS = [
 
 const ALL_SECTION_IDS = SETTINGS_NAV_GROUPS.flatMap((g) => g.items.map((i) => i.id));
 
-/**
- * @param {string | null | undefined} section
- * @param {() => string[]} getAllowedIds
- * @returns {string | null} null = empty “choose a section” hub
- */
 export function resolveSettingsSection(section, getAllowedIds) {
   if (section == null || section === '') return null;
   const allowed = new Set(getAllowedIds());
   return allowed.has(section) ? section : null;
 }
 
-/**
- * @param {object} state
- * @param {(id: string) => void} onSelect
- * @param {() => string[]} getAllowedIds
- */
 export function renderSettingsNavAside(state, onSelect, getAllowedIds) {
   const allowed = new Set(getAllowedIds());
   const aside = document.createElement('aside');

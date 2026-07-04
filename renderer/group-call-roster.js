@@ -1,8 +1,6 @@
-/** Shared group voice roster (main + group-call window). */
 
-/** @type {Map<string, Set<number>>} */
 const voiceByGroup = new Map();
-/** @type {Map<string, { active: boolean, participants: Set<number> }>} */
+
 const ongoingByGroup = new Map();
 
 function peerNum(id) {
@@ -74,7 +72,6 @@ export function voiceParticipants(groupId) {
   return [...(voiceByGroup.get(groupId) || [])];
 }
 
-/** Apply incoming group-call-state TCP (roster only). */
 export function applyGroupCallStateFromTcp(msg) {
   const participants = (msg.participants || []).map(peerNum).filter(Number.isFinite);
 
@@ -88,7 +85,6 @@ export function applyGroupCallStateFromTcp(msg) {
   return { participants, active: true };
 }
 
-/** group-call-start: mark call active with starter. */
 export function noteGroupCallStarted(groupId, starterId) {
   const prev = getOngoingGroupCall(groupId).participants;
   const starter = peerNum(starterId);

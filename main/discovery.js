@@ -38,7 +38,7 @@ export class Discovery {
     this.announceTimer = null;
     this.cleanupTimer = null;
     this.udpPort = resolvePorts(config).udpPort;
-    /** @type {((data: object) => void) | null} */
+
     this.onSeedPacket = null;
   }
 
@@ -66,7 +66,7 @@ export class Discovery {
       try {
         this.socket?.close();
       } catch {
-        /* ignore */
+
       }
       this.socket = null;
       throw err;
@@ -87,7 +87,7 @@ export class Discovery {
             const data = JSON.parse(Buffer.from(a.data).toString());
             this.registerPeer(data);
           } catch {
-            /* ignore malformed */
+
           }
         }
       });
@@ -183,7 +183,6 @@ export class Discovery {
     this.announceMdns();
   }
 
-  /** @param {object} obj Beacon / seed UDP packet (`seed-announce`, `seed-pulse`, …). */
   broadcastPacket(obj) {
     if (!this.config.blipId || !this.socket || !obj) return;
     const payload = JSON.stringify(obj);
@@ -204,7 +203,7 @@ export class Discovery {
         this.registerPeer(data);
       }
     } catch {
-      /* ignore */
+
     }
   }
 
@@ -309,7 +308,6 @@ export class Discovery {
     return Array.from(this.peers.values()).sort((a, b) => a.blipId - b.blipId);
   }
 
-  /** Update peer IP after a TCP session from a different route (NAT/VPN/Tailscale). */
   noteObservedPeerIp(blipId, ip) {
     const id = Number(blipId);
     if (!Number.isFinite(id)) return;

@@ -1,9 +1,5 @@
 import { existsSync, readFileSync } from 'fs';
 
-/**
- * @param {string} raw
- * @returns {{ seedId: string, filename: string, size: number, chunkSize: number, totalChunks: number } | null}
- */
 export function parseBlipSeedText(raw) {
   const text = String(raw || '').trim();
   if (!text) return null;
@@ -28,17 +24,10 @@ export function parseBlipSeedText(raw) {
   };
 }
 
-/**
- * @param {string} path
- */
 export function isBlipFilePath(path) {
   return typeof path === 'string' && /\.blip$/i.test(path) && existsSync(path);
 }
 
-/**
- * @param {string[]} argv
- * @returns {string | null}
- */
 export function extractBlipFileFromArgv(argv) {
   for (const arg of argv || []) {
     if (!arg || arg.startsWith('-')) continue;
@@ -48,10 +37,6 @@ export function extractBlipFileFromArgv(argv) {
   return null;
 }
 
-/**
- * @param {string[]} argv
- * @returns {string | null} seedId from blip://seed/…
- */
 export function extractBlipSeedIdFromArgv(argv) {
   for (const arg of argv || []) {
     if (!arg || !arg.includes('blip://')) continue;
@@ -61,9 +46,6 @@ export function extractBlipSeedIdFromArgv(argv) {
   return null;
 }
 
-/**
- * @param {string} filePath
- */
 export function readBlipSeedFile(filePath) {
   const text = readFileSync(filePath, 'utf8');
   const doc = parseBlipSeedText(text);

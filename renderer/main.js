@@ -81,7 +81,6 @@ async function boot() {
     void toggleDoNotDisturb();
   });
 
-  /* Calls run in separate BrowserWindow (call-window.html) — see main process */
 }
 
 boot().catch((err) => {

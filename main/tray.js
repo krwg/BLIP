@@ -26,7 +26,6 @@ function createTrayIconFromPath(trayPath) {
   return nativeImage.createFromBuffer(canvas, { width: size, height: size });
 }
 
-/** @deprecated use setTrayIconPath */
 function createTrayIcon() {
   return createTrayIconFromPath(trayIconPath) || createTrayIconFallback();
 }
@@ -38,7 +37,6 @@ export function setTrayBaseTooltip(tooltip) {
   }
 }
 
-/** @param {{ percent?: number, label?: string } | null} info */
 export function setTrayTransferProgress(info) {
   if (!tray || tray.isDestroyed?.()) return;
   const pct = Math.round(Number(info?.percent) || 0);
@@ -56,26 +54,18 @@ export function destroyTray() {
     tray.removeAllListeners();
     tray.destroy();
   } catch {
-    /* ignore */
+
   }
   tray = null;
 }
 
-/**
- * @param {{
- *   getMainWindow: () => import('electron').BrowserWindow | null;
- *   tooltip?: string;
- *   onQuit: () => void | Promise<void>;
- *   labels?: { show?: string; quit?: string };
- * }} opts
- */
 export function setTrayIconPath(path) {
   trayIconPath = path || null;
   if (tray && !tray.isDestroyed?.()) {
     try {
       tray.setImage(createTrayIconFromPath(trayIconPath) || createTrayIconFallback());
     } catch {
-      /* ignore */
+
     }
   }
 }

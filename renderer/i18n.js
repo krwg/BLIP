@@ -2005,7 +2005,6 @@ export function applyLangChange() {
   window.dispatchEvent(new Event('blip-lang-change'));
 }
 
-/** Update text from data-i18n / data-i18n-placeholder under root. */
 export function applyI18n(root = document) {
   root.querySelectorAll('[data-i18n]').forEach((el) => {
     const key = el.dataset.i18n;

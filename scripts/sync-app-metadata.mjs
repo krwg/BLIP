@@ -1,8 +1,4 @@
-/**
- * Single source of truth: app-metadata.json → package.json version (for npm / electron-builder).
- * `version` must be valid semver (major.minor.patch[-prerelease]).
- * `displayVersion` is shown in the app UI (e.g. 0.7.0.1 test labels).
- */
+
 import { readFileSync, writeFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';

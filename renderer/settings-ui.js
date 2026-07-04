@@ -7,28 +7,18 @@ export function buildThemedSelect(className = 'blip-select settings-dropdown') {
   return sel;
 }
 
-/** Scrollable glass panel for settings lists (blocked peers, shortcuts, network, releases). */
 export function createSettingsListPanel(extraClass = '') {
   const panel = document.createElement('div');
   panel.className = ['settings-list-panel', extraClass].filter(Boolean).join(' ');
   return panel;
 }
 
-/**
- * @param {HTMLElement} content
- * @param {string} [extraClass]
- */
 export function wrapInSettingsListPanel(content, extraClass = '') {
   const panel = createSettingsListPanel(extraClass);
   panel.appendChild(content);
   return panel;
 }
 
-/**
- * @param {{ value: string, label: string }[]} options
- * @param {string} current
- * @param {(value: string) => void} onChange
- */
 export function fillSettingsDropdown(select, options, current, onChange) {
   select.innerHTML = '';
   for (const opt of options) {
@@ -54,7 +44,6 @@ export function buildSettingsField(labelKey, controlEl) {
   return wrap;
 }
 
-/** Pixel ? tooltip (title on hover + toast on click). */
 export function createPixelHintIcon(hintKey) {
   const btn = document.createElement('button');
   btn.type = 'button';
@@ -69,7 +58,6 @@ export function createPixelHintIcon(hintKey) {
   return btn;
 }
 
-/** Section subtitle (h3) + optional pixel ? hint. */
 export function buildSectionSubtitleRow(labelKey, hintKey) {
   const row = document.createElement('div');
   row.className = 'section-title-row';
@@ -82,7 +70,6 @@ export function buildSectionSubtitleRow(labelKey, hintKey) {
   return row;
 }
 
-/** Panel title (h2) + optional hint. */
 export function buildPanelTitleRow(labelKey, hintKey) {
   const row = document.createElement('div');
   row.className = 'settings-panel-title-row';
@@ -95,7 +82,6 @@ export function buildPanelTitleRow(labelKey, hintKey) {
   return row;
 }
 
-/** Label row: text + optional hint icon. */
 export function buildSettingsLabelRow(labelKey, hintKey) {
   const row = document.createElement('div');
   row.className = 'settings-label-row';
@@ -116,10 +102,6 @@ export function buildSettingsFieldWithHint(labelKey, hintKey, controlEl) {
   return wrap;
 }
 
-/**
- * Square pixel toggle (hidden checkbox + visual switch).
- * @param {{ checked?: boolean, labelKey?: string, labelText?: string, onChange?: (v: boolean) => void }} opts
- */
 export function createPixelToggle(opts = {}) {
   const row = document.createElement('label');
   row.className = 'pixel-toggle-row';
@@ -159,7 +141,6 @@ export function createPixelToggle(opts = {}) {
   };
 }
 
-/** @param {string} text */
 export async function copyTextToClipboard(text) {
   try {
     await navigator.clipboard.writeText(text);

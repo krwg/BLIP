@@ -9,10 +9,6 @@ function closeOpenMenu() {
   openMenu = null;
 }
 
-/**
- * @param {HTMLElement} anchor
- * @param {Array<{ id: string, label: string, onClick: () => void, danger?: boolean, disabled?: boolean }>} items
- */
 export function openBeaconRowMenu(anchor, items) {
   closeOpenMenu();
 

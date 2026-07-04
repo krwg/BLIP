@@ -28,7 +28,7 @@ async function finalizeStagingSeed(stagingId, seedId, meta) {
     try {
       await rm(stagingDir, { recursive: true, force: true });
     } catch {
-      /* ignore */
+
     }
   } else {
     try {
@@ -37,7 +37,7 @@ async function finalizeStagingSeed(stagingId, seedId, meta) {
       try {
         await rm(stagingDir, { recursive: true, force: true });
       } catch {
-        /* ignore */
+
       }
     }
   }
@@ -64,11 +64,6 @@ function guessMime(filename) {
   return map[ext] || 'application/octet-stream';
 }
 
-/**
- * Ingest a file from disk into seed storage (single pass: hash + write).
- * @param {string} filePath
- * @param {{ chunkSize?: number, maxBytes?: number, onProgress?: (p: { phase: string, percent?: number }) => void }} [opts]
- */
 export async function ingestPublishFromPath(filePath, opts = {}) {
   const chunkSize = opts.chunkSize || 1048576;
   const onProgress = opts.onProgress;
@@ -133,7 +128,6 @@ export async function ingestPublishFromPath(filePath, opts = {}) {
   return meta;
 }
 
-/** Small image preview (optional). */
 export async function tryReadImagePreviewB64(filePath, maxBytes = 8 * 1024 * 1024) {
   const ext = extname(filePath).toLowerCase();
   if (!['.png', '.jpg', '.jpeg', '.gif', '.webp'].includes(ext)) return null;

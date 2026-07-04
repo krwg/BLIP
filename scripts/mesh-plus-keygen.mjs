@@ -1,12 +1,5 @@
 #!/usr/bin/env node
-/**
- * Generate a MESH+ license key (run locally only — never commit private keys).
- *
- *   node scripts/mesh-plus-keygen.mjs
- *   node scripts/mesh-plus-keygen.mjs --private-key path/to/mesh-plus-private.b64
- *
- * Writes optional private key to scripts/.mesh-plus-private.b64 (gitignored).
- */
+
 import {
   createPrivateKey,
   createPublicKey,
@@ -30,7 +23,6 @@ function publicKeyB64FromPrivate(privateKey) {
   return pub.export({ type: 'spki', format: 'der' }).toString('base64');
 }
 
-/** @returns {{ privateKey: import('crypto').KeyObject, created: boolean }} */
 function loadOrCreatePrivateKey(path) {
   if (existsSync(path)) {
     const b64 = readFileSync(path, 'utf8').trim();

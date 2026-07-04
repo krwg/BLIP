@@ -6,9 +6,6 @@ import {
   sessionOnlineHours,
 } from './session-stats.js';
 
-/**
- * @param {HTMLElement} parent
- */
 export function appendSessionStatsSection(parent) {
   const statsWrap = document.createElement('div');
   statsWrap.className = 'settings-network-stats-block';

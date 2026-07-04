@@ -1,10 +1,6 @@
-/** Max single JSON line on TCP (bytes of UTF-8 buffer). */
+
 export const MAX_TCP_LINE_BYTES = 4 * 1024 * 1024;
 
-/**
- * Incremental newline-framed reader with backpressure on oversized buffers.
- * @returns {{ push: (chunk: Buffer|string) => string[], reset: () => void }}
- */
 export function createTcpLineReader(onOverflow) {
   let buffer = '';
 

@@ -1,6 +1,4 @@
-/**
- * Private peer notes — local only, never sent over the network (like Steam / Discord).
- */
+
 const STORAGE_KEY = 'blip_peer_private_notes_v1';
 const MAX_NOTE_LEN = 500;
 
@@ -19,14 +17,12 @@ function saveMap(map) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
 }
 
-/** @param {number | string} peerId */
 export function getPeerPrivateNote(peerId) {
   const id = String(peerId);
   const v = loadMap()[id];
   return typeof v === 'string' ? v : '';
 }
 
-/** @param {number | string} peerId @param {string} text */
 export function setPeerPrivateNote(peerId, text) {
   const id = String(peerId);
   const map = loadMap();

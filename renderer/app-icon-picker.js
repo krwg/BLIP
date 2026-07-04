@@ -9,10 +9,6 @@ const MESH_ICON_IDS = ['mesh-1', 'mesh-2', 'mesh-3', 'mesh-4', 'mesh-5', 'mesh-6
 const ICON_PREVIEW_PX = 96;
 const ICON_LIGHTBOX_PX = 256;
 
-/**
- * @param {string} src
- * @param {string} [label]
- */
 function openAppIconPreview(src, label = '') {
   if (!src) return;
   const backdrop = document.createElement('div');
@@ -49,10 +45,6 @@ function openAppIconPreview(src, label = '') {
   document.body.appendChild(backdrop);
 }
 
-/**
- * @param {object} state
- * @param {(patch: object) => Promise<object>} saveConfig
- */
 export function appendAppIconPickerSections(block, state, saveConfig) {
   block.appendChild(
     buildSectionSubtitleRow('settings.app_icon_free_title', 'settings.app_icon_preview_hint')
@@ -112,7 +104,7 @@ export function appendAppIconPickerSections(block, state, saveConfig) {
       try {
         await window.blip.getAppIconUrl?.();
       } catch {
-        /* ignore */
+
       }
       freeGrid.querySelectorAll('.settings-app-icon-tile').forEach((el) => {
         el.classList.toggle('selected', el.dataset.iconId === state.config.appIconVariant);

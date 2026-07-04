@@ -80,7 +80,6 @@ export async function writeSeedChunk(seedId, chunkIndex, base64Data) {
   await writeFile(chunkPath(dir, chunkIndex), buf);
 }
 
-/** Write many chunks in one IPC round-trip. */
 export async function writeSeedChunksBatch(seedId, chunks) {
   const dir = getSeedDir(seedId);
   await mkdir(dir, { recursive: true });
@@ -214,7 +213,6 @@ export async function localSeedExists(seedId) {
   }
 }
 
-/** Remove seed directory (chunks, meta, preview). */
 export async function deleteLocalSeed(seedId) {
   const dir = getSeedDir(seedId);
   await rm(dir, { recursive: true, force: true });

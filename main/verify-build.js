@@ -24,7 +24,7 @@ function buildInfoPaths() {
     try {
       paths.push(join(dirname(app.getPath('exe')), 'build-info.json'));
     } catch {
-      /* ignore */
+
     }
   }
   paths.push(join(process.cwd(), 'build', 'build-info.json'));
@@ -39,16 +39,12 @@ function loadBuildInfo() {
       const o = JSON.parse(raw);
       if (o && typeof o === 'object' && o.buildSignature) return o;
     } catch {
-      /* try next */
+
     }
   }
   return null;
 }
 
-/**
- * @param {object} info
- * @returns {boolean}
- */
 export function verifyBuildInfo(info) {
   if (!info?.buildSignature || !info?.issuer || !info?.version) return false;
   const pub = TRUST_ANCHOR_B64;
@@ -58,7 +54,6 @@ export function verifyBuildInfo(info) {
   return verifyCanonical(pub, canonical, info.buildSignature);
 }
 
-/** @returns {{ verified: boolean, issuer: string, version: string, meshPlusPublicKeyHash: string }} */
 export function verifyBuildAtStartup() {
   const info = loadBuildInfo();
   if (!info) {
@@ -74,7 +69,6 @@ export function verifyBuildAtStartup() {
   };
 }
 
-/** @param {string} pubB64 */
 export function hashTrustAnchor(pubB64) {
   if (!pubB64) return '';
   return createHash('sha256').update(pubB64, 'utf8').digest('hex').slice(0, 16);

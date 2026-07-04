@@ -8,11 +8,10 @@ import {
 import { getChunkDelayMs } from './file-transfer-speed.js';
 import { recordBandwidthSample } from './bandwidth-monitor.js';
 
-/** Raw bytes per chunk (~1 MiB on wire after base64, under 4 MiB TCP line cap). */
 const CHUNK_RAW_BYTES = 1024 * 1024;
-/** Multiple chunks per TCP line (fewer IPC round-trips). */
+
 const CHUNKS_PER_TCP_BATCH = 2;
-/** In-flight TCP batch sends without waiting for each to finish. */
+
 const SEND_PIPELINE_DEPTH = 12;
 
 function resolveFileDiskPath(file) {
@@ -52,15 +51,13 @@ async function isCallActive() {
     }
     if (window.blip?.isGroupCallActiveSync?.()) return true;
   } catch {
-    /* ignore */
+
   }
   return false;
 }
 
-/** @type {Map<string, { meta: object, chunks: string[], received: number, peerId: number }>} */
 const incoming = new Map();
 
-/** @type {Set<string>} */
 const cancelRequested = new Set();
 
 function transferKey(peerId, transferId) {
@@ -75,7 +72,6 @@ export function clearTransferCancel(peerId, transferId) {
   cancelRequested.delete(transferKey(peerId, transferId));
 }
 
-/** Cancel an outgoing (or in-progress incoming) chunked transfer. */
 export async function abortFileTransfer(api, config, peerId, transferId) {
   cancelRequested.add(transferKey(peerId, transferId));
   incoming.delete(transferKey(peerId, transferId));
@@ -87,7 +83,7 @@ export async function abortFileTransfer(api, config, peerId, transferId) {
       transferId,
     });
   } catch {
-    /* peer offline */
+
   }
 }
 
@@ -131,11 +127,6 @@ function assembleIncoming(entry) {
   };
 }
 
-/**
- * Send a file to a peer (inline message or chunked TCP).
- * @param {{ transferId?: string, groupId?: string, msgId?: string }} [opts]
- * @returns {{ attachment, messageText } | { chunked: true, transferId }}
- */
 async function sendChatFileFromDisk(api, config, peerId, file, diskPath, onProgress, opts) {
   const transferId = opts.transferId || createMessageId();
   const key = transferKey(peerId, transferId);
@@ -262,7 +253,6 @@ export async function sendChatFile(api, config, peerId, file, onProgress, opts =
   return buildChunkedAttachment(file, transferId, opts);
 }
 
-/** Build a local data URL for UI after send/receive. */
 export async function fileToDataUrl(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();

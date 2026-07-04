@@ -1,4 +1,3 @@
-/* BLIP appearance — load before styles.css. html[data-theme] + html[data-animated-bg] */
 
 :root {
   --blip-bg: #0a0a0a;
@@ -661,7 +660,6 @@ html[data-reduced-motion='1'][data-animated-bg]:not([data-animated-bg='none']) b
   opacity: calc(var(--blip-bg-layer-opacity, 0.45) * 0.55);
 }
 
-/* —— 0.7.2 base theme modes —— */
 html[data-theme='dark'] {
   --blip-bg: #0a0a0a;
   --blip-text: #e0e0e0;

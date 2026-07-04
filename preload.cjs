@@ -103,7 +103,7 @@ contextBridge.exposeInMainWorld('blip', {
         return webUtils.getPathForFile(file) || '';
       }
     } catch {
-      /* ignore */
+
     }
     if (file && typeof file.path === 'string') return file.path;
     return '';

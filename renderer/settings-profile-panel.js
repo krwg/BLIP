@@ -24,11 +24,6 @@ import {
   buildPanelTitleRow,
 } from './settings-ui.js';
 
-/**
- * @param {object} state
- * @param {object} api
- * @param {{ broadcastCustomAvatar?: () => void, broadcastProfileGif?: () => void }} deps
- */
 export function buildSettingsProfilePanel(state, api, deps = {}) {
   const frag = document.createElement('div');
   frag.className = 'settings-panel settings-panel--profile';

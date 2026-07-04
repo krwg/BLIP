@@ -4,11 +4,6 @@ import { applyAppearance, normalizeCustomAccentHex } from './appearance.js';
 import { buildSectionSubtitleRow } from './settings-ui.js';
 import { createBlipColorInput } from './blip-color-input.js';
 
-/**
- * MESH+ custom accent (#RRGGBB).
- * @param {() => object} getConfig
- * @param {(patch: object) => Promise<object>} saveConfig
- */
 export function appendThemeEditorSection(block, getConfig, saveConfig) {
   const row = document.createElement('div');
   row.className = 'settings-theme-editor';

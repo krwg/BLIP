@@ -1,6 +1,4 @@
-/**
- * Block list — persisted in blip-config.json (enforced in main over TCP).
- */
+
 const BLOCK_KEY = 'blip_blocked_peers_v1';
 
 let blockedIds = new Set();
@@ -29,7 +27,6 @@ function persistToMain() {
   });
 }
 
-/** Call once from initUI with config + api.saveConfig */
 export function initPeerTrust(cfg, api) {
   saveApi = (updates) => api.saveConfig(updates);
   const fromConfigBlocked = Array.isArray(cfg?.blockedPeerIds) ? cfg.blockedPeerIds : null;

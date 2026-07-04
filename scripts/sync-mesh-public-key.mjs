@@ -1,7 +1,4 @@
-/**
- * Copies MESH+ public key into build/mesh-plus-public-key.txt for electron-builder extraResources.
- * Sources (first match): BLIP_MESH_PUBLIC_KEY env, .env.build, mesh-plus-public-key.local
- */
+
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';

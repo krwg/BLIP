@@ -1,12 +1,6 @@
 import { t } from './i18n.js';
 import { getMeshLabel, setMeshLabel, clearMeshLabel } from './peer-labels.js';
 
-/**
- * In-app dialog (Electron frameless windows block window.prompt).
- * @param {number} peerId
- * @param {string} [fallbackName]
- * @returns {Promise<string | null>} saved label, empty string if cleared, null if cancelled
- */
 export function openMeshLabelDialog(peerId, fallbackName = '') {
   return new Promise((resolve) => {
     const backdrop = document.createElement('div');

@@ -1,6 +1,5 @@
 const STORAGE_KEY = 'blip_favorites_v1';
 
-/** @type {Set<number>} */
 let favorites = new Set();
 
 function load() {
@@ -20,7 +19,7 @@ function persist() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify([...favorites]));
   } catch {
-    /* ignore */
+
   }
 }
 

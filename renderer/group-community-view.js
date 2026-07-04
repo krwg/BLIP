@@ -113,9 +113,6 @@ function channelNameI18nKey(ch) {
   return null;
 }
 
-/**
- * Group layout: channel rail + main (voice stage + chat).
- */
 export function createGroupCommunityView(
   group,
   config,

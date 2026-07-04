@@ -3,10 +3,6 @@ import { getSessionStats } from './session-stats.js';
 import { isAchievementUnlocked, unlockAchievement } from './achievements-store.js';
 import { showAchievementUnlockToast } from './achievement-toast.js';
 
-/**
- * @param {object} [config]
- * @returns {import('./achievements.js').AchievementDef[]}
- */
 export function syncAchievements(config) {
   if (!config?.achievementsEnabled) return [];
   const stats = getSessionStats();

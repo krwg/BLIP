@@ -1,6 +1,4 @@
-/**
- * Main-window bridge — WebRTC group calls run in group-call-window.
- */
+
 import {
   getOngoingGroupCall,
   applyGroupCallStateFromTcp,

@@ -1,10 +1,8 @@
-/* Thematic animated wallpapers — no grid / mesh patterns. */
 
 html {
   --blip-bg-pulse: 0;
 }
 
-/* Decorative layers must not participate in hit-testing (Electron/Chromium). */
 html[data-animated-bg]:not([data-animated-bg='none']) body::before,
 html[data-animated-bg]:not([data-animated-bg='none']) body::after {
   pointer-events: none !important;
@@ -20,7 +18,6 @@ html[data-reactive-bg='1'][data-animated-bg]:not([data-animated-bg='none']) body
   transform: scale(calc(1.02 + var(--blip-bg-pulse) * 0.035));
 }
 
-/* —— City skyline (static art — no LAN grid) —— */
 html[data-animated-bg='skyline'] body::before {
   opacity: var(--blip-bg-layer-opacity, 0.62);
   background:
@@ -56,7 +53,6 @@ html[data-animated-bg='skyline'] body::after {
   animation: blip-bg-city-lights 6s ease-in-out infinite alternate;
 }
 
-/* —— Void (static) —— */
 html[data-animated-bg='void'] body::before {
   opacity: var(--blip-bg-layer-opacity, 0.65);
   background:
@@ -75,7 +71,6 @@ html[data-animated-bg='void'] body::after {
   animation: none;
 }
 
-/* —— Dusk (static) —— */
 html[data-animated-bg='dusk'] body::before {
   opacity: var(--blip-bg-layer-opacity, 0.6);
   background: linear-gradient(
@@ -94,7 +89,6 @@ html[data-animated-bg='dusk'] body::after {
   animation: none;
 }
 
-/* —— Bloom (organic aurora blobs) —— */
 html[data-animated-bg='bloom'] body::before {
   opacity: var(--blip-bg-layer-opacity, 0.62);
   background:
@@ -110,7 +104,6 @@ html[data-animated-bg='bloom'] body::after {
   animation: blip-bg-bloom-2 24s ease-in-out infinite alternate-reverse;
 }
 
-/* —— Horizon (landscape art) —— */
 html[data-animated-bg='horizon'] body::before {
   opacity: var(--blip-bg-layer-opacity, 0.6);
   background: linear-gradient(
@@ -142,7 +135,6 @@ html[data-animated-bg='horizon'] body::after {
   animation: blip-bg-horizon-mount 40s ease-in-out infinite alternate;
 }
 
-/* —— Ember (floating particles) —— */
 html[data-animated-bg='ember'] body::before {
   opacity: var(--blip-bg-layer-opacity, 0.55);
   background:
@@ -155,7 +147,6 @@ html[data-animated-bg='ember'] body::before {
   animation: blip-bg-ember-rise 14s ease-in infinite;
 }
 
-/* —— Rift (dimensional tear) —— */
 html[data-animated-bg='rift'] body::before {
   opacity: var(--blip-bg-layer-opacity, 0.58);
   background: linear-gradient(
@@ -177,7 +168,6 @@ html[data-animated-bg='rift'] body::after {
   animation: blip-bg-rift-glow 7s ease-in-out infinite alternate;
 }
 
-/* —— Depths (underwater caustics) —— */
 html[data-animated-bg='depths'] body::before {
   opacity: var(--blip-bg-layer-opacity, 0.56);
   background:
@@ -193,7 +183,6 @@ html[data-animated-bg='depths'] body::after {
   animation: blip-bg-depths-ray 22s ease-in-out infinite;
 }
 
-/* —— Signal (radio rings, not a grid) —— */
 html[data-animated-bg='signal'] body::before {
   opacity: var(--blip-bg-layer-opacity, 0.52);
   background:
@@ -215,7 +204,6 @@ html[data-animated-bg='signal'] body::after {
   animation: blip-bg-signal-sweep 12s linear infinite;
 }
 
-/* Hyperwave: drop diagonal line mesh on ::after — soft glow only */
 html[data-animated-bg='hyperwave'] body::after {
   opacity: calc(var(--blip-bg-layer-opacity, 0.5) * 0.55);
   background: radial-gradient(ellipse 90% 70% at 50% 80%, color-mix(in srgb, var(--blip-accent) 40%, transparent), transparent 65%);

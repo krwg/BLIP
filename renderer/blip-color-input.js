@@ -1,10 +1,6 @@
-/** @type {(() => void) | null} */
+
 let closeOpenPopover = null;
 
-/**
- * BLIP-styled color picker (custom popover: SV field, hue, hex, RGB).
- * @param {{ value?: string, onInput?: (hex: string) => void, title?: string, className?: string }} [opts]
- */
 export function createBlipColorInput(opts = {}) {
   const wrap = document.createElement('div');
   wrap.className = ['blip-color-input', opts.className].filter(Boolean).join(' ');
@@ -61,7 +57,7 @@ export function createBlipColorInput(opts = {}) {
 
   function onDocPointer(e) {
     if (!popover) return;
-    const t = /** @type {Node} */ (e.target);
+    const t =  (e.target);
     if (popover.contains(t) || wrap.contains(t)) return;
     closePopover();
   }
@@ -261,7 +257,7 @@ export function createBlipColorInput(opts = {}) {
         const res = await ed.open();
         if (res?.sRGBHex) applyHex(res.sRGBHex);
       } catch {
-        /* cancelled */
+
       }
     });
 
@@ -309,7 +305,6 @@ export function createBlipColorInput(opts = {}) {
   };
 }
 
-/** @param {HTMLElement} anchor @param {HTMLElement} popover */
 function positionPopover(anchor, popover) {
   const gap = 8;
   const pad = 10;
@@ -331,7 +326,6 @@ function positionPopover(anchor, popover) {
   popover.style.visibility = '';
 }
 
-/** @param {string} [hex] */
 export function normalizePickerHex(hex) {
   const s = String(hex || '').trim();
   if (/^#[0-9a-fA-F]{6}$/.test(s)) return s.toLowerCase();
@@ -344,7 +338,6 @@ export function normalizePickerHex(hex) {
   return '';
 }
 
-/** @param {string} hex */
 function hexToRgb(hex) {
   const n = normalizePickerHex(hex) || '#000000';
   return {
@@ -354,7 +347,6 @@ function hexToRgb(hex) {
   };
 }
 
-/** @param {{ r: number, g: number, b: number }} rgb */
 function rgbToHex(rgb) {
   const r = clampByte(rgb.r).toString(16).padStart(2, '0');
   const g = clampByte(rgb.g).toString(16).padStart(2, '0');
@@ -362,7 +354,6 @@ function rgbToHex(rgb) {
   return `#${r}${g}${b}`;
 }
 
-/** @param {{ r: number, g: number, b: number }} rgb */
 function rgbToHsv(rgb) {
   const r = rgb.r / 255;
   const g = rgb.g / 255;
@@ -382,7 +373,6 @@ function rgbToHsv(rgb) {
   return { h, s, v: max };
 }
 
-/** @param {{ h: number, s: number, v: number }} hsv */
 function hsvToRgb(hsv) {
   const h = ((hsv.h % 360) + 360) % 360;
   const s = clamp01(hsv.s);
@@ -406,12 +396,10 @@ function hsvToRgb(hsv) {
   };
 }
 
-/** @param {number} n */
 function clamp01(n) {
   return Math.min(1, Math.max(0, Number(n) || 0));
 }
 
-/** @param {number|string} n */
 function clampByte(n) {
   return Math.min(255, Math.max(0, Math.round(Number(n) || 0)));
 }

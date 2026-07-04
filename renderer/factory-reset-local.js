@@ -5,7 +5,6 @@ import { resetGroupInvitesStore } from './group-invites.js';
 import { resetMeshProjectStores } from './group-projects-store.js';
 import { clearAllAchievementUnlocks } from './achievements-store.js';
 
-/** Clear renderer local persistence (keep UI language). */
 export function clearRendererLocalStorage() {
   const keep = new Set(['blip_lang']);
   const remove = [];
@@ -16,7 +15,6 @@ export function clearRendererLocalStorage() {
   for (const key of remove) localStorage.removeItem(key);
 }
 
-/** Clear in-memory stores that were loaded from localStorage at startup. */
 export function resetRendererMemoryStores() {
   resetGroupsStore();
   resetChatStore();

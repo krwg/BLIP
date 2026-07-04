@@ -191,7 +191,7 @@ async function broadcastCustomAvatar() {
         dataUrl,
       });
     } catch {
-      /* offline */
+
     }
   }
 }
@@ -209,7 +209,7 @@ async function broadcastProfileGif() {
         dataUrl,
       });
     } catch {
-      /* offline */
+
     }
   }
 }
@@ -223,7 +223,7 @@ async function requestPeerProfileGif(blipId) {
       from: state.config.blipId,
     });
   } catch {
-    /* ignore */
+
   }
 }
 
@@ -246,18 +246,16 @@ let state = {
   activeGroup: null,
   chatViews: new Map(),
   groupChatViews: new Map(),
-  /** `null` = no subsection selected (placeholder in content column). */
+
   settingsSection: null,
-  /** Peer profile page (full main-content view). */
+
   profilePeerId: null,
-  /** Where to return from profile (view + chat targets). */
+
   profileReturn: null,
 };
 
-/** @type {Map<string, number>} */
 const unreadByGroup = new Map();
 
-/** Last payload from main `update-status` (auto-updater). */
 let lastUpdateStatus = null;
 
 let rootEl = null;
@@ -266,23 +264,21 @@ let gridComponent = null;
 let api = null;
 let appearanceListenerDispose = null;
 let lastUpdateToastDismiss = null;
-/** @type {Map<number, number>} */
+
 const peerLatencyMs = new Map();
 
 const MESH_PULSE_INTERVAL_MS = 60_000;
 let meshPulseTimer = null;
-/** @type {(() => void) | null} */
+
 let profilePageCleanup = null;
-/** @type {{ peerId: number, refresh: () => void, setPeer?: (p: object) => void, destroy: () => void } | null} */
+
 let profilePageApi = null;
 
-/** @type {Map<number, number>} */
 const unreadByPeer = new Map();
 let unreadInviteCount = 0;
-/** @type {Set<number>} */
+
 const peersTyping = new Set();
 
-/** UI label from app-metadata (`displayVersion` for test builds like 0.7.0.1). */
 function formatAppVersion(meta) {
   if (!meta) return '—';
   return meta.displayVersion || meta.version || '—';
@@ -500,10 +496,8 @@ function openGroupChat(groupId) {
   else render();
 }
 
-/** @type {ReturnType<typeof createProjectsView> | null} */
 let projectsViewInstance = null;
 
-/** @type {(() => void) | null} */
 let settingsPanelCleanup = null;
 
 function ensureProjectsView() {
@@ -544,7 +538,6 @@ function findPeerByBlipId(id) {
   return state.peers.find((p) => normalizeBlipId(p.blipId) === nid);
 }
 
-/** Re-bind if DOM was rebuilt (grid → app layout) without updating the module ref. */
 function resolveMainContent() {
   if (mainContent?.isConnected) return mainContent;
   const found =
@@ -554,7 +547,6 @@ function resolveMainContent() {
   return mainContent;
 }
 
-/** Always replace main panel (bypasses renderView short-circuit). */
 function mountMainPanel(el, { prevView = null } = {}) {
   const panel = resolveMainContent();
   if (!panel || !el) return false;
@@ -2484,7 +2476,7 @@ async function ensureAudioDeviceLabels() {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     stream.getTracks().forEach((tr) => tr.stop());
   } catch {
-    /* labels may be empty without permission */
+
   }
 }
 
@@ -3159,7 +3151,7 @@ function buildSettingsDeveloperPanel() {
     try {
       net = await window.blip.getNetworkDiagnostics?.();
     } catch {
-      /* ignore */
+
     }
     const payload = {
       exportedAt: new Date().toISOString(),
@@ -3314,7 +3306,7 @@ function showAboutIconContextMenu(e) {
 }
 
 function githubRepoBase(meta) {
-  const raw = meta?.githubUrl || 'https://github.com/FlokeStudio/BLIP';
+  const raw = meta?.githubUrl || 'https://github.com/krwg/BLIP';
   return String(raw).replace(/\/$/, '');
 }
 
@@ -3337,7 +3329,7 @@ function buildSettingsAboutPanel() {
       const url = await window.blip.getAppIconUrl?.();
       if (url) icon.src = url;
     } catch {
-      /* ignore */
+
     }
   })();
   iconBtn.appendChild(icon);
@@ -3375,7 +3367,7 @@ function buildSettingsAboutPanel() {
     </div>
     <div class="settings-about-meta-row">
       <span data-i18n="settings.about_made">${t('settings.about_made')}</span>
-      <span>Floke Studio</span>
+      <span>krwg</span>
     </div>`;
   frag.appendChild(metaBlock);
 
@@ -4611,8 +4603,6 @@ export function initUI(config, blipApi) {
 
   setupGlobalShortcuts();
 
-  /* Calls use a separate BrowserWindow — see main/index.js + call-window.html */
-
   onLangChange(() => {
     refreshTransferHubI18n();
     applyI18n(rootEl);
@@ -4720,7 +4710,6 @@ export function initUI(config, blipApi) {
     }
   });
 
-
   render();
 }
 
@@ -4751,7 +4740,6 @@ export function updatePeers({ peers, occupiedIds }) {
     gridComponent.updateOccupied(occupiedIds.filter((id) => id !== state.config.blipId));
   }
 
-  /* Never full re-render during active conversation (fixes scroll jump + input focus loss) */
   if (state.view === 'chat' && (state.activePeer || state.activeGroup) && mainContent) {
     return;
   }

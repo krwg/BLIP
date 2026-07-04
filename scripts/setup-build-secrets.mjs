@@ -1,8 +1,5 @@
 #!/usr/bin/env node
-/**
- * Creates .env.build from build-secrets.local.example if missing.
- * Run after mesh-plus:keygen and paste TRUST_ANCHOR from keygen output.
- */
+
 import { existsSync, copyFileSync, readFileSync, writeFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';

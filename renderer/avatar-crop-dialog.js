@@ -3,10 +3,6 @@ import { t } from './i18n.js';
 const VIEW_SIZE = 280;
 const OUTPUT_SIZE = 128;
 
-/**
- * @param {File} file
- * @returns {Promise<string | null>} JPEG data URL (128×128)
- */
 export function openAvatarCropDialog(file) {
   return new Promise((resolve) => {
     const reader = new FileReader();

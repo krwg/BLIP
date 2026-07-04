@@ -13,10 +13,6 @@ function ensureStack() {
   return stackEl;
 }
 
-/**
- * @param {import('./achievements.js').AchievementDef} def
- * @param {{ durationMs?: number }} [opts]
- */
 export function showAchievementUnlockToast(def, opts = {}) {
   const durationMs = opts.durationMs ?? 5500;
   const stack = ensureStack();

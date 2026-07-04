@@ -1,6 +1,4 @@
-/**
- * Shared chat message body: media bubbles, files, link embeds, quote blocks.
- */
+
 import { t } from './i18n.js';
 import { appendLinkifiedText } from './linkify.js';
 import { formatFileSize } from './file-transfer.js';
@@ -241,10 +239,6 @@ function appendTextWithEmbeds(block, text) {
   }
 }
 
-/**
- * @param {HTMLElement} block
- * @param {{ text?: string, attachment?: object, replyTo?: object }} m
- */
 export function appendChatMessageBody(block, m, opts = {}) {
   if (m.forwardFrom) appendForwardBlock(block, m.forwardFrom);
   if (m.forwardFrom) appendForwardSeedNotice(block, m.forwardFrom, opts);
@@ -283,7 +277,6 @@ export function formatReplyFromLabel(from, displayName) {
   return displayName || `BLIP-${from}`;
 }
 
-/** Lite forward snapshot (wire-safe; no blob re-upload). */
 export function buildForwardSnapshot(sourcePeerId, m, fromLabel, opts = {}) {
   const snap = {
     sourcePeerId: Number(sourcePeerId),

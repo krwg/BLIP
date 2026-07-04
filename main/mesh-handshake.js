@@ -9,10 +9,8 @@ import {
 } from './mesh-identity.js';
 import { isPeerBlocked } from './trust-policy.js';
 
-/** @type {Map<import('net').Socket, object>} */
 const sessions = new Map();
 
-/** @type {Map<import('net').Socket, { resolve: Function, reject: Function }>} */
 const outboundWait = new Map();
 
 const HANDSHAKE_TIMEOUT_MS = 8000;
@@ -51,9 +49,6 @@ export function peerIpMatchesDiscovery(discovery, blipId, remoteIp) {
   return normalizePeerIp(peer.ip) === normalizePeerIp(remoteIp);
 }
 
-/**
- * Handle mesh-handshake / mesh-handshake-ack. Returns true if consumed.
- */
 export function handleMeshHandshakeMessage(msg, socket, ctx) {
   const { config, discovery, tcpServer, onConfigPatch } = ctx;
   const session = sessions.get(socket) || initInboundSession(socket, socket.remoteAddress);
@@ -131,11 +126,6 @@ export function assertAuthenticated(socket, msg) {
   return { ok: true, session, from };
 }
 
-/**
- * @param {import('net').Socket} socket
- * @param {object} config
- * @param {number} expectedPeerId
- */
 export function performOutboundHandshake(socket, config, expectedPeerId, discovery) {
   const remoteIp = normalizePeerIp(socket.remoteAddress);
   initInboundSession(socket, remoteIp);
@@ -147,7 +137,7 @@ export function performOutboundHandshake(socket, config, expectedPeerId, discove
       try {
         socket.destroy();
       } catch {
-        /* ignore */
+
       }
     }, HANDSHAKE_TIMEOUT_MS);
 

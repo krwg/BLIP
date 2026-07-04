@@ -3,7 +3,6 @@ import { join } from 'path';
 import { resolveBuildAsset } from './paths.js';
 import { resolveEntitlementState } from './mesh-plus-license.js';
 
-/** @type {{ id: string, file: string, tier: 'free' | 'mesh_plus' }[]} */
 export const APP_ICON_VARIANTS = [
   { id: 'main', file: 'icon-main.svg', tier: 'free' },
   { id: 'dop-1', file: 'icon-dop-1.svg', tier: 'free' },
@@ -26,7 +25,6 @@ export function normalizeAppIconVariant(id) {
   return APP_ICON_VARIANTS.some((v) => v.id === s) ? s : 'main';
 }
 
-/** @param {object} config */
 export function resolveAppIconVariant(config) {
   let id = normalizeAppIconVariant(config?.appIconVariant);
   if (MESH_IDS.has(id) && !resolveEntitlementState(config)) id = 'main';
@@ -40,7 +38,6 @@ export function canUseAppIconVariant(config, variantId) {
   return false;
 }
 
-/** @param {string} variantId */
 export function resolveVariantWindowIconPath(variantId) {
   const id = normalizeAppIconVariant(variantId);
   const named = resolveBuildAsset(join('icons', `${id}.png`));
@@ -48,7 +45,6 @@ export function resolveVariantWindowIconPath(variantId) {
   return resolveBuildAsset('icon.png');
 }
 
-/** @param {string} variantId */
 export function resolveVariantTrayIconPath(variantId) {
   const id = normalizeAppIconVariant(variantId);
   const named = resolveBuildAsset(join('icons', `${id}-tray.png`));

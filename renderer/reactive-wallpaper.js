@@ -1,6 +1,3 @@
-/**
- * Reactive wallpaper — mic/voice energy drives CSS --blip-bg-pulse on <html>.
- */
 
 let ctx = null;
 let analyser = null;
@@ -24,7 +21,7 @@ function teardown() {
   try {
     source?.disconnect();
   } catch {
-    /* ignore */
+
   }
   source = null;
   analyser = null;
@@ -60,7 +57,7 @@ async function attachStream(stream) {
     try {
       await ctx.resume();
     } catch {
-      /* ignore */
+
     }
   }
   analyser = ctx.createAnalyser();

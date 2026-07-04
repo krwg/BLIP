@@ -27,16 +27,15 @@ import { getBandwidthRates, subscribeBandwidth } from './bandwidth-monitor.js';
 import { openBeaconRowMenu, createBeaconRowMenuButton } from './beacon-row-menu.js';
 import { downloadBlipSeedFile } from './beacon-seed-file.js';
 
-/** @type {'mesh' | 'mine' | 'downloads'} */
 let activeTab = 'mesh';
 let tableBodyEl = null;
 let statsRootEl = null;
 let bwUnsub = null;
 let searchQuery = '';
 let publishBusy = false;
-/** @type {HTMLElement | null} */
+
 let publishOverlayEl = null;
-/** @type {() => object} */
+
 let getUiConfig = () => ({});
 
 function ensurePublishOverlay(wrap) {
@@ -389,7 +388,6 @@ function mkBtn(labelKey, className, onClick, { disabled = false, soon = false } 
   if (onClick) btn.addEventListener('click', onClick);
   return btn;
 }
-
 
 function createPreviewThumb(item) {
   const thumb = document.createElement('div');

@@ -2,15 +2,8 @@ import { readSeedChunksBatch } from './beacon-store.js';
 import { sendOnSocketQueued } from './tcp-write-queue.js';
 import { MAX_TCP_LINE_BYTES } from './tcp-framing.js';
 
-/** 1 MiB raw chunks → ~2× base64 per TCP line (under 4 MiB cap). */
 const CHUNKS_PER_LINE = 2;
 
-/**
- * Read seed chunks from disk and send to peer in main (no renderer round-trip).
- * @param {import('net').Socket} socket
- * @param {number} fromBlipId
- * @param {{ to: number, seedId: string, chunkIndices: number[] }} opts
- */
 export async function serveSeedChunksOnSocket(socket, fromBlipId, { to, seedId, chunkIndices }) {
   const indices = (chunkIndices || []).map(Number).filter(Number.isFinite);
   if (!seedId || !indices.length || !socket) return { ok: false, sent: 0 };

@@ -15,7 +15,6 @@ function clearProfileGifStorage() {
   }
 }
 
-/** Remove optional userData artifacts (not packaged resources). */
 export function clearUserDataArtifacts() {
   clearCustomAvatar();
   clearProfileGifStorage();
@@ -24,7 +23,6 @@ export function clearUserDataArtifacts() {
   resetGiphyApiKeyCache();
 }
 
-/** Full factory reset: defaults config + cleared profile media. */
 export function performFactoryReset() {
   clearUserDataArtifacts();
   return resetConfigToDefaults();

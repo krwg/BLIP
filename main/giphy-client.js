@@ -1,7 +1,3 @@
-/**
- * Giphy search/trending (optional API key via BLIP_GIPHY_API_KEY).
- * @see https://developers.giphy.com/docs/api/
- */
 
 import { getGiphyApiKey } from './giphy-key.js';
 import { MAX_PROFILE_GIF_BYTES } from './profile-gif-store.js';
@@ -16,9 +12,6 @@ export function isGiphyConfigured() {
   return apiKey().length > 0;
 }
 
-/**
- * @param {object} gif
- */
 function pickImage(images, ...keys) {
   for (const key of keys) {
     const o = images[key];
@@ -55,10 +48,6 @@ function mapGif(gif) {
   };
 }
 
-/**
- * @param {string} query
- * @param {{ offset?: number, limit?: number }} [opts]
- */
 export async function searchGiphy(query, opts = {}) {
   const key = apiKey();
   if (!key) return { ok: false, error: 'no_api_key', items: [] };
@@ -73,9 +62,6 @@ export async function searchGiphy(query, opts = {}) {
   return { ok: true, items, pagination: data?.pagination };
 }
 
-/**
- * @param {{ offset?: number, limit?: number }} [opts]
- */
 export async function trendingGiphy(opts = {}) {
   const key = apiKey();
   if (!key) return { ok: false, error: 'no_api_key', items: [] };
@@ -89,10 +75,6 @@ export async function trendingGiphy(opts = {}) {
   return { ok: true, items, pagination: data?.pagination };
 }
 
-/**
- * @param {string} gifUrl
- * @returns {Promise<Buffer>}
- */
 export async function downloadGifUrl(gifUrl) {
   const res = await fetch(gifUrl);
   if (!res.ok) throw new Error('download_failed');

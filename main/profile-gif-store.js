@@ -12,9 +12,9 @@ import { randomBytes } from 'crypto';
 import { buildProfileGifShareDataUrl } from './profile-gif-share.js';
 
 const MAX_HISTORY = 5;
-/** @type {number} max stored GIF size (bytes) */
+
 export const MAX_PROFILE_GIF_BYTES = 8 * 1024 * 1024;
-/** Max raw GIF bytes for one TCP JSON line (base64 + framing under 4 MiB). */
+
 export const MAX_PROFILE_GIF_TCP_BYTES = 2_800_000;
 const MAX_BYTES = MAX_PROFILE_GIF_BYTES;
 
@@ -63,14 +63,6 @@ function newId() {
   return randomBytes(8).toString('hex');
 }
 
-/**
- * @param {string} dataUrl
- * @returns {string} id
- */
-/**
- * @param {Buffer} buf
- * @returns {string}
- */
 export function saveProfileGifFromBuffer(buf) {
   if (!buf || buf.length > MAX_BYTES) throw new Error('gif_too_large');
   ensureDirs();
@@ -83,7 +75,7 @@ export function saveProfileGifFromBuffer(buf) {
       try {
         unlinkSync(filePathForId(old));
       } catch {
-        /* ignore */
+
       }
     }
   }
@@ -98,7 +90,6 @@ export function saveProfileGifFromDataUrl(dataUrl) {
   return saveProfileGifFromBuffer(buf);
 }
 
-/** @param {string} id */
 export function setActiveProfileGif(id) {
   const meta = loadMeta();
   if (!id) {
@@ -128,14 +119,12 @@ function readGifBuffer(id) {
   }
 }
 
-/** @param {string} [id] */
 export function getProfileGifDataUrl(id) {
   const buf = readGifBuffer(id);
   if (!buf) return null;
   return `data:image/gif;base64,${buf.toString('base64')}`;
 }
 
-/** LAN share payload — downscales if needed so TCP line stays under limit. */
 export function getProfileGifShareDataUrl(id) {
   const buf = readGifBuffer(id);
   return buildProfileGifShareDataUrl(buf);
@@ -150,7 +139,6 @@ export function hasActiveProfileGif() {
   return !!(activeId && existsSync(filePathForId(activeId)));
 }
 
-/** @returns {{ id: string, dataUrl: string }[]} */
 export function listProfileGifHistory() {
   const { history } = loadMeta();
   const out = [];
@@ -161,7 +149,6 @@ export function listProfileGifHistory() {
   return out;
 }
 
-/** Sync config fields for announce / public config. */
 export function getProfileGifPublicState() {
   const meta = loadMeta();
   return {

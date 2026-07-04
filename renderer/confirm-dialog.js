@@ -1,9 +1,5 @@
 import { t } from './i18n.js';
 
-/**
- * @param {{ title: string, body?: string, confirmLabel?: string, cancelLabel?: string, danger?: boolean }} opts
- * @returns {Promise<boolean>}
- */
 export function openConfirmDialog(opts) {
   const {
     title,
@@ -70,10 +66,6 @@ export function openConfirmDialog(opts) {
   });
 }
 
-/**
- * @param {{ title: string, body?: string, okLabel?: string }} opts
- * @returns {Promise<void>}
- */
 export function openAlertDialog(opts) {
   const { title, body = '', okLabel = t('dialog.confirm') } = opts;
 

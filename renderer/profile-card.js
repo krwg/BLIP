@@ -19,11 +19,6 @@ function applyGifCloudSize(cloudEl, imgEl) {
   cloudEl.style.height = `${h}px`;
 }
 
-/**
- * @param {object} peer
- * @param {object} hooks
- * @returns {{ el: HTMLElement, refresh: () => void, destroy: () => void }}
- */
 export function buildProfileCard(peerInput, hooks = {}) {
   let peer = peerInput;
   const {

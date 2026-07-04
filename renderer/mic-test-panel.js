@@ -2,10 +2,6 @@ import { t } from './i18n.js';
 import { getVoiceMediaStream } from './audio-capture.js';
 import { createPixelToggle, createPixelHintIcon } from './settings-ui.js';
 
-/**
- * @param {object} config
- * @param {(patch: object) => Promise<object>} saveConfig
- */
 export function buildMicTestPanel(config, saveConfig) {
   const wrap = document.createElement('div');
   wrap.className = 'mic-test-panel';

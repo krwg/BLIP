@@ -7,11 +7,6 @@ import {
   subscribeBandwidth,
 } from './bandwidth-monitor.js';
 
-/**
- * Pixel-style dual sparkline (down + up).
- * @param {HTMLElement} container
- * @param {{ height?: number, compact?: boolean }} [opts]
- */
 export function mountBandwidthSparkline(container, opts = {}) {
   const height = opts.height ?? 56;
   const canvas = document.createElement('canvas');
@@ -86,10 +81,6 @@ export function mountBandwidthSparkline(container, opts = {}) {
   return { canvas, refresh: draw, destroy: () => unsub() };
 }
 
-/**
- * Settings → Network bandwidth block (live bars + sparkline).
- * @param {HTMLElement} parent
- */
 export function appendBandwidthGraphSection(parent) {
   const wrap = document.createElement('div');
   wrap.className = 'settings-bandwidth-block';

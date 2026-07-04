@@ -111,7 +111,6 @@ textarea {
   border: 2px solid var(--blip-glass-border);
 }
 
-/* Electron/Chromium: backdrop-filter + isolation break hit-testing on clicks */
 .glass,
 .glass::before,
 .glass::after {
@@ -192,7 +191,6 @@ textarea {
   pointer-events: auto;
 }
 
-/* Title bar */
 .title-bar {
   display: flex;
   align-items: center;
@@ -249,7 +247,6 @@ textarea {
   color: var(--blip-on-accent);
 }
 
-/* Layout */
 .app-body {
   flex: 1;
   overflow: hidden;
@@ -320,7 +317,6 @@ textarea {
   width: 100%;
 }
 
-/* Buttons */
 .btn {
   padding: 8px 16px;
   border: 2px solid var(--blip-accent);
@@ -437,7 +433,6 @@ textarea {
   color: var(--blip-on-accent);
 }
 
-/* Inputs */
 .input {
   width: 100%;
   max-width: 280px;
@@ -510,7 +505,6 @@ select.blip-select:focus {
   color: var(--blip-text);
 }
 
-/* Typography */
 .section-title {
   margin: 0 0 8px;
   font-size: 16px;
@@ -526,7 +520,6 @@ select.blip-select:focus {
   margin: 0 0 16px;
 }
 
-/* ID Grid */
 .id-grid-wrap {
   display: flex;
   flex-direction: column;
@@ -664,7 +657,6 @@ select.blip-select:focus {
   transform: translateY(-50%) rotate(-45deg);
 }
 
-/* Dial */
 .dial-view {
   flex: 1;
   display: flex;
@@ -720,7 +712,6 @@ select.blip-select:focus {
   width: 100%;
 }
 
-/* Chat hub */
 .chat-hub-list {
   display: flex;
   flex-direction: column;
@@ -778,7 +769,6 @@ select.blip-select:focus {
   border: 2px solid var(--blip-bg);
 }
 
-/* Peers */
 .peers-subtitle {
   margin: 0 0 12px;
   max-width: 520px;
@@ -1110,7 +1100,6 @@ select.blip-select:focus {
   background: rgba(0, 255, 200, 0.15);
 }
 
-/* Screen share picker */
 .screen-picker-modal {
   width: min(92vw, 560px);
   max-height: 85vh;
@@ -1180,7 +1169,6 @@ select.blip-select:focus {
   white-space: nowrap;
 }
 
-/* Chat drag & drop */
 .chat-view--drag .chat-messages {
   outline: 2px dashed var(--blip-accent);
 }
@@ -1205,7 +1193,6 @@ select.blip-select:focus {
   display: none;
 }
 
-/* Groups */
 .group-create-modal {
   width: min(92vw, 420px);
   max-height: 80vh;
@@ -1517,7 +1504,6 @@ select.blip-select:focus {
   letter-spacing: 0.04em;
 }
 
-/* Chat */
 .chat-view {
   position: relative;
   display: flex;
@@ -1857,7 +1843,6 @@ select.blip-select:focus {
   max-width: none;
 }
 
-/* Avatar */
 .avatar-wrap {
   display: inline-block;
   image-rendering: pixelated;
@@ -1907,7 +1892,6 @@ select.blip-select:focus {
   image-rendering: auto;
 }
 
-/* Call overlay */
 .call-overlay {
   position: fixed;
   inset: 0;
@@ -2146,7 +2130,6 @@ select.blip-select:focus {
   display: none;
 }
 
-/* Local screen share only — full stage (not PiP camera tile) */
 .call-video-wrap--local-primary.call-video-wrap--stage .call-video.local.call-video--stage {
   position: relative;
   width: 100%;
@@ -2174,7 +2157,6 @@ select.blip-select:focus {
   display: none;
 }
 
-/* 1:1 screen share + remote camera — remote full stage, own stream PiP */
 .call-video-wrap--remote-primary.call-video-wrap--stage .call-video.local.call-video--stage {
   display: block;
   position: absolute;
@@ -2277,7 +2259,6 @@ select.blip-select:focus {
   display: none !important;
 }
 
-/* Signal lost */
 .signal-lost {
   padding: 32px;
   text-align: center;
@@ -2303,7 +2284,6 @@ select.blip-select:focus {
     linear-gradient(var(--blip-danger) 0 0) 65% 75% / 8px 16px no-repeat;
 }
 
-/* Context menu */
 .context-menu {
   position: fixed;
   z-index: 9500;
@@ -2329,7 +2309,6 @@ select.blip-select:focus {
   color: var(--blip-on-accent);
 }
 
-/* Settings */
 .settings-view {
   display: flex;
   flex-direction: column;
@@ -3223,7 +3202,6 @@ select.blip-select:focus {
   min-width: 68px;
 }
 
-/* In-app toast stack (bottom-right) */
 .toast-stack {
   position: fixed;
   bottom: 20px;
@@ -4415,8 +4393,6 @@ select.blip-select:focus {
   min-width: 120px;
 }
 
-/* Mesh label modal */
-/* Peer profile page */
 .peer-profile-view {
   display: flex;
   flex-direction: column;
@@ -4656,7 +4632,6 @@ select.blip-select:focus {
   image-rendering: pixelated;
 }
 
-/* Dashed rounded status chip (pixel ~4px radius) */
 .peer-profile-status-chip {
   display: inline-flex;
   align-items: center;
@@ -4792,7 +4767,6 @@ select.blip-select:focus {
   color: var(--blip-accent);
 }
 
-/* Private note (Steam / Discord style) */
 .peer-profile-note {
   display: flex;
   flex-direction: column;
@@ -4891,7 +4865,6 @@ select.blip-select:focus {
   }
 }
 
-/* Settings profile editor + preview */
 .settings-panel--profile {
   width: 100%;
   max-width: none;
@@ -5122,7 +5095,6 @@ select.blip-select:focus {
   image-rendering: auto;
 }
 
-/* Narrow app window: tiles down to 4:3 horizontal */
 @media (max-width: 960px) {
   .profile-gif-picker-grid {
     grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
@@ -5220,7 +5192,6 @@ select.blip-select:focus {
   transition: opacity 0.3s steps(1);
 }
 
-/* Error toast */
 .error-toast {
   position: fixed;
   bottom: 24px;
@@ -5239,7 +5210,6 @@ select.blip-select:focus {
   margin-bottom: 4px;
 }
 
-/* Chat hub — group invite cards */
 .chat-hub-invites-section {
   display: flex;
   flex-direction: column;
@@ -5294,7 +5264,6 @@ select.blip-select:focus {
   padding: 8px 10px;
 }
 
-/* Group community — channel sidebar + voice stage */
 .group-community {
   display: flex;
   gap: 8px;
@@ -5759,7 +5728,6 @@ select.blip-select:focus {
   margin-left: auto;
 }
 
-/* —— Chat media bubbles & viewer —— */
 .chat-media-bubble {
   display: block;
   position: relative;
@@ -6143,7 +6111,6 @@ body.media-viewer-open {
   transition: width 0.1s linear;
 }
 
-/* Pixel toggles & hint buttons */
 .pixel-toggle-row {
   display: flex;
   align-items: center;
@@ -6457,7 +6424,6 @@ body.media-viewer-open {
   text-align: center;
 }
 
-/* MESH+ badge — platinum plaque + gradient pixel label */
 .mesh-plus-badge {
   display: inline-flex;
   align-items: center;
@@ -6536,7 +6502,6 @@ body.media-viewer-open {
   align-self: center;
 }
 
-/* Settings → MESH+ */
 .settings-panel--mesh-plus {
   max-width: none;
   width: 100%;
@@ -6735,7 +6700,6 @@ body.media-viewer-open {
   letter-spacing: 0.04em;
 }
 
-/* Appearance → app icons */
 .settings-app-icon-grid {
   display: flex;
   flex-wrap: wrap;
@@ -7154,7 +7118,6 @@ body.media-viewer-open {
   width: 100%;
 }
 
-/* Scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -7172,7 +7135,6 @@ body.media-viewer-open {
   background: var(--blip-accent);
 }
 
-/* Pixel media / reply controls */
 .pixel-tri {
   display: inline-block;
   width: 0;
@@ -7290,7 +7252,6 @@ body.media-viewer-open {
   flex-direction: column;
 }
 
-/* Projects hub */
 .projects-hub-view {
   padding: 12px 16px;
   max-width: 720px;
@@ -7325,7 +7286,6 @@ body.media-viewer-open {
   color: var(--blip-accent);
 }
 
-/* Project tools */
 .proj-tool {
   flex: 1;
   display: flex;
@@ -7695,7 +7655,6 @@ body.media-viewer-open {
   align-items: center;
 }
 
-/* BLIP color picker (appearance + projects canvas) */
 .blip-color-input {
   position: relative;
   display: inline-flex;
@@ -7926,7 +7885,6 @@ body.media-viewer-open {
   pointer-events: none;
 }
 
-/* UI labels CAPS (inputs and chat body stay as typed) */
 #app :is(
     h1,
     h2,

@@ -1,10 +1,5 @@
 import { playTypingClick } from './audio.js';
 
-/**
- * Subtle local key click on chat composers (#30).
- * @param {HTMLElement} input
- * @param {() => object} getConfig
- */
 export function attachTypingSound(input, getConfig) {
   if (!input) return;
   input.addEventListener('keydown', (e) => {

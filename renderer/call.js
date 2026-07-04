@@ -20,7 +20,6 @@ let activeCall = null;
 let pendingCandidates = [];
 let pendingOffer = null;
 
-/** Plain SessionDescription for IPC / TCP (RTCSessionDescription may not JSON.stringify). */
 export function toSdpWire(desc) {
   if (!desc) return null;
   if (typeof desc.type === 'string' && typeof desc.sdp === 'string' && desc.sdp.length > 0) {
@@ -248,7 +247,6 @@ export function createCallUI(config, api, options = {}) {
   let pseudoFullscreen = false;
   let stateHeartbeat = null;
 
-  /** @type {'off'|'local'|'remote'|'both'} */
   let stageMode = 'off';
 
   function hasLiveVideo(stream) {
@@ -387,7 +385,7 @@ export function createCallUI(config, api, options = {}) {
           await window.blip.callWindowToggleFullScreen();
         }
       } catch {
-        /* ignore */
+
       }
     }
     if (!pseudoFullscreen && !document.fullscreenElement) return;
@@ -592,7 +590,7 @@ export function createCallUI(config, api, options = {}) {
       try {
         await outgoingAudioCtx.close();
       } catch {
-        /* ignore */
+
       }
       outgoingAudioCtx = null;
     }
@@ -798,7 +796,7 @@ export function createCallUI(config, api, options = {}) {
       const fresh = await api.getConfig?.();
       if (fresh?.[key]) return fresh[key];
     } catch {
-      /* ignore */
+
     }
     return config?.[key] || '';
   }
@@ -996,8 +994,7 @@ export function createCallUI(config, api, options = {}) {
       console.error('[call] outgoing:', err);
       hide();
     }
-    
-    // Очищаем входящий оффер при исходящем звонке
+
     incomingOffer = null;
   }
 
@@ -1086,7 +1083,6 @@ export function createCallUI(config, api, options = {}) {
     const from = Number(data.from);
     if (!from) return;
 
-    // Если уже есть активный звонок, игнорируем новый входящий
     if (pc || (incomingOffer && activeCall?.pending)) {
       return;
     }

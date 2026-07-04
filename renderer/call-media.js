@@ -1,4 +1,3 @@
-/** WebRTC capture constraints and sender tuning for BLIP calls. */
 
 export const STREAM_QUALITY_IDS = ['low', 'hd', 'fhd', 'max', 'qhd', 'uhd'];
 
@@ -74,19 +73,11 @@ export function getFullscreenPreset(config) {
   return PRESETS[normalizeFullscreenQuality(config)];
 }
 
-/** Target pixel frame for fullscreen theater (from settings). */
 export function getFullscreenDimensions(config) {
   const { screenMax } = getFullscreenPreset(config);
   return { width: screenMax.w, height: screenMax.h };
 }
 
-/**
- * Size the stage video to the configured fullscreen resolution (letterboxed on display).
- * @param {HTMLElement} wrap
- * @param {HTMLVideoElement | null} video
- * @param {object} config
- * @param {boolean} on
- */
 export function applyCallFullscreenLayout(wrap, video, config, on) {
   if (!wrap) return;
   if (!on) {
@@ -134,10 +125,8 @@ export function getScreenCaptureMandatory(config) {
   };
 }
 
-/** @deprecated use getCameraVideoConstraints(config) */
 export const CAMERA_VIDEO_CONSTRAINTS = PRESETS.fhd.camera;
 
-/** @deprecated use getScreenCaptureConstraints(config) */
 export const SCREEN_CAPTURE_CONSTRAINTS = { video: PRESETS.fhd.screen, audio: false };
 
 export function applyScreenTrackHints(track) {
@@ -145,7 +134,7 @@ export function applyScreenTrackHints(track) {
   try {
     if ('contentHint' in track) track.contentHint = 'detail';
   } catch {
-    /* ignore */
+
   }
 }
 
@@ -183,7 +172,7 @@ export async function tuneVideoSender(sender, { screenShare = false, config } = 
       enc.priority = 'high';
       enc.networkPriority = 'high';
     } catch {
-      /* optional RTP fields */
+
     }
     await sender.setParameters(params);
   } catch (err) {
@@ -191,7 +180,6 @@ export async function tuneVideoSender(sender, { screenShare = false, config } = 
   }
 }
 
-/** Heuristic: screen shares are usually HD landscape. */
 export function trackLooksLikeScreen(track) {
   const s = track?.getSettings?.();
   if (!s?.width || !s?.height) return false;

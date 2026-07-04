@@ -1,6 +1,3 @@
-/**
- * Rich link embeds (YouTube) for chat.
- */
 
 const URL_RE =
   /(?:https?:\/\/|www\.)[\w\-._~:/?#[\]@!$&'()*+,;=%]+/gi;
@@ -34,11 +31,6 @@ export function youtubeThumb(id) {
   return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
 }
 
-/**
- * @param {HTMLElement} parent
- * @param {{ id: string, url: string }} yt
- * @param {{ onPlay: (detail: object) => void }} handlers
- */
 export function appendYoutubeEmbed(parent, yt, { onPlay }) {
   const card = document.createElement('button');
   card.type = 'button';

@@ -58,7 +58,6 @@ function resolveGroupHost(msg) {
   return wireFrom(msg);
 }
 
-/** Original author (TCP `from` is always the socket peer after Handshake). */
 function messageAuthor(msg) {
   const a = msg.author ?? msg.originFrom;
   if (a != null && Number.isFinite(Number(a))) return Number(a);
@@ -97,7 +96,6 @@ function deliverGroupMessage(groupId, incoming, ctx, { bumpUnread = false } = {}
   return true;
 }
 
-/** Leave group locally and notify mesh. */
 export async function leaveGroup(api, config, groupId, statePeers) {
   const group = getGroup(groupId);
   if (!group) return { ok: false, error: 'not_found' };
@@ -143,7 +141,6 @@ export async function leaveGroup(api, config, groupId, statePeers) {
   return { ok: true };
 }
 
-/** Dissolve group (host only). */
 export async function dissolveGroup(api, config, groupId) {
   const group = getGroup(groupId);
   if (!group) return { ok: false, error: 'not_found' };
@@ -211,7 +208,6 @@ export async function createGroupFromUi(api, config, memberIds, name, seedPeerId
   return group;
 }
 
-/** Host failover only when the current host peer goes offline (not on every mesh pulse). */
 export function migrateGroupsHostOnPeerOffline(offlinePeerId, onlineIds, api, config) {
   const myId = Number(config.blipId);
   const offline = Number(offlinePeerId);
@@ -238,7 +234,6 @@ export function migrateGroupsHostOnPeerOffline(offlinePeerId, onlineIds, api, co
   }
 }
 
-/** Full mesh: sender pushes to every other member on existing TCP sockets. */
 export async function sendGroupChatMessage(api, config, groupId, msg) {
   const group = getGroup(groupId);
   if (!group) return { ok: false };

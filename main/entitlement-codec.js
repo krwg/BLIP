@@ -1,4 +1,3 @@
-/** BLIP entitlement key format — no Electron dependency (safe for Node keygen). */
 
 export const ENTITLEMENT_CANON = 'blip-meshplus-v1';
 const CROCKFORD = '0123456789ABCDEFGHJKMNPQRSTUVWXYZ';
@@ -9,7 +8,6 @@ function base32DecodeChar(c) {
   return i >= 0 ? i : -1;
 }
 
-/** @param {string} encoded */
 function base32Decode(encoded) {
   let bits = 0;
   let value = 0;
@@ -27,7 +25,6 @@ function base32Decode(encoded) {
   return Buffer.from(out);
 }
 
-/** @param {Buffer} buf */
 function base32Encode(buf) {
   let bits = 0;
   let value = 0;
@@ -44,13 +41,11 @@ function base32Encode(buf) {
   return out;
 }
 
-/** @param {string} body */
 function formatBlipKey(body) {
   const groups = body.match(/.{1,4}/g) || [];
   return `BLIP-${groups.join('-')}`;
 }
 
-/** @param {string} raw */
 export function normalizeEntitlementInput(raw) {
   if (!raw || typeof raw !== 'string') return null;
   let s = raw.trim().toUpperCase().replace(/\s+/g, '');
@@ -60,7 +55,6 @@ export function normalizeEntitlementInput(raw) {
   return s;
 }
 
-/** @param {string} raw */
 export function parseEntitlementBlob(raw) {
   const encoded = normalizeEntitlementInput(raw);
   if (!encoded) return null;
@@ -74,7 +68,6 @@ export function parseEntitlementBlob(raw) {
   };
 }
 
-/** @param {string} licenseId @param {string} sigB64 */
 export function formatEntitlementDisplay(licenseId, sigB64) {
   const idBuf = Buffer.from(licenseId, 'hex');
   if (idBuf.length !== 8) throw new Error('licenseId must be 16 hex chars');

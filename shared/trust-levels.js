@@ -1,4 +1,3 @@
-/** Local trust levels — main process is source of truth. */
 
 export const BUILD_TRUST = {
   VERIFIED_OFFICIAL: 'verified_official',

@@ -15,7 +15,7 @@ let getMainWindow = () => null;
 let getConfigRef = () => null;
 let listenersAttached = false;
 let retryingAfterStaleFeed = false;
-/** @type {string | null} */
+
 let activeFeedTag = null;
 
 export function isPortableInstall() {
@@ -25,7 +25,6 @@ export function isPortableInstall() {
   );
 }
 
-/** @param {object} [config] */
 export async function configureAutoUpdater(config) {
   if (!app.isPackaged || isPortableInstall()) return;
   await applyUpdateFeed(config);
@@ -85,17 +84,12 @@ function isUnsignedInstallerError(err) {
   );
 }
 
-/**
- * @param {object} [config]
- */
 async function applyUpdateFeed(config) {
   autoUpdater.allowPrerelease = false;
   autoUpdater.autoDownload = config?.autoDownloadUpdates !== false;
   autoUpdater.autoInstallOnAppQuit = config?.autoDownloadUpdates !== false;
   autoUpdater.disableDifferentialDownload = true;
 
-  // electron-updater ignores `false` — setter only applies truthy values (NsisUpdater.js).
-  // Unsigned GitHub installers must skip Authenticode verification explicitly.
   if (process.platform === 'win32') {
     autoUpdater.verifyUpdateCodeSignature = async () => null;
   }
@@ -179,10 +173,6 @@ function attachListeners() {
   );
 }
 
-/**
- * @param {() => import('electron').BrowserWindow | null} getWindow
- * @param {() => object | null} getConfig
- */
 export function setupAutoUpdater(getWindow, getConfig) {
   getMainWindow = getWindow;
   getConfigRef = getConfig;

@@ -32,14 +32,6 @@ function resolveTargets(mode, config, peers, activePeer) {
   return [];
 }
 
-/**
- * @param {{
- *   getConfig: () => object,
- *   getPeers: () => object[],
- *   getActivePeer: () => number | null,
- *   sendTcpMessage: (payload: object) => Promise<unknown>,
- * }} deps
- */
 export function startClipboardSync(deps) {
   stopClipboardSync();
   pollTimer = setInterval(() => {
@@ -84,19 +76,11 @@ async function pollClipboard(deps) {
         ts: Date.now(),
       });
     } catch {
-      /* peer offline */
+
     }
   }
 }
 
-/**
- * @param {object} msg
- * @param {{
- *   getConfig: () => object,
- *   getActivePeer: () => number | null,
- *   onApplied?: (from: number) => void,
- * }} ctx
- */
 export async function handleClipboardPush(msg, ctx) {
   const from = Number(msg.from);
   if (!Number.isFinite(from) || isBlocked(from)) return;
@@ -117,6 +101,6 @@ export async function handleClipboardPush(msg, ctx) {
     await navigator.clipboard.writeText(text);
     ctx.onApplied?.(from);
   } catch {
-    /* OS denied write */
+
   }
 }

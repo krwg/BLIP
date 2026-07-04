@@ -1,7 +1,3 @@
-/**
- * MESH+ feature gates — shared by main (enforce) and renderer (UI).
- * FREE baseline: signal/pulse FX, mesh/grid melodies, core animated + art backgrounds.
- */
 
 export const MESH_PLUS_FEATURES = {
   animated_bg: 'animated_bg',
@@ -30,41 +26,28 @@ const DEFAULTS = {
   uiMelodyPack: 'mesh',
 };
 
-/** @param {object} [cfg] */
 export function uiShowsPremiumTier(cfg) {
   return cfg?.meshPlusActive === true || cfg?.tier === 'mesh_plus';
 }
 
-/** @param {object} [cfg] */
 export function readTierFlag(cfg) {
   return cfg?.tier === 'mesh_plus';
 }
 
-/** @param {object} [cfg] */
 export function readEntitlementMarker(cfg) {
   return !!(cfg?.meshPlusLicenseId || cfg?.meshPlusLicenseMasked);
 }
 
-/** @param {object} [cfg] */
 export function readActiveEntitlement(cfg) {
   return cfg?.meshPlusActive === true;
 }
 
-/**
- * @param {object} [cfg]
- * @param {string} feature — MESH_PLUS_FEATURES.*
- */
 export function gateAllowsCapability(cfg, feature) {
   if (!readActiveEntitlement(cfg) || !readTierFlag(cfg)) return false;
   if (!uiShowsPremiumTier(cfg)) return false;
   return freeTierAllowsValue(cfg, feature, feature);
 }
 
-/**
- * @param {object} [cfg]
- * @param {string} feature
- * @param {string} [value]
- */
 export function freeTierAllowsValue(cfg, feature, value) {
   if (uiShowsPremiumTier(cfg)) return true;
   if (!value) return true;
@@ -80,7 +63,6 @@ export function freeTierAllowsValue(cfg, feature, value) {
   }
 }
 
-/** @param {object} config */
 export function premiumResetPatch(config) {
   if (!config || typeof config !== 'object') return null;
   const patch = {};

@@ -1,18 +1,14 @@
-/* MESH+ subscription trust (settings card, badges) */
 
-/* Legacy hooks — MESH+ settings uses pixel grid hero instead of flat gradient */
 .meshplus-official,
 .meshplus-unverified {
   background: transparent;
   box-shadow: none;
 }
 
-/* Official MESH PLUS — purple/cyan animated gradient on platinum plaque (see styles.css) */
 .mesh-plus-badge--trust-official .mesh-plus-badge__text {
   animation: mesh-plus-badge-gradient 3.2s ease-in-out infinite;
 }
 
-/* Unofficial subscription — platinum plaque, bright red gradient text (readable) */
 .mesh-plus-badge--trust-unverified {
   background: linear-gradient(
     180deg,
@@ -42,7 +38,7 @@
   background-clip: text;
   color: transparent;
   -webkit-text-fill-color: transparent;
-  /* filter + background-clip:text hides glyphs in Chromium — use text-shadow */
+
   filter: none;
   paint-order: stroke fill;
   text-shadow:
@@ -87,8 +83,6 @@
     background-position: 100% 50%;
   }
 }
-
-/* Settings → MESH+ pixel field (BLIP purple → cyan → mint) */
 
 .mesh-plus-hero {
   position: relative;
@@ -258,8 +252,6 @@
     background-position: 50% 50%;
   }
 }
-
-/* Settings → About: build trust (client), square notice */
 
 .settings-about-trust-notice {
   width: 100%;

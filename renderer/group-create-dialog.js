@@ -2,10 +2,6 @@ import { t } from './i18n.js';
 import { generateGroupId } from './groups.js';
 import { openAlertDialog } from './confirm-dialog.js';
 
-/**
- * @param {{ selfId: number, peers: Array<{ blipId: number, displayName?: string, online?: boolean }>, seedPeerId?: number }} opts
- * @returns {Promise<{ name: string, memberIds: number[] } | null>}
- */
 export function openGroupCreateDialog(opts) {
   const { selfId, peers, seedPeerId } = opts;
   const online = peers.filter((p) => p.online && p.blipId !== selfId);

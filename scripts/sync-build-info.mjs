@@ -1,7 +1,4 @@
-/**
- * Signs build/build-info.json for packaged official builds.
- * Uses scripts/.mesh-plus-private.b64 (same maintainer key as MESH+ keygen).
- */
+
 import { createHash, createPrivateKey, sign } from 'crypto';
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';

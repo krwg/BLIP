@@ -1,6 +1,4 @@
-/**
- * Prints files to attach when publishing a release manually (no GH_TOKEN).
- */
+
 import { existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 

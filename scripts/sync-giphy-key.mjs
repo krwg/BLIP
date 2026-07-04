@@ -1,7 +1,4 @@
-/**
- * Copies Giphy API key into build/giphy-api-key.txt for electron-builder extraResources.
- * Sources (first match): BLIP_GIPHY_API_KEY / GIPHY_API_KEY env, then ./giphy-api-key.local
- */
+
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';

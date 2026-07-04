@@ -15,7 +15,7 @@ export function createTcpServer(handlers, tcpPort = DEFAULT_TCP_PORT) {
       try {
         socket.destroy();
       } catch {
-        /* ignore */
+
       }
     });
 
@@ -27,7 +27,7 @@ export function createTcpServer(handlers, tcpPort = DEFAULT_TCP_PORT) {
             const msg = JSON.parse(line);
             handlers.onMessage(msg, socket, remoteIp);
           } catch {
-            /* ignore malformed */
+
           }
         }
       } catch (e) {
@@ -37,7 +37,7 @@ export function createTcpServer(handlers, tcpPort = DEFAULT_TCP_PORT) {
         try {
           socket.destroy();
         } catch {
-          /* ignore */
+
         }
       }
     });
@@ -54,7 +54,7 @@ export function createTcpServer(handlers, tcpPort = DEFAULT_TCP_PORT) {
       try {
         socket.destroy();
       } catch {
-        /* ignore */
+
       }
     });
   });

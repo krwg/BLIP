@@ -1,6 +1,4 @@
-/** Per-group voice channel presence (main window). */
 
-/** @type {Map<string, { active: boolean, participants: Set<number> }>} */
 const byChannel = new Map();
 
 function key(groupId, channelId) {
@@ -40,10 +38,6 @@ function setChannel(groupId, channelId, participantIds, active) {
   dispatchVoiceChannelState(groupId, channelId);
 }
 
-/**
- * Merge roster updates (join broadcasts are partial per peer).
- * @param {object} msg — TCP voice-ch-roster
- */
 export function applyVoiceChRosterFromTcp(msg) {
   const k = key(msg.groupId, msg.channelId);
   const incoming = (msg.participants || []).map(peerNum).filter(Number.isFinite);

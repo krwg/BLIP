@@ -1,17 +1,12 @@
-/**
- * Rolling LAN throughput samples (BEACON + file transfer).
- */
 
 const HISTORY_LEN = 60;
 const TICK_MS = 1000;
 
-/** @type {{ downBps: number, upBps: number, t: number }[]} */
 const history = [];
 let currentDownBps = 0;
 let currentUpBps = 0;
 let tickTimer = null;
 
-/** @type {Set<() => void>} */
 const listeners = new Set();
 
 function emit() {
@@ -56,7 +51,6 @@ export function getBandwidthHistory() {
   return [...history];
 }
 
-/** Peak combined bps in history (for graph scale). */
 export function getBandwidthHistoryPeak() {
   let peak = 1;
   for (const s of history) {

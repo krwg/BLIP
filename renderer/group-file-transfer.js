@@ -10,7 +10,6 @@ import {
 import { sendChatFile, fileToDataUrl } from './file-transfer.js';
 import { addGroupMessage, updateGroupMessageAttachment } from './groups.js';
 
-/** @type {Map<string, object>} */
 const stashedReady = new Map();
 
 function stashKey(groupId, msgId) {
@@ -35,10 +34,6 @@ export function completeIncomingGroupFile(groupId, msgId, attachment) {
   return ok;
 }
 
-/**
- * Send a file in a group (inline in group-msg or chunked P2P to each member).
- * @param {(msg: object) => Promise<void>} broadcastMsg
- */
 export async function sendGroupChatFile(api, config, group, file, broadcastMsg, hooks = {}) {
   const { onProgress, onPeerStart, onPeerEnd } = hooks;
   if (!group || !file) return { ok: false };

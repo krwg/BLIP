@@ -1,7 +1,4 @@
-/**
- * Runs electron-builder; ignores CSC_LINK / WIN_CSC_LINK when the path is missing
- * (e.g. leftover placeholder C:\path\to\krwg.pfx from docs).
- */
+
 import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 

@@ -18,10 +18,6 @@ const CAROUSEL_SLIDES = [
   { icon: '◎', titleKey: 'mesh_plus.slide_relay', descKey: 'mesh_plus.slide_relay_desc' },
 ];
 
-/**
- * @param {object} state
- * @param {() => void} onConfigChange
- */
 export function buildSettingsMeshPlusPanel(state, onConfigChange) {
   const frag = document.createElement('div');
   frag.className = 'settings-panel settings-panel--mesh-plus';

@@ -1,7 +1,4 @@
-/**
- * electron-builder afterPack — obfuscate MESH+ license modules in the packaged app.
- * @param {import('electron-builder').AfterPackContext} context
- */
+
 const { readFileSync, writeFileSync, existsSync } = require('fs');
 const { join } = require('path');
 const JavaScriptObfuscator = require('javascript-obfuscator');

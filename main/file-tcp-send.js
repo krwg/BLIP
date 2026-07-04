@@ -5,12 +5,6 @@ import { MAX_TCP_LINE_BYTES } from './tcp-framing.js';
 const CHUNK_RAW_BYTES = 1024 * 1024;
 const CHUNKS_PER_BATCH = 2;
 
-/**
- * Stream a file from disk to a peer over TCP (main process — no renderer FileReader).
- * @param {import('net').Socket} socket
- * @param {number} fromBlipId
- * @param {object} opts
- */
 export async function sendFileFromPathOnSocket(socket, fromBlipId, opts) {
   const {
     filePath,

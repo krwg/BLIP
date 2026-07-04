@@ -4,11 +4,6 @@ import { computeGifFramePx } from './gif-frame-size.js';
 const CROP_MAX_W = 400;
 const CROP_MAX_H = 225;
 
-/**
- * Preview positioning for profile GIF cloud. Returns true if user confirmed.
- * @param {File} file
- * @returns {Promise<boolean>}
- */
 export function openGifCropDialog(file) {
   const isGif =
     file.type === 'image/gif' || /\.gif$/i.test(file.name || '');

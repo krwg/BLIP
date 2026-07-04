@@ -1,6 +1,4 @@
-/**
- * Mesh Labels — local-only nicknames for peers (never sent over the network).
- */
+
 const STORAGE_KEY = 'blip_mesh_labels_v1';
 
 function loadMap() {
@@ -41,7 +39,6 @@ export function clearMeshLabel(peerId) {
   setMeshLabel(peerId, '');
 }
 
-/** Display name for UI: mesh label → LAN display name → BLIP-ID */
 export function formatPeerDisplayName(peer, peerId = peer?.blipId) {
   const label = getMeshLabel(peerId);
   if (label) return label;

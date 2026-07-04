@@ -1,4 +1,4 @@
-/** @param {unknown} arr */
+
 export function normalizePeerIdList(arr) {
   if (!Array.isArray(arr)) return [];
   return [

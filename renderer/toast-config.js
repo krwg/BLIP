@@ -1,4 +1,3 @@
-/** Global default toast duration from user config (ms). */
 
 let defaultToastMs = 9000;
 
@@ -7,7 +6,6 @@ export function setDefaultToastDurationMs(ms) {
   defaultToastMs = Number.isFinite(n) ? Math.max(2000, Math.min(60000, Math.round(n))) : 9000;
 }
 
-/** @param {number | undefined} overrideMs explicit per-toast duration */
 export function resolveToastDurationMs(overrideMs) {
   if (overrideMs != null && Number.isFinite(Number(overrideMs))) {
     const n = Number(overrideMs);

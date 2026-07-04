@@ -38,7 +38,7 @@ export function setAvatarSeed(blipId, seed) {
     o[String(blipId)] = seed;
     localStorage.setItem(SEED_KEY, JSON.stringify(o));
   } catch {
-    /* ignore */
+
   }
 }
 
@@ -93,7 +93,7 @@ function writePeerAvatars(map) {
   try {
     localStorage.setItem(PEER_AVATAR_KEY, JSON.stringify(map));
   } catch {
-    /* quota */
+
   }
 }
 
@@ -118,7 +118,7 @@ export function setSelfAvatarCache(dataUrl) {
     if (dataUrl) localStorage.setItem(SELF_AVATAR_KEY, dataUrl);
     else localStorage.removeItem(SELF_AVATAR_KEY);
   } catch {
-    /* ignore */
+
   }
 }
 
@@ -161,11 +161,6 @@ function appendImageAvatar(wrap, dataUrl, scale) {
   wrap.appendChild(img);
 }
 
-/**
- * @param {number} blipId
- * @param {number} [scale]
- * @param {{ selfBlipId?: number | null }} [opts]
- */
 export function createAvatarElement(blipId, scale = 4, opts = {}) {
   const wrap = document.createElement('div');
   wrap.className = 'avatar-wrap';
@@ -181,7 +176,6 @@ export function createAvatarElement(blipId, scale = 4, opts = {}) {
   return wrap;
 }
 
-/** Resize image file to JPEG data URL (max ~48KB for LAN share). */
 export function fileToAvatarDataUrl(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();

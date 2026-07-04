@@ -4,9 +4,8 @@ import { formatTransferSpeed } from './file-transfer-speed.js';
 
 const AUTO_CLEAR_MS = 5000;
 
-/** @type {Map<string, object>} */
 const active = new Map();
-/** @type {Map<string, ReturnType<typeof setTimeout>>} */
+
 const autoClearTimers = new Map();
 let rootEl = null;
 let listEl = null;

@@ -1,12 +1,7 @@
-/** Horizontal frame: default 16:9, minimum width:height 4:3. */
+
 export const GIF_FRAME_MAX_AR = 16 / 9;
 export const GIF_FRAME_MIN_AR = 4 / 3;
 
-/**
- * @param {number} imgWidth
- * @param {number} imgHeight
- * @returns {number} width / height
- */
 export function clampGifAspectRatio(imgWidth, imgHeight) {
   const w = Math.max(1, imgWidth);
   const h = Math.max(1, imgHeight);
@@ -14,14 +9,6 @@ export function clampGifAspectRatio(imgWidth, imgHeight) {
   return Math.min(GIF_FRAME_MAX_AR, Math.max(GIF_FRAME_MIN_AR, ar));
 }
 
-/**
- * Fit a horizontal GIF frame inside max bounds.
- * @param {number} imgWidth
- * @param {number} imgHeight
- * @param {number} maxW
- * @param {number} maxH
- * @returns {{ w: number, h: number, ar: number }}
- */
 export function computeGifFramePx(imgWidth, imgHeight, maxW, maxH) {
   const ar = clampGifAspectRatio(imgWidth, imgHeight);
   let w = maxW;

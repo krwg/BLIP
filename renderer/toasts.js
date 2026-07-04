@@ -1,6 +1,3 @@
-/**
- * Bottom-right in-app toast stack (messages, updates, hints).
- */
 
 import { resolveToastDurationMs } from './toast-config.js';
 
@@ -58,7 +55,7 @@ function bindSwipeDismiss(el, dismiss) {
     try {
       el.releasePointerCapture(e.pointerId);
     } catch {
-      /* ignore */
+
     }
     const dx = e.clientX - startX;
     if (dx >= SWIPE_DISMISS_PX) {
@@ -72,16 +69,6 @@ function bindSwipeDismiss(el, dismiss) {
   el.addEventListener('pointercancel', endSwipe);
 }
 
-/**
- * @param {{
- *   title: string,
- *   body?: string,
- *   variant?: 'accent' | 'danger' | 'muted',
- *   durationMs?: number,
- *   dismissible?: boolean,
- *   actions?: Array<{ label: string, onClick: () => void, primary?: boolean }>,
- * }} opts
- */
 export function showAppToast(opts) {
   const {
     title,

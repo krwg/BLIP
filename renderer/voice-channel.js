@@ -1,6 +1,4 @@
-/**
- * Voice channels — star topology: all media flows through group host (mixer + forward).
- */
+
 import { t } from './i18n.js';
 import { sounds } from './audio.js';
 import { showAppToast } from './toasts.js';
@@ -24,17 +22,15 @@ const ICE = [];
 
 let clientConnectInFlight = false;
 
-/** @type {Map<number, RTCPeerConnection>} */
 const hostPeers = new Map();
-/** @type {Map<number, RTCIceCandidateInit[]>} */
+
 const hostPendingIce = new Map();
 
 let clientPc = null;
 let clientPendingIce = [];
 
-/** @type {Map<number, RTCPeerConnection>} */
 const meshPeers = new Map();
-/** @type {Map<number, RTCIceCandidateInit[]>} */
+
 const meshPendingIce = new Map();
 
 let localStream = null;
@@ -48,30 +44,25 @@ let activeChannelId = null;
 let apiRef = null;
 let configRef = null;
 
-/** @type {Map<number, { muted: boolean; deafened: boolean; screenSharing: boolean }>} */
 const peerMediaState = new Map();
 
 let audioCtx = null;
-/** @type {Map<number, MediaStreamTrack>} */
+
 const mixerTracks = new Map();
 
-/** Silent track for mix-minus gaps (never send raw local mic as "mix"). */
 let silentAudioCtx = null;
 let silentOscillator = null;
 let silentTrack = null;
 
-/** @type {Map<number, HTMLAudioElement>} */
 const peerAudioEls = new Map();
 
 let heartbeatTimer = null;
 let stageRefresh = null;
 
-/** @type {Map<number, { type: string, sdp: string }>} */
 const pendingHostOffers = new Map();
-/** @type {Set<number>} */
+
 const hostOfferInFlight = new Set();
 
-/** @type {Map<number, MediaStream>} */
 const peerVideoStreams = new Map();
 
 let localScreenPreview = null;
@@ -113,7 +104,6 @@ function isOwnAudioTrack(track) {
   return !!(local && track.id === local.id);
 }
 
-/** Drop loopback of our own sender track on a PeerConnection. */
 function isPcLoopbackTrack(track, pc) {
   if (!track || !pc) return false;
   if (isOwnAudioTrack(track)) return true;
@@ -144,7 +134,7 @@ function stopSilentTrack() {
   try {
     silentOscillator?.stop();
   } catch {
-    /* ignore */
+
   }
   silentOscillator = null;
   silentTrack = null;
@@ -250,7 +240,6 @@ function registerHostMicInMixer() {
   registerTrackInMixer(myId(), track);
 }
 
-/** Mix of all participants except excludePeerId (SFU mix-minus-self). */
 function buildMixMinusTrack(excludePeerId) {
   ensureMixer();
   const ex = peerNum(excludePeerId);
@@ -285,7 +274,6 @@ function mixerSourceCount(excludePeerId) {
   return n;
 }
 
-/** Outbound audio to a peer (host → client). Uses raw mic for 1:1 mix; WebAudio mix for 3+. */
 function getOutboundAudioTrack(forPeerId) {
   const mic = localStream?.getAudioTracks()?.[0];
   if (mixerSourceCount(forPeerId) <= 1) {
@@ -361,7 +349,6 @@ function wireRemoteTrackPlayback(track, audioEl) {
   }
 }
 
-/** Same playback path as 1:1 call — direct <audio>, no WebAudio mixer (avoids host self-monitor). */
 function playRemoteStream(peerId, stream, pc) {
   const n = peerNum(peerId);
   const tracks = (stream?.getAudioTracks?.() || []).filter(
@@ -417,7 +404,7 @@ async function flushHostIce(peerId, pc) {
     try {
       await pc.addIceCandidate(c);
     } catch {
-      /* ignore */
+
     }
   }
   hostPendingIce.delete(peerId);
@@ -429,7 +416,7 @@ async function flushClientIce(pc) {
     try {
       await pc.addIceCandidate(c);
     } catch {
-      /* ignore */
+
     }
   }
   clientPendingIce = [];
@@ -597,7 +584,7 @@ async function flushMeshIce(peerId, pc) {
     try {
       await pc.addIceCandidate(c);
     } catch {
-      /* ignore */
+
     }
   }
   meshPendingIce.delete(peerId);
@@ -861,7 +848,7 @@ export async function leaveVoiceChannel() {
     try {
       await audioCtx.close();
     } catch {
-      /* ignore */
+
     }
     audioCtx = null;
     mixerTracks.clear();
@@ -1080,7 +1067,7 @@ export async function handleVoiceChSignal(msg, api, config) {
       try {
         await pc.addIceCandidate(cand);
       } catch {
-        /* ignore */
+
       }
     } else if (clientPc) {
       if (!clientPc.remoteDescription) {
@@ -1090,7 +1077,7 @@ export async function handleVoiceChSignal(msg, api, config) {
       try {
         await clientPc.addIceCandidate(cand);
       } catch {
-        /* ignore */
+
       }
     } else if (meshPeers.get(remoteId)) {
       const pc = meshPeers.get(remoteId);
@@ -1103,7 +1090,7 @@ export async function handleVoiceChSignal(msg, api, config) {
       try {
         await pc.addIceCandidate(cand);
       } catch {
-        /* ignore */
+
       }
     }
   }

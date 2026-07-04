@@ -1,12 +1,6 @@
-/** Per-socket serialized writes so parallel IPC handlers cannot interleave JSON lines. */
 
-/** @type {WeakMap<import('net').Socket, { tail: Promise<void> }>} */
 const queues = new WeakMap();
 
-/**
- * @param {import('net').Socket} socket
- * @param {object} payload
- */
 export function sendOnSocketQueued(socket, payload) {
   if (!socket || socket.destroyed) {
     return Promise.reject(new Error('Socket not available'));

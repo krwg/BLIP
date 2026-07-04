@@ -1,6 +1,3 @@
-/**
- * Theme mode (light / dark / auto) + color accent + backgrounds.
- */
 
 import { t } from './i18n.js';
 import { uiShowsPremiumTier } from '../shared/mesh-plus-gates.js';
@@ -26,10 +23,8 @@ export const ACCENT_IDS = [
   'gold',
 ];
 
-/** CSS-animated (themes.css). */
 export const ANIMATED_BACKGROUNDS = ['none', 'beacon', 'depths', 'signal', 'ember', 'rift'];
 
-/** Art layers (wallpaper-art.css). */
 export const STATIC_ART_BACKGROUNDS = ['none', 'skyline', 'bloom', 'horizon', 'void', 'dusk'];
 
 export const ALL_BACKGROUNDS = [...ANIMATED_BACKGROUNDS, ...STATIC_ART_BACKGROUNDS.filter((id) => id !== 'none')];
@@ -127,10 +122,6 @@ export function labelBg(id) {
   return label === key ? id : label;
 }
 
-/**
- * @param {string} raw
- * @returns {string} #rrggbb or ''
- */
 export function normalizeCustomAccentHex(raw) {
   const s = String(raw || '').trim();
   if (/^#[0-9A-Fa-f]{6}$/.test(s)) return s.toLowerCase();
@@ -178,7 +169,6 @@ function clampScale(n, min, max, fallback = 1) {
   return Math.min(max, Math.max(min, v));
 }
 
-/** Density + font scales (#21, #22). */
 export function applyUiPreferences(config) {
   const html = document.documentElement;
   const density = config?.uiDensity === 'compact' ? 'compact' : 'comfortable';

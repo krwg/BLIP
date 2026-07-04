@@ -1,14 +1,14 @@
 appId: com.blip.messenger
 productName: BLIP
-copyright: Copyright © 2026 Floke Studio
+copyright: Copyright © 2026 krwg
 extraMetadata:
-  CompanyName: Floke Studio
+  CompanyName: krwg
   FileDescription: BLIP — P2P LAN Messenger
   ProductName: BLIP
-  LegalCopyright: Copyright © 2026 Floke Studio
+  LegalCopyright: Copyright © 2026 krwg
 publish:
   - provider: github
-    owner: FlokeStudio
+    owner: krwg
     repo: BLIP
     releaseType: release
 directories:
@@ -40,7 +40,7 @@ extraResources:
 win:
   icon: icon.ico
   # Display name for unsigned installers; Authenticode subject may still read krwg on older signed builds.
-  publisherName: Floke Studio
+  publisherName: krwg
   legalTrademarks: BLIP
   target:
     - nsis

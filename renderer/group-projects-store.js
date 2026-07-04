@@ -1,11 +1,5 @@
 import { ensureGroupChannels } from './groups.js';
 
-/** @typedef {{ text: string, updatedAt: number, from: number }} PadState */
-/** @typedef {{ id: string, text: string, status: 'todo'|'progress'|'done', assignee: number|null }} BoardCard */
-/** @typedef {{ cards: BoardCard[] }} BoardState */
-/** @typedef {{ w: number, h: number, cells: string[] }} CanvasState */
-/** @typedef {{ id: string, text: string, from: number, ts: number }} ClipEntry */
-
 const pads = new Map();
 const boards = new Map();
 const canvases = new Map();
@@ -14,7 +8,7 @@ const clips = new Map();
 const CANVAS_W = 32;
 const CANVAS_H = 16;
 export const CLIP_MAX_FREE = 20;
-/** Practical cap for MESH+ clipboard board (effectively unlimited vs FREE). */
+
 export const CLIP_MAX_MESH_PLUS = 500;
 
 export function resetMeshProjectStores() {
@@ -70,7 +64,6 @@ export function setCanvasPixel(groupId, x, y, color) {
   emit(groupId, 'canvas');
 }
 
-/** After bulk canvas edits (e.g. fill). */
 export function notifyCanvasChanged(groupId) {
   emit(groupId, 'canvas');
 }
@@ -88,11 +81,6 @@ export function pushClipEntry(groupId, entry, maxEntries = CLIP_MAX_FREE) {
   emit(groupId, 'clipboard');
 }
 
-/**
- * @param {string} groupId
- * @param {string} entryId
- * @returns {boolean}
- */
 export function removeClipEntry(groupId, entryId) {
   const st = getClipState(groupId);
   const before = st.entries.length;

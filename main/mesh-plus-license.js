@@ -14,7 +14,6 @@ export {
   formatEntitlementDisplay,
 };
 
-/** @param {{ licenseId: string, sigB64: string }} parsed */
 export function verifyEntitlementDigest(parsed) {
   if (!parsed?.licenseId || !parsed.sigB64) return false;
   const pub = TRUST_ANCHOR_B64;
@@ -23,7 +22,6 @@ export function verifyEntitlementDigest(parsed) {
   return verifyCanonical(pub, canonical, parsed.sigB64);
 }
 
-/** @param {object} config */
 export function resolveEntitlementState(config) {
   if (!config?.meshPlusLicenseId || !config?.meshPlusLicenseSig) return false;
   return verifyEntitlementDigest({
@@ -32,12 +30,10 @@ export function resolveEntitlementState(config) {
   });
 }
 
-/** @returns {'free' | 'mesh_plus'} */
 export function resolveProductTier(config) {
   return resolveEntitlementState(config) ? 'mesh_plus' : 'free';
 }
 
-/** @param {string} rawKey */
 export function confirmEntitlementBlob(rawKey) {
   const parsed = parseEntitlementBlob(rawKey);
   if (!parsed) {

@@ -1,10 +1,6 @@
 import { buildProfileCard } from './profile-card.js';
 import { getPeerProfileGifDisplayUrl } from './peer-gif-cache.js';
 
-/**
- * @param {object} peer
- * @param {object} hooks
- */
 export function buildPeerProfilePage(peer, hooks = {}) {
   return buildProfileCard(peer, {
     ...hooks,

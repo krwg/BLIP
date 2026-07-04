@@ -12,7 +12,7 @@ async function safeSend(api, payload) {
   try {
     await api.sendTcpMessage(payload);
   } catch {
-    /* offline */
+
   }
 }
 

@@ -8,12 +8,6 @@ export function unregisterGlobalShortcuts() {
   active = false;
 }
 
-/**
- * @param {object} opts
- * @param {boolean} [opts.enabled]
- * @param {() => import('electron').BrowserWindow | null} opts.getMainWindow
- * @param {() => import('electron').BrowserWindow | null} opts.getCallWindow
- */
 export function registerGlobalShortcuts({ enabled = true, getMainWindow, getCallWindow }) {
   unregisterGlobalShortcuts();
   if (enabled === false) return;

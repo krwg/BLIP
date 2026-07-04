@@ -1,13 +1,6 @@
-/**
- * .blip seed descriptor files (torrent-style magnet for BEACON).
- */
 
 const BLIP_SEED_V = 1;
 
-/**
- * @param {object} meta
- * @returns {string}
- */
 export function serializeBlipSeedFile(meta) {
   const seedId = String(meta?.seedId || '').trim();
   const doc = {
@@ -23,10 +16,6 @@ export function serializeBlipSeedFile(meta) {
   return `# BLIP Seed\n${JSON.stringify(doc, null, 2)}\n`;
 }
 
-/**
- * @param {string} raw
- * @returns {{ seedId: string, filename: string, size: number, chunkSize: number, totalChunks: number, link: string } | null}
- */
 export function parseBlipSeedFile(raw) {
   const text = String(raw || '').trim();
   if (!text) return null;
@@ -52,10 +41,6 @@ export function parseBlipSeedFile(raw) {
   };
 }
 
-/**
- * @param {object} meta
- * @param {string} [suggestedName]
- */
 export function downloadBlipSeedFile(meta, suggestedName) {
   const seedId = String(meta?.seedId || '').trim();
   const base = String(suggestedName || meta?.filename || 'seed')

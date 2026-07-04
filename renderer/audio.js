@@ -1,7 +1,3 @@
-/**
- * BLIP UI sounds — Web Audio chiptune synthesis (no sample files).
- * Two FX packs (signal / pulse) and two melody packs (mesh / grid).
- */
 
 let audioCtx = null;
 let soundsEnabled = true;
@@ -31,7 +27,6 @@ export const MELODY_PREVIEW_KEYS = [
   'callEnd',
 ];
 
-/** @deprecated use SOUND_PREVIEW_KEYS / MELODY_PREVIEW_KEYS */
 export const PREVIEW_KEYS = [...SOUND_PREVIEW_KEYS, ...MELODY_PREVIEW_KEYS];
 
 const N = {
@@ -327,7 +322,6 @@ export function setSoundPrefs({ enabled, volume, soundPack, melodyPack } = {}) {
   if (melodyPack) melodyPackId = normalizePack(melodyPack, MELODY_PACK_IDS, 'mesh');
 }
 
-/** Resume AudioContext after user gesture (required in Chromium). */
 export async function ensureAudioReady() {
   const ctx = getCtx();
   if (ctx.state === 'suspended') {
@@ -538,7 +532,6 @@ export const SOUND_CATALOG = new Proxy(
   }
 );
 
-/** Preview one cue (ignores “UI sounds off”; uses current volume). */
 export async function preview(name) {
   const ready = await ensureAudioReady();
   if (!ready) return false;
@@ -636,7 +629,6 @@ export const sounds = {
   ensureAudioReady,
 };
 
-/** Local composer click (#30) — ignores global uiSoundsEnabled. */
 export async function playTypingClick() {
   const ready = await ensureAudioReady();
   if (!ready) return;

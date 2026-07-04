@@ -83,11 +83,6 @@ function hexToRgb(hex) {
   };
 }
 
-/**
- * @param {number} peerId
- * @param {string} displayName
- * @param {{ themed?: boolean, config?: object }} [opts]
- */
 export async function exportPeerChatPdf(peerId, displayName, opts = {}) {
   const { jsPDF } = await import('jspdf');
   const msgs = getMessages(peerId);
@@ -161,11 +156,6 @@ export async function exportPeerChatPdf(peerId, displayName, opts = {}) {
   doc.save(`blip-${peerId}-chat${suffix}.pdf`);
 }
 
-/**
- * @param {number} peerId
- * @param {string} displayName
- * @param {{ config?: object }} [opts]
- */
 export function exportPeerChatHtml(peerId, displayName, opts = {}) {
   const payload = buildChatExportPayload(peerId, displayName);
   const accent = resolveThemedAccent(opts.config);

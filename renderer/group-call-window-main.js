@@ -13,7 +13,7 @@ import { setSoundPrefs } from './audio.js';
 import { setLocalTrustState } from './trust-ui.js';
 
 let appearanceRm = null;
-/** @type {Map<number, object>} */
+
 let lanPeersById = new Map();
 
 const api = {

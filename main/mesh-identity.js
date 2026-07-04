@@ -129,7 +129,7 @@ export function verifyHandshakePacket(msg, expectedFrom) {
 
 export function signAnnouncePayload(payload) {
   const canonical = announceCanonical(payload);
-  return { canonical, sig: null }; // sig filled by caller with config
+  return { canonical, sig: null };
 }
 
 export function verifyAnnouncePayload(data) {
@@ -153,7 +153,6 @@ export function verifyAnnouncePayload(data) {
   return { ok: true, meshPubkey };
 }
 
-/** @param {object} config */
 export function rememberPeerPubkey(config, blipId, meshPubkey) {
   if (!meshPubkey) return config;
   const known = { ...(config.knownPeerKeys || {}) };

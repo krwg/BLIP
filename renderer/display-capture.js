@@ -1,10 +1,5 @@
 import { getScreenCaptureConstraints, getScreenCaptureMandatory } from './call-media.js';
 
-/**
- * Capture a picked desktopCapturer source in Electron (reliable vs getDisplayMedia handler).
- * @param {string} sourceId
- * @returns {Promise<MediaStream>}
- */
 export async function captureDisplayStream(sourceId, config, { withAudio = false } = {}) {
   if (!sourceId || typeof sourceId !== 'string') {
     throw new Error('no_source');

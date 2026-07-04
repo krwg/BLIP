@@ -1,4 +1,4 @@
-/** Achievement SVG assets (bundled by Vite). */
+
 import first_peer from '../ach-icons/first_peer.svg?url';
 import mesh_5 from '../ach-icons/mesh_5.svg?url';
 import messages_50 from '../ach-icons/messages_50.svg?url';
@@ -10,7 +10,6 @@ import mesh_plus_active from '../ach-icons/mesh_plus_active.svg?url';
 import beta_tester from '../ach-icons/beta_tester.svg?url';
 import unofficial_build from '../ach-icons/unofficial_build.svg?url';
 
-/** @type {Record<string, string>} */
 export const ACHIEVEMENT_ICON_BY_ID = {
   first_peer,
   mesh_5,

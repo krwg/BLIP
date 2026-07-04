@@ -1,6 +1,4 @@
-/**
- * In-app media lightbox — images, video, YouTube. Pixel controls + share/download.
- */
+
 import { t } from './i18n.js';
 import { youtubeThumb } from './link-embed.js';
 
@@ -17,7 +15,7 @@ async function readVideoVolume() {
     const v = Number(cfg?.videoVolume);
     if (Number.isFinite(v)) return Math.min(1, Math.max(0, v));
   } catch {
-    /* ignore */
+
   }
   return 1;
 }
@@ -214,7 +212,7 @@ function ensureRoot() {
           await navigator.share({ title, url });
           return;
         } catch {
-          /* fall through */
+
         }
       }
       if (window.blip?.openExternal) void window.blip.openExternal(url);
@@ -225,7 +223,7 @@ function ensureRoot() {
         await navigator.share({ title, text: title, url: state.src });
         return;
       } catch {
-        /* ignore */
+
       }
     }
     await downloadCurrent();
@@ -292,7 +290,6 @@ function ensureRoot() {
   return root;
 }
 
-/** Mount viewer DOM once at boot so first play/open is instant. */
 export function initMediaViewer() {
   ensureRoot();
 }

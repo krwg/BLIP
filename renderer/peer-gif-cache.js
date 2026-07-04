@@ -1,8 +1,8 @@
-/** @type {Set<number>} peers with a display URL ready */
+
 const peerGifReady = new Set();
-/** @type {Map<number, string>} data: or blob: URL for <img src> */
+
 const peerGifDisplayById = new Map();
-/** @type {Map<number, Promise<boolean>>} in-flight ingest per peer */
+
 const peerGifIngestPending = new Map();
 
 const MAX_INGEST_CHARS = 4_000_000;
@@ -19,7 +19,7 @@ function revokeDisplayUrl(id) {
     try {
       URL.revokeObjectURL(prev);
     } catch {
-      /* ignore */
+
     }
   }
   peerGifDisplayById.delete(id);
@@ -30,12 +30,6 @@ function isValidProfileGifDataUrl(raw) {
   return typeof raw === 'string' && raw.length > 0 && raw.length <= MAX_INGEST_CHARS && DATA_URL_RE.test(raw);
 }
 
-/**
- * Store LAN data URL for profile cloud (direct <img src> — reliable for multi‑MB GIFs).
- * @param {number} blipId
- * @param {string | null} dataUrl
- * @returns {Promise<boolean>}
- */
 export async function ingestPeerProfileGifDataUrl(blipId, dataUrl) {
   const id = normalizeId(blipId);
   if (id == null) return false;
@@ -73,12 +67,10 @@ export async function ingestPeerProfileGifDataUrl(blipId, dataUrl) {
   }
 }
 
-/** @param {number} blipId @param {string | null} dataUrl */
 export function setPeerProfileGifDataUrl(blipId, dataUrl) {
   void ingestPeerProfileGifDataUrl(blipId, dataUrl);
 }
 
-/** @deprecated alias — use {@link getPeerProfileGifDisplayUrl} */
 export function getPeerProfileGifDataUrl(blipId) {
   return getPeerProfileGifDisplayUrl(blipId);
 }
@@ -88,14 +80,12 @@ export function isPeerProfileGifIngesting(blipId) {
   return id != null && peerGifIngestPending.has(id);
 }
 
-/** @param {number} blipId */
 export function getPeerProfileGifDisplayUrl(blipId) {
   const id = normalizeId(blipId);
   if (id == null) return null;
   return peerGifDisplayById.get(id) || null;
 }
 
-/** @param {number} blipId */
 export function revokePeerProfileGifDisplayUrl(blipId) {
   const id = normalizeId(blipId);
   if (id == null) return;

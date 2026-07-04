@@ -1,6 +1,3 @@
-/**
- * CSS pixel-art lighthouse for BEACON nav and hero.
- */
 
 export function createBeaconPixelIcon(className = 'beacon-pixel-icon') {
   const el = document.createElement('span');

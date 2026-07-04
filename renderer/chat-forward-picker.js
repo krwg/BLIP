@@ -1,10 +1,5 @@
 import { t } from './i18n.js';
 
-/**
- * Pick a peer to forward a message to.
- * @param {{ id: number, label: string }[]} targets
- * @returns {Promise<number | null>}
- */
 export function openForwardPeerPicker(targets) {
   return new Promise((resolve) => {
     if (!targets?.length) {

@@ -7,14 +7,6 @@ import {
 } from './app-icons.js';
 import { setTrayIconPath } from './tray.js';
 
-/**
- * @param {object} config
- * @param {{
- *   mainWindow?: import('electron').BrowserWindow | null;
- *   callWindow?: import('electron').BrowserWindow | null;
- *   groupCallWindow?: import('electron').BrowserWindow | null;
- * }} wins
- */
 export function applyAppIcons(config, wins = {}) {
   const variantId = resolveAppIconVariant(config);
   const winPath = resolveVariantWindowIconPath(variantId);
@@ -26,7 +18,7 @@ export function applyAppIcons(config, wins = {}) {
       try {
         w.setIcon(image);
       } catch {
-        /* ignore */
+
       }
     }
   }

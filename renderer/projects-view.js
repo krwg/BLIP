@@ -34,13 +34,6 @@ const TOOLS = [
   { id: 'clipboard', icon: '⧉', labelKey: 'projects.tool_clip', tier: 'free' },
 ];
 
-/**
- * Standalone Projects workspace (not tied to groups).
- * @param {object | (() => object)} configOrGetter
- * @param {object} api
- * @param {() => number[]} getOnlinePeerIds
- * @param {{ onOpenMeshPlus?: () => void }} [hooks]
- */
 export function createProjectsView(configOrGetter, api, getOnlinePeerIds, hooks = {}) {
   const getConfig =
     typeof configOrGetter === 'function' ? configOrGetter : () => configOrGetter;

@@ -1,9 +1,7 @@
-/** Defaults; env BLIP_UDP_PORT / BLIP_TCP_PORT override config for dev scripts. */
 
 export const DEFAULT_UDP_PORT = 42069;
 export const DEFAULT_TCP_PORT = 42070;
 
-/** Common alternate ports for dual-instance discovery on one PC. */
 export const DISCOVERY_BROADCAST_PORTS = [42069, 42071, 42073, 42075];
 
 export function resolvePorts(config = {}) {

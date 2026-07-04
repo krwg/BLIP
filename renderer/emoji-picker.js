@@ -1,10 +1,6 @@
 import { t } from './i18n.js';
 import { EMOJI_CATEGORIES } from './emoji-data.js';
 
-/**
- * @param {HTMLElement} anchorBtn
- * @param {HTMLInputElement} input
- */
 export function attachEmojiPicker(anchorBtn, input) {
   let panel = null;
 

@@ -1,9 +1,5 @@
 import { t } from './i18n.js';
 
-/**
- * @param {{ title: string, body?: string, placeholder?: string, defaultValue?: string, confirmLabel?: string }} opts
- * @returns {Promise<string | null>} trimmed text or null if cancelled
- */
 export function openTextPromptDialog(opts) {
   const {
     title,

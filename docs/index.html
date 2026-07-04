@@ -6,7 +6,6 @@
     <title>BLIP — P2P LAN Messenger</title>
     <meta name="description" content="BLIP 1.1.1 Beacon — P2P LAN messenger + mesh file library (МАЯК): chat, voice, BEACON seeds. Electron + Vite, WebRTC. No cloud." />
 
-    <!-- Open Graph -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://krwg.github.io/BLIP/" />
     <meta property="og:title" content="BLIP — P2P LAN Messenger" />
@@ -14,13 +13,12 @@
     <meta property="og:image" content="https://krwg.github.io/BLIP/og-image.png" />
     <meta name="twitter:card" content="summary_large_image" />
 
-    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
 
     <style>
-      /* ─── Design Tokens ─── */
+
       :root {
         --font-pixel: 'Press Start 2P', ui-monospace, monospace;
         --font-mono: ui-monospace, 'Cascadia Code', Consolas, monospace;
@@ -31,7 +29,6 @@
         --radius: 0px;
         --border-width: 2px;
 
-        /* Dark (default) */
         --bg-0: #030304;
         --bg-1: #0a0a0c;
         --bg-2: #111118;
@@ -63,7 +60,6 @@
         --success: #059669;
       }
 
-      /* ─── Reset ─── */
       *, *::before, *::after {
         box-sizing: border-box;
         margin: 0;
@@ -95,7 +91,6 @@
         -webkit-font-smoothing: antialiased;
       }
 
-      /* ─── CRT / Grid Background ─── */
       body::before {
         content: '';
         position: fixed;
@@ -110,7 +105,6 @@
         -webkit-mask-image: radial-gradient(ellipse at center, black 40%, transparent 80%);
       }
 
-      /* Scanlines (subtle) */
       body::after {
         content: '';
         position: fixed;
@@ -137,7 +131,6 @@
         );
       }
 
-      /* ─── Skip Link ─── */
       .skip-link {
         position: absolute;
         top: -40px;
@@ -152,7 +145,6 @@
       }
       .skip-link:focus { top: 0; }
 
-      /* ─── Header ─── */
       .header {
         position: fixed;
         inset: 0 0 auto 0;
@@ -265,7 +257,6 @@
         outline-offset: 4px;
       }
 
-      /* ─── Hero ─── */
       .hero {
         position: relative;
         min-height: 92vh;
@@ -341,7 +332,6 @@
         }
       }
 
-      /* ─── Code Box ─── */
       .code-box {
         width: 100%;
         max-width: 540px;
@@ -431,7 +421,6 @@
         outline-offset: 2px;
       }
 
-      /* ─── CTA Row ─── */
       .cta-row {
         display: flex;
         flex-wrap: wrap;
@@ -511,7 +500,6 @@
         outline-offset: 3px;
       }
 
-      /* ─── Features ─── */
       .features {
         position: relative;
         z-index: 1;
@@ -588,7 +576,6 @@
         color: var(--text-muted);
       }
 
-      /* ─── Footer ─── */
       .foot {
         position: relative;
         z-index: 1;
@@ -638,7 +625,6 @@
         font-size: 8px;
       }
 
-      /* ─── Scroll to top ─── */
       .scroll-top {
         position: fixed;
         bottom: 24px;
@@ -678,7 +664,6 @@
         outline-offset: 2px;
       }
 
-      /* ─── Responsive ─── */
       @media (max-width: 640px) {
         .header-inner {
           padding: 10px 14px;
@@ -711,7 +696,6 @@
         }
       }
 
-      /* ─── Reduced motion ─── */
       @media (prefers-reduced-motion: reduce) {
         .hero-badge, .hero-title, .hero-sub, .code-box, .cta-row {
           opacity: 1;
@@ -730,7 +714,6 @@
         }
       }
 
-      /* ─── Selection ─── */
       ::selection {
         background: rgba(148, 163, 184, 0.3);
         color: var(--text);
@@ -770,7 +753,7 @@
         </p>
 
         <div class="code-box">
-          <code class="code-text" id="clone-line">git clone https://github.com/krwg/BLIP.git</code>
+          <code class="code-text" id="clone-line">git clone https:
           <button
             type="button"
             class="copy-btn"
@@ -877,7 +860,6 @@
       (() => {
         'use strict';
 
-        // ─── i18n Data ───
         const STR = {
           ru: {
             badge: 'v1.1.1 Beacon · LAN · GPLv3',
@@ -938,7 +920,6 @@
         const LANG_KEY = 'blip_pages_lang';
         const TYPEWRITER_SPEED = 60;
 
-        // ─── DOM refs ───
         const header = document.getElementById('header');
         const ruBtn = document.getElementById('lang-ru');
         const enBtn = document.getElementById('lang-en');
@@ -947,7 +928,6 @@
         const scrollTopBtn = document.getElementById('scroll-top');
         const typewriterEl = document.getElementById('typewriter-text');
 
-        // ─── Helpers ───
         const getLang = () => {
           try {
             const v = localStorage.getItem(LANG_KEY);
@@ -992,7 +972,6 @@
             }
           });
 
-          // Update typewriter with new title
           const titleText = pack.title || '';
           typewrite(titleText);
 
@@ -1006,11 +985,9 @@
           copyBtn?.setAttribute('data-i18n-copied', pack.copied);
         };
 
-        // ─── Event Listeners ───
         ruBtn?.addEventListener('click', () => setLang('ru'));
         enBtn?.addEventListener('click', () => setLang('en'));
 
-        // Keyboard shortcut: Ctrl/Cmd + L to toggle language
         document.addEventListener('keydown', (e) => {
           if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
             e.preventDefault();
@@ -1018,7 +995,6 @@
           }
         });
 
-        // ─── Copy to clipboard ───
         const fallbackCopy = (text) => {
           const ta = document.createElement('textarea');
           ta.value = text;
@@ -1063,16 +1039,13 @@
           }
         });
 
-        // ─── Scroll effects ───
         let lastScroll = 0;
 
         window.addEventListener('scroll', () => {
           const y = window.scrollY;
 
-          // Header shadow
           header?.classList.toggle('scrolled', y > 10);
 
-          // Scroll-to-top button
           scrollTopBtn?.classList.toggle('visible', y > 400);
 
           lastScroll = y;
@@ -1082,7 +1055,6 @@
           window.scrollTo({ top: 0, behavior: 'smooth' });
         });
 
-        // ─── Intersection Observer for features ───
         const featureObserver = new IntersectionObserver((entries) => {
           entries.forEach(entry => {
             if (entry.isIntersecting) {
@@ -1099,7 +1071,6 @@
           featureObserver.observe(f);
         });
 
-        // ─── Init ───
         apply(getLang());
 
       })();

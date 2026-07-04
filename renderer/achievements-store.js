@@ -14,19 +14,14 @@ function saveSet(set) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify([...set]));
   } catch {
-    /* quota */
+
   }
 }
 
-/** @param {string} id */
 export function isAchievementUnlocked(id) {
   return loadSet().has(id);
 }
 
-/**
- * @param {string} id
- * @returns {boolean} true if newly unlocked
- */
 export function unlockAchievement(id) {
   const set = loadSet();
   if (set.has(id)) return false;
@@ -39,6 +34,6 @@ export function clearAllAchievementUnlocks() {
   try {
     localStorage.removeItem(STORAGE_KEY);
   } catch {
-    /* ignore */
+
   }
 }

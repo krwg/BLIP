@@ -8,7 +8,6 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const buildDir = join(root, 'build');
 const iconsDir = join(buildDir, 'icons');
 
-/** @type {{ id: string, file: string }[]} */
 const VARIANTS = [
   { id: 'main', file: 'icon-main.svg' },
   { id: 'dop-1', file: 'icon-dop-1.svg' },

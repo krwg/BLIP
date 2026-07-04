@@ -1,4 +1,3 @@
-/** Auto away after idle (#29) — manual busy/away wins over idle timer. */
 
 let lastActivity = Date.now();
 let pollTimer = null;
@@ -41,9 +40,6 @@ async function pollIdle() {
   }
 }
 
-/**
- * @param {{ getConfig: () => object, saveConfig: (patch: object) => Promise<object> }} opts
- */
 export function initIdleAway(opts) {
   getConfigRef = opts.getConfig;
   saveConfigRef = opts.saveConfig;

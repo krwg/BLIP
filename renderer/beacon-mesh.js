@@ -1,6 +1,3 @@
-/**
- * BEACON / Mesh Library — catalog, seeding, parallel chunk download (1.1.0).
- */
 
 import { getMaxFileBytes } from './file-transfer-limits.js';
 import { parseBlipSeedFile } from './beacon-seed-file.js';
@@ -11,42 +8,33 @@ const PULSE_INTERVAL_MS = 30_000;
 const CHUNK_REQUEST_BATCH = 16;
 const MAX_PARALLEL_PEERS = 8;
 const PIPELINED_BATCHES_PER_PEER = 3;
-/** Max chunks per TCP JSON line (stay under 4 MiB framing limit). */
+
 const SEED_TCP_BATCH = 2;
 const CHUNK_TIMEOUT_MS = 45_000;
 const HAVE_QUERY_MS = 12_000;
 
-/** peerId -> base64 bitmap for seedId */
 const peerHaveBitmaps = new Map();
-/** `${seedId}:${peerId}` -> pending have resolve */
+
 const pendingHave = new Map();
 
-/** @type {Map<string, { seedId: string, filename: string, size: number, chunkSize: number, totalChunks: number, seeders: Map<number, number>, leechers?: number, updatedAt: number }>} */
 const catalog = new Map();
 
-/** @type {Set<string>} */
 const localComplete = new Set();
 
-/** @type {Set<string>} */
 const localSeedIds = new Set();
 
-/** Seeds we have on disk but are not actively sharing (stop seeding). */
 const stoppedSeeding = new Set();
 
-/** @type {Map<string, { progress: number, phase: string }>} */
 const jobProgress = new Map();
 
-/** In-flight publish before catalog entry exists. */
 let pendingIngest = null;
 
-/** @type {Map<string, { resolve: (data: string) => void, reject: (err: Error) => void, timer: ReturnType<typeof setTimeout> }>} */
 const pendingChunks = new Map();
 
 let pulseTimer = null;
 let meshApi = null;
 let getConfig = () => ({});
 
-/** IPC surface (initBeaconMesh may omit newer methods — always fall back to preload). */
 function beaconIpc() {
   if (meshApi?.beaconPublishFromPath) return meshApi;
   if (typeof window !== 'undefined' && window.blip?.beaconPublishFromPath) {
@@ -57,7 +45,6 @@ function beaconIpc() {
 let getPeers = () => [];
 let getPeerLatency = () => 9999;
 
-/** @type {Set<string>} UI+mesh pause until TCP seed control ships */
 const pausedSeeds = new Set();
 
 let activeServeRequests = 0;
@@ -336,7 +323,6 @@ function readFileSliceAsBase64(file, start, end) {
   });
 }
 
-/** @param {File} file */
 function resolvePublishFilePath(file) {
   if (!file) return '';
   if (typeof file.path === 'string' && file.path.trim()) return file.path.trim();
@@ -354,11 +340,6 @@ async function computeSeedId(file) {
   return [...new Uint8Array(hash)].map((b) => b.toString(16).padStart(2, '0')).join('').slice(0, 16);
 }
 
-/**
- * Publish via main-process disk read (large ZIP, archives, etc.).
- * @param {string} filePath
- * @param {File} file — for display name fallback
- */
 async function publishBeaconFileFromPath(filePath, file) {
   const cfg = getConfig();
   const maxBytes = getMaxFileBytes(cfg);
@@ -763,9 +744,6 @@ function resolveIncomingChunk(msg) {
   if (pending) pending.resolve(data);
 }
 
-/**
- * @param {{ api: object, getConfig: () => object, getPeers?: () => object[], getPeerLatency?: (id: number) => number }} opts
- */
 export function initBeaconMesh(opts) {
   meshApi = opts.api;
   getConfig = opts.getConfig;
@@ -804,7 +782,7 @@ export async function stopAllBeaconSeeds() {
     try {
       await stopBeaconSeed(seedId);
     } catch {
-      /* skip */
+
     }
   }
   return true;
@@ -829,9 +807,6 @@ export function hasLocalSeedData(seedId) {
   return localSeedIds.has(String(seedId || ''));
 }
 
-/**
- * Delete local seed data and remove from catalog. Stops mesh sharing first if needed.
- */
 export async function deleteBeaconSeed(seedId) {
   const cfg = getConfig();
   if (!cfg?.devBeaconEnabled) throw new Error('disabled');
@@ -842,7 +817,7 @@ export async function deleteBeaconSeed(seedId) {
     try {
       await stopBeaconSeed(seedId);
     } catch {
-      /* still delete local */
+
     }
   }
 
@@ -862,7 +837,6 @@ export async function deleteBeaconSeed(seedId) {
   return true;
 }
 
-/** Register a .blip descriptor and return seedId (starts download via UI). */
 export function registerBlipSeedDescriptor(doc) {
   if (!doc?.seedId) throw new Error('invalid');
   upsertCatalogEntry({
@@ -897,7 +871,6 @@ export async function getBeaconSeedExportMeta(seedId) {
   };
 }
 
-/** Stop sharing chunks on the mesh; local files stay for Save / re-seed. */
 export async function stopBeaconSeed(seedId) {
   const cfg = getConfig();
   if (!cfg?.devBeaconEnabled) throw new Error('disabled');
@@ -933,7 +906,6 @@ export function isSeedStopped(seedId) {
   return stoppedSeeding.has(String(seedId || ''));
 }
 
-/** Re-announce a locally complete seed after stop. */
 export async function resumeBeaconSeeding(seedId) {
   const cfg = getConfig();
   if (!cfg?.devBeaconEnabled) throw new Error('disabled');
@@ -1020,9 +992,6 @@ export function getBeaconCatalog() {
   return rows;
 }
 
-/**
- * @returns {boolean} true if handled
- */
 export function handleBeaconTcp(msg, { api, config }) {
   if (!config?.devBeaconEnabled) return false;
   switch (msg.type) {
@@ -1065,17 +1034,8 @@ export async function announceSeed(meta) {
   return true;
 }
 
-/**
- * Publish a file into the mesh library.
- * @param {File} file
- */
-/** Renderer-only publish for tiny files without a disk path. */
 const RENDERER_PUBLISH_MAX = 4 * 1024 * 1024;
 
-/**
- * Publish from absolute path (main-process read). Preferred for all sizes.
- * @param {string} filePath
- */
 export async function publishBeaconFilePath(filePath) {
   const cfg = getConfig();
   if (!cfg?.devBeaconEnabled) throw new Error('disabled');
@@ -1172,10 +1132,6 @@ export async function publishBeaconFile(file) {
   }
 }
 
-/**
- * Download a seed from mesh peers and save via system dialog.
- * @param {string} seedId
- */
 export async function downloadBeaconSeed(seedId) {
   const cfg = getConfig();
   if (!cfg?.devBeaconEnabled) throw new Error('disabled');

@@ -19,12 +19,10 @@ export {
   freeTierAllowsValue,
 };
 
-/** @param {object} [cfg] */
 export function premiumTierEnabled(cfg) {
   return uiShowsPremiumTier(cfg);
 }
 
-/** @param {object} [peer] */
 export function peerShowsPremiumBadge(peer) {
   return !!peer?.meshPlus;
 }

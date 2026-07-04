@@ -7,11 +7,6 @@ import { BUILD_TRUST } from '../shared/trust-levels.js';
 import { ACHIEVEMENT_ICON_BY_ID } from './achievements-icons.js';
 import { showAppToast } from './toasts.js';
 
-/**
- * @typedef {{ id: string, codeKey: string, titleKey: string, descKey: string, glyph: string, iconAsset: string, check?: (s: object) => boolean, checkConfig?: (cfg: object) => boolean, checkTrust?: () => boolean }} AchievementDef
- */
-
-/** Fallback glyph when iconAsset is empty. */
 export const ACHIEVEMENT_GLYPHS = {
   first_peer: '◎',
   mesh_5: '⬡',
@@ -34,10 +29,6 @@ function appendAchievementGlyphFallback(wrap, def) {
   wrap.appendChild(glyph);
 }
 
-/**
- * @param {HTMLElement} parent
- * @param {AchievementDef} def
- */
 export function appendAchievementIcon(parent, def) {
   const wrap = document.createElement('div');
   wrap.className = 'ach-icon-slot';
@@ -61,13 +52,10 @@ export function appendAchievementIcon(parent, def) {
   return wrap;
 }
 
-/** @param {string} id */
 export function achievementIconUrl(id) {
   return ACHIEVEMENT_ICON_BY_ID[id] || '';
 }
 
-/** Achievement definitions — icons in `/ach-icons/*.svg`. */
-/** @type {AchievementDef[]} */
 export const ACHIEVEMENT_DEFS = [
   {
     id: 'first_peer',
@@ -170,10 +158,6 @@ function isProgressMet(def, stats, config) {
   return !!def.check?.(stats);
 }
 
-/**
- * @param {object} [config]
- * @returns {{ def: AchievementDef, unlocked: boolean, progressMet: boolean }[]}
- */
 export function getAchievementStates(config) {
   const stats = getSessionStats();
   return ACHIEVEMENT_DEFS.map((def) => {
@@ -186,9 +170,6 @@ export function getAchievementStates(config) {
   });
 }
 
-/**
- * @param {{ def: AchievementDef, unlocked: boolean, progressMet: boolean }} item
- */
 function createAchievementCard({ def, unlocked, progressMet }) {
   const card = document.createElement('div');
   card.className = `ach-card${unlocked ? ' ach-card--unlocked' : ''}${
@@ -240,11 +221,6 @@ function createAchievementCard({ def, unlocked, progressMet }) {
   return card;
 }
 
-/**
- * @param {string} titleKey
- * @param {{ def: AchievementDef, unlocked: boolean, progressMet: boolean }[]} items
- * @param {string} sectionClass
- */
 function buildAchievementsSection(titleKey, items, sectionClass) {
   const section = document.createElement('section');
   section.className = `ach-section ${sectionClass}`;
@@ -275,10 +251,6 @@ function buildAchievementsSection(titleKey, items, sectionClass) {
   return section;
 }
 
-/**
- * @param {HTMLElement} root
- * @param {object} [config]
- */
 export function renderAchievementsGrid(root, config) {
   root.innerHTML = '';
   const states = getAchievementStates(config);

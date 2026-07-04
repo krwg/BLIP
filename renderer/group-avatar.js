@@ -24,7 +24,7 @@ function writeMap(map) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
   } catch {
-    /* quota */
+
   }
 }
 
@@ -33,11 +33,6 @@ export function getGroupAvatarDataUrl(groupId) {
   return map[String(groupId)] || null;
 }
 
-/**
- * Resize to square JPEG for LAN (same budget as peer avatars).
- * @param {string} dataUrl
- * @returns {Promise<string | null>}
- */
 export function compressGroupAvatarForShare(dataUrl) {
   return new Promise((resolve) => {
     if (!dataUrl) {
@@ -83,12 +78,6 @@ export function setGroupAvatarDataUrl(groupId, dataUrl) {
   window.dispatchEvent(new CustomEvent('blip-group-avatar-changed', { detail: { groupId } }));
 }
 
-/**
- * Push group avatar to online members (LAN TCP).
- * @param {string} groupId
- * @param {{ sendTcpMessage: Function }} api
- * @param {number} selfId
- */
 export async function broadcastGroupAvatarToMembers(groupId, api, selfId) {
   const group = getGroup(groupId);
   if (!group || !api?.sendTcpMessage) return;
@@ -109,14 +98,11 @@ export async function broadcastGroupAvatarToMembers(groupId, api, selfId) {
         dataUrl,
       });
     } catch {
-      /* offline */
+
     }
   }
 }
 
-/**
- * Ask members for their group avatar (they reply with group-avatar-share if set).
- */
 export async function requestGroupAvatarsFromMembers(groupId, api, selfId) {
   const group = getGroup(groupId);
   if (!group || !api?.sendTcpMessage) return;
@@ -132,15 +118,11 @@ export async function requestGroupAvatarsFromMembers(groupId, api, selfId) {
         from,
       });
     } catch {
-      /* offline */
+
     }
   }
 }
 
-/**
- * @param {string} groupId
- * @param {number} [scale]
- */
 export function createGroupAvatarElement(groupId, scale = 3) {
   const wrap = document.createElement('div');
   wrap.className = 'avatar-wrap group-avatar-wrap';

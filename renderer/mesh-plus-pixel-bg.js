@@ -1,10 +1,9 @@
-/** BLIP-style pixel grid for Settings → MESH+ */
+
 import { t } from './i18n.js';
 
 export const MESH_PIXEL_COLS = 28;
 export const MESH_PIXEL_ROWS = 6;
 
-/** @param {number} t 0..1 */
 function blipPixelRgb(t) {
   const clamp = Math.max(0, Math.min(1, t));
   const stops = [
@@ -24,10 +23,6 @@ function blipPixelRgb(t) {
   };
 }
 
-/**
- * @param {HTMLElement} gridEl
- * @param {boolean} active — MESH+ subscription active
- */
 export function fillMeshPlusPixelGrid(gridEl, active) {
   gridEl.replaceChildren();
   for (let r = 0; r < MESH_PIXEL_ROWS; r++) {
@@ -76,10 +71,6 @@ function fillStripCells(mini, cols, rows, active) {
   }
 }
 
-/**
- * Hero block: animated pixel field + inner slot (status card).
- * @returns {{ hero: HTMLElement, inner: HTMLElement, setSubscriptionActive: (boolean) => void }}
- */
 export function createMeshPlusPixelHero() {
   const hero = document.createElement('div');
   hero.className = 'mesh-plus-hero mesh-plus-hero--free';
@@ -113,10 +104,6 @@ export function createMeshPlusPixelHero() {
   };
 }
 
-/**
- * Pixel strip above carousel — gray (FREE) or BLIP gradient + MESH PLUS label.
- * @param {boolean} active
- */
 export function createMeshPlusPixelStrip(active = false) {
   const strip = document.createElement('div');
   strip.className = `mesh-plus-pixel-strip${active ? ' mesh-plus-pixel-strip--active' : ' mesh-plus-pixel-strip--free'}`;

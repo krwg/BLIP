@@ -1,7 +1,6 @@
 const STORAGE_KEY = 'blip_netlog_v1';
 const MAX = 80;
 
-/** @type {Array<{ ts: number, peerId: number, event: string }>} */
 let entries = [];
 
 function load() {
@@ -19,7 +18,7 @@ function persist() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(entries.slice(-MAX)));
   } catch {
-    /* ignore */
+
   }
 }
 

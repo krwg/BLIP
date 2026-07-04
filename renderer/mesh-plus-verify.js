@@ -2,10 +2,6 @@ import { t } from './i18n.js';
 import { showAppToast } from './toasts.js';
 import { readTierFlag, readActiveEntitlement } from '../shared/mesh-plus-gates.js';
 
-/**
- * @param {object} state
- * @returns {Promise<boolean>}
- */
 export async function syncPremiumTierWithHost(state) {
   if (!window.blip?.getMeshPlusStatus) return true;
   const main = await window.blip.getMeshPlusStatus();
@@ -20,7 +16,7 @@ export async function syncPremiumTierWithHost(state) {
       state.config = fresh;
     }
   } catch {
-    /* ignore */
+
   }
 
   showAppToast({

@@ -1,11 +1,8 @@
-/**
- * Pending group invites — shown as cards in the Chat hub (not blocking dialogs).
- */
+
 import { createMessageId } from './message-id.js';
 
 const STORAGE_KEY = 'blip_group_invites_v1';
 
-/** @type {Map<string, object>} */
 const pending = new Map();
 
 function load() {

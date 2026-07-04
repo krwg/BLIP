@@ -3,9 +3,8 @@ import { t } from './i18n.js';
 const STORAGE_KEY = 'blip_groups_v1';
 const DECLINED_KEY = 'blip_groups_declined_v1';
 
-/** @type {Map<string, object>} */
 const groups = new Map();
-/** @type {Set<string>} */
+
 const declinedInvites = new Set();
 
 function load() {
@@ -94,7 +93,6 @@ export function clearDeclinedInvite(groupId) {
   persistDeclined();
 }
 
-/** Drop groups you are not a member of (stale localStorage). */
 export function resetGroupsStore() {
   groups.clear();
   declinedInvites.clear();
@@ -120,7 +118,6 @@ export function getAllGroups() {
   return [...groups.values()].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
 }
 
-/** Groups the local user still belongs to (hub / menus must use this). */
 export function getGroupsFor(blipId) {
   const id = Number(blipId);
   return getAllGroups().filter((g) => isGroupMember(g, id));
@@ -130,7 +127,6 @@ export function getGroup(groupId) {
   return groups.get(groupId) || null;
 }
 
-/** Inject group from main window (separate call window has its own file:// storage). */
 export const DEFAULT_CHANNELS = [
   { id: 'text-general', name: 'general', type: 'text' },
   { id: 'voice-lounge', name: 'voice', type: 'voice' },
@@ -255,7 +251,6 @@ export function findGroupMessage(groupId, messageId) {
   return getGroupMessages(groupId).find((m) => m.id === messageId) || null;
 }
 
-/** @returns {boolean} true if message was stored */
 export function addGroupMessage(groupId, msg) {
   const g = getGroup(groupId);
   if (!g) return false;
@@ -272,7 +267,6 @@ export function addGroupMessage(groupId, msg) {
   return true;
 }
 
-/** Patch attachment / flags on an existing group message. */
 export function updateGroupMessageAttachment(groupId, msgId, patch) {
   const g = getGroup(groupId);
   if (!g?.messages) return false;

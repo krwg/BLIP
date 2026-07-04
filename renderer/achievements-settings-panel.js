@@ -5,10 +5,6 @@ import { clearAllAchievementUnlocks } from './achievements-store.js';
 import { showAppToast } from './toasts.js';
 import { openConfirmDialog } from './confirm-dialog.js';
 
-/**
- * @param {object} state
- * @param {object} api
- */
 export function buildSettingsAchievementsPanel(state, api) {
   const frag = document.createElement('div');
   frag.className = 'settings-panel settings-panel--achievements';

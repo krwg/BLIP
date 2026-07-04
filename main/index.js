@@ -140,26 +140,26 @@ function loadAppMetadata() {
 
 let mainWindow = null;
 let callWindow = null;
-/** Active 1:1 call peer — hang up on app quit. */
+
 let activeCallPeerId = null;
 let groupCallWindow = null;
 let callWindowReady = false;
 let groupCallWindowReady = false;
-/** @type {Array<{ channel: string, data: unknown, focus: boolean }>} */
+
 const pendingCallIpc = [];
-/** @type {Array<{ channel: string, data: unknown, focus: boolean }>} */
+
 const pendingGroupCallIpc = [];
 let discovery = null;
 let tcpServer = null;
 let config = null;
 const peerSockets = new Map();
-/** @type {Map<string, Promise<import('net').Socket>>} */
+
 const peerSocketConnectInflight = new Map();
-/** Set in `before-quit` so the main window can distinguish Quit from close-to-tray hide. */
+
 let appIsQuitting = false;
-/** @type {Array<() => void>} */
+
 const pendingRendererDeliveries = [];
-/** macOS: .blip opened before app.ready */
+
 let pendingBlipFilePath = null;
 
 function queueRendererDelivery(fn) {
@@ -311,7 +311,7 @@ function createWindow() {
         callWindow = null;
       }
     } catch {
-      /* ignore */
+
     }
   });
 
@@ -669,7 +669,7 @@ function wirePeerSocket(socket, socketKey, peerIp) {
     try {
       socket.destroy();
     } catch {
-      /* ignore */
+
     }
   });
 
@@ -689,7 +689,7 @@ function wirePeerSocket(socket, socketKey, peerIp) {
         try {
           onSocketLine(JSON.parse(line));
         } catch {
-          /* ignore */
+
         }
       }
     } catch (e) {
@@ -865,7 +865,7 @@ function createTcpHandlers() {
         try {
           socket.destroy();
         } catch {
-          /* ignore */
+
         }
         return;
       }
@@ -882,14 +882,14 @@ async function rollbackNetworking(reasonErr) {
   try {
     discovery?.stop();
   } catch {
-    /* ignore */
+
   }
   discovery = null;
   if (tcpServer) {
     try {
       await tcpServer.close();
     } catch {
-      /* ignore */
+
     }
     tcpServer = null;
   }
@@ -1145,7 +1145,7 @@ function setupIpc() {
           try {
             wc.send('beacon-ingest-progress', p);
           } catch {
-            /* window gone */
+
           }
         },
       });
@@ -1259,7 +1259,7 @@ function setupIpc() {
           try {
             wc.send('file-send-progress', { transferId, to, ...p });
           } catch {
-            /* gone */
+
           }
         },
       });
@@ -1687,7 +1687,7 @@ function setupIpc() {
   });
 
   ipcMain.handle('open-external', async (_, url) => {
-    if (typeof url !== 'string' || !/^https?:\/\//i.test(url)) return { ok: false };
+    if (typeof url !== 'string' || !/^https?:\/\
     await shell.openExternal(url);
     return { ok: true };
   });
@@ -1948,7 +1948,7 @@ async function hangupActiveCallIfAny() {
       to: peer,
     });
   } catch {
-    /* peer may be offline */
+
   }
 }
 

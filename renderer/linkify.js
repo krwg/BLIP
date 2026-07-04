@@ -10,12 +10,6 @@ function normalizeHref(raw) {
   return { href, label: trimmed, blipSeed: null };
 }
 
-/**
- * Append text nodes and external links into `parent`.
- * @param {HTMLElement} parent
- * @param {string} text
- * @param {(url: string) => void} onOpen
- */
 export function appendLinkifiedText(parent, text, onOpen) {
   const src = String(text || '');
   if (!src) return;

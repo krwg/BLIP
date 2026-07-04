@@ -13,9 +13,6 @@ function readKeyFile(p) {
   }
 }
 
-/**
- * Giphy API key: env → userData → packaged resources → dev giphy-api-key.local.
- */
 export function getGiphyApiKey() {
   if (cached) return cached;
   const fromEnv = (
@@ -35,7 +32,7 @@ export function getGiphyApiKey() {
     try {
       paths.push(join(dirname(app.getPath('exe')), 'giphy-api-key.txt'));
     } catch {
-      /* ignore */
+
     }
   } else {
     paths.push(join(process.cwd(), 'giphy-api-key.local'));

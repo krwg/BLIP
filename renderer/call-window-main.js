@@ -1,6 +1,4 @@
-/**
- * Standalone call window — WebRTC only; main window no longer hosts call overlay.
- */
+
 import { setLang, applyI18n, onLangChange } from './i18n.js';
 import { createCallUI } from './call.js';
 import { applyCallWindowAppearance, listenReducedMotion } from './appearance.js';
@@ -10,7 +8,7 @@ import { setLocalTrustState } from './trust-ui.js';
 let callAppearanceRm = null;
 let callUI = null;
 let liveConfig = null;
-/** @type {object | null} */
+
 let remotePeerTrust = null;
 
 const api = {

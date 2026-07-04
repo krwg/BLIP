@@ -23,9 +23,6 @@ export function getCustomAvatarDataUrl() {
   }
 }
 
-/**
- * @param {string} dataUrl data:image/...;base64,...
- */
 export function saveCustomAvatar(dataUrl) {
   const m = String(dataUrl || '').match(/^data:image\/(png|jpeg|webp);base64,(.+)$/i);
   if (!m) throw new Error('invalid_image');

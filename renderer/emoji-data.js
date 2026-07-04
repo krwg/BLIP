@@ -1,4 +1,3 @@
-/** Emoji categories for the chat picker (system color emoji font). */
 
 export const EMOJI_CATEGORIES = [
   {

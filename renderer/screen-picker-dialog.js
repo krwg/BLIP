@@ -1,9 +1,5 @@
 import { t } from './i18n.js';
 
-/**
- * Discord-style screen/window picker (sources from main process).
- * @returns {Promise<{ sourceId: string, withAudio: boolean } | null>}
- */
 export async function openScreenPickerDialog() {
   if (!window.blip?.listDisplaySources) return null;
 

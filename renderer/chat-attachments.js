@@ -1,6 +1,5 @@
 import { getMaxFileBytes } from './file-transfer-limits.js';
 
-/** Legacy default; use getMaxFileBytes(config) in app code. */
 export const MAX_CHAT_FILE_BYTES = 100 * 1024 * 1024 * 1024;
 export const INLINE_FILE_BYTES = 768 * 1024;
 const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
@@ -73,11 +72,6 @@ function readFileAsDataUrl(file) {
   });
 }
 
-/**
- * Resize image for LAN send (JPEG, capped size).
- * @param {File} file
- * @returns {Promise<{ kind: 'image', name: string, mime: string, size: number, dataUrl: string }>}
- */
 export async function encodeChatImageAttachment(file) {
   if (!file || !file.size) throw new Error('empty');
   if (file.size > MAX_IMAGE_BYTES) throw new Error('file_too_big');
@@ -129,10 +123,6 @@ export async function encodeChatImageAttachment(file) {
   }
 }
 
-/**
- * Small generic file inline in a chat message (data URL).
- * @param {File} file
- */
 export async function encodeInlineFileAttachment(file, config) {
   if (!file || !file.size) throw new Error('empty');
   if (file.size > INLINE_FILE_BYTES) throw new Error('use_chunked');

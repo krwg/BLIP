@@ -15,14 +15,10 @@ function writeAll(data) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch {
-    /* quota */
+
   }
 }
 
-/**
- * @param {string} scopeId
- * @returns {Array<{ id: string, text: string, updatedAt: number, from: number, label?: string }>}
- */
 export function getPadHistory(scopeId) {
   const key = String(scopeId);
   const all = readAll();
@@ -30,10 +26,6 @@ export function getPadHistory(scopeId) {
   return list.slice(0, MAX_SNAPSHOTS);
 }
 
-/**
- * @param {string} scopeId
- * @param {{ text: string, updatedAt?: number, from?: number, label?: string }} snap
- */
 export function pushPadSnapshot(scopeId, snap) {
   const key = String(scopeId);
   const text = String(snap.text ?? '');
@@ -56,22 +48,12 @@ export function pushPadSnapshot(scopeId, snap) {
   return entry;
 }
 
-/**
- * @param {string} scopeId
- * @param {string} snapshotId
- * @returns {{ text: string, updatedAt: number, from: number } | null}
- */
 export function getPadSnapshotById(scopeId, snapshotId) {
   const hit = getPadHistory(scopeId).find((e) => e.id === snapshotId);
   if (!hit) return null;
   return { text: hit.text, updatedAt: hit.updatedAt, from: hit.from };
 }
 
-/**
- * @param {string} scopeId
- * @param {string} snapshotId
- * @returns {boolean}
- */
 export function deletePadSnapshot(scopeId, snapshotId) {
   const key = String(scopeId);
   const all = readAll();

@@ -1,7 +1,3 @@
-/**
- * Microphone capture constraints (noise suppression, AGC, echo cancellation).
- * Raw stream is used for WebRTC — gain is applied in voice mixer / mic test only.
- */
 
 export function getVoiceAudioConstraints(config) {
   const deviceId = config?.audioInputDeviceId;

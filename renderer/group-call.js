@@ -35,15 +35,15 @@ import {
 export { getOngoingGroupCall };
 
 const ICE = [];
-/** @type {Map<number, RTCPeerConnection>} */
+
 const peers = new Map();
-/** @type {Map<number, RTCIceCandidateInit[]>} */
+
 const pendingCandidates = new Map();
-/** @type {Map<number, HTMLAudioElement>} */
+
 const remoteAudios = new Map();
-/** @type {Map<number, HTMLVideoElement>} */
+
 const remoteVideos = new Map();
-/** @type {Map<number, { msg: object, groupId: string }>} */
+
 const pendingOffers = new Map();
 
 const dismissedRing = new Set();
@@ -57,7 +57,7 @@ let configRef = null;
 let shell = null;
 let muted = false;
 let deafened = false;
-/** @type {Map<number, { muted: boolean, deafened: boolean, screenSharing: boolean }>} */
+
 const peerMediaState = new Map();
 let groupFsOverlay = null;
 let groupFsWrap = null;
@@ -819,7 +819,7 @@ async function flushCandidates(remoteId, pc) {
     try {
       await pc.addIceCandidate(c);
     } catch {
-      /* ignore */
+
     }
   }
   pendingCandidates.delete(remoteId);
@@ -1092,7 +1092,6 @@ export async function leaveGroupCall() {
   }
 }
 
-/** Boot group-call BrowserWindow (group-call-window.html). */
 export function initGroupCallWindow(api, config) {
   apiRef = api;
   configRef = config ?? null;
@@ -1169,7 +1168,7 @@ export async function handleGroupCallSignal(msg, api) {
     try {
       await pc.addIceCandidate(msg.candidate);
     } catch {
-      /* ignore */
+
     }
   }
 }

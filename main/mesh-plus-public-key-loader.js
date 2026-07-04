@@ -23,9 +23,6 @@ function electronApp() {
   }
 }
 
-/**
- * @returns {string | null}
- */
 export function loadTrustAnchorB64() {
   if (cached !== undefined) return cached || null;
 
@@ -45,14 +42,14 @@ export function loadTrustAnchorB64() {
       try {
         paths.push(join(dirname(app.getPath('exe')), 'mesh-plus-public-key.txt'));
       } catch {
-        /* ignore */
+
       }
     } else {
       paths.push(join(process.cwd(), 'mesh-plus-public-key.local'));
       try {
         paths.push(join(app.getAppPath(), '..', 'mesh-plus-public-key.local'));
       } catch {
-        /* ignore */
+
       }
       paths.push(join(process.cwd(), 'build', 'mesh-plus-public-key.txt'));
     }

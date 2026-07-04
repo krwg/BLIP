@@ -1,14 +1,8 @@
 import { nativeImage } from 'electron';
 import { MAX_PROFILE_GIF_TCP_BYTES } from './profile-gif-store.js';
 
-/** Max UTF-8 JSON line budget for profile-gif-share (under tcp-framing 4 MiB). */
 const MAX_SHARE_DATA_URL_CHARS = 3_200_000;
 
-/**
- * Build a LAN-safe data URL for profile-gif-share (may downscale static preview if GIF is huge).
- * @param {Buffer | null} buf
- * @returns {string | null}
- */
 export function buildProfileGifShareDataUrl(buf) {
   if (!buf?.length) return null;
 

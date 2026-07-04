@@ -1,7 +1,6 @@
 import net from 'net';
 import { DEFAULT_TCP_PORT } from './ports.js';
 
-/** @type {Map<string, Promise<import('net').Socket>>} */
 const connectInflight = new Map();
 
 export function connectToPeer(ip, blipId, tcpPort = DEFAULT_TCP_PORT) {
@@ -38,7 +37,6 @@ export function sendOnSocket(socket, payload) {
   return sendOnSocketQueued(socket, payload);
 }
 
-/** @returns {Promise<{ ok: boolean, ms: number | null }>} */
 export function pingPeer(ip, tcpPort = DEFAULT_TCP_PORT) {
   return new Promise((resolve) => {
     const started = Date.now();

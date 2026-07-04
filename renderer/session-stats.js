@@ -2,10 +2,8 @@ import { syncAchievements } from './achievements-tracker.js';
 
 const STORAGE_KEY = 'blip_session_stats_v1';
 
-/** @type {(() => object | null) | null} */
 let achievementConfigProvider = null;
 
-/** @param {() => object | null} fn */
 export function setAchievementConfigProvider(fn) {
   achievementConfigProvider = fn;
 }
@@ -29,7 +27,7 @@ function save(data) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
   } catch {
-    /* quota */
+
   }
 }
 
@@ -71,9 +69,6 @@ export function recordCallStarted() {
   tickAchievements();
 }
 
-/**
- * @param {number} onlineCount
- */
 export function recordPeersOnline(onlineCount) {
   const d = ensure();
   const n = Number(onlineCount) || 0;
@@ -90,7 +85,6 @@ export function sessionOnlineHours() {
   return Math.max(0, ms / (1000 * 60 * 60));
 }
 
-/** @returns {{ labelKey: string, value: number }[]} */
 export function getSessionStatsChartBars() {
   const s = getSessionStats();
   const minutes = Math.max(1, Math.round(sessionOnlineHours() * 60));

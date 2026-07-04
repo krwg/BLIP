@@ -1,8 +1,5 @@
 import { sendOnSocket } from './tcp-client.js';
 
-/**
- * Plain { type, sdp } for JSON over TCP / IPC (RTCSessionDescription does not always stringify).
- */
 export function serializeSdp(sdp) {
   if (!sdp) return null;
   if (typeof sdp === 'string') {
@@ -20,10 +17,6 @@ export function serializeSdp(sdp) {
   return null;
 }
 
-/**
- * Prefer inbound TCP (peer dialed us), then outbound handshake socket, then new connection.
- * @param {Map<string, import('net').Socket>} [peerSockets]
- */
 export async function sendCallPayload(
   tcpServer,
   ensurePeerSocket,

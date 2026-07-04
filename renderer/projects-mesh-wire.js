@@ -16,7 +16,7 @@ async function safeSend(api, payload) {
   try {
     await api.sendTcpMessage(payload);
   } catch {
-    /* peer offline */
+
   }
 }
 
@@ -33,51 +33,22 @@ async function broadcastMesh(api, config, peerIds, type, payload) {
   }
 }
 
-/**
- * @param {object} api
- * @param {object} config
- * @param {number[]} peerIds
- * @param {object} payload
- */
 export async function broadcastMeshPad(api, config, peerIds, payload) {
   return broadcastMesh(api, config, peerIds, 'mesh-proj-pad', payload);
 }
 
-/**
- * @param {object} api
- * @param {object} config
- * @param {number[]} peerIds
- * @param {object} payload
- */
 export async function broadcastMeshBoard(api, config, peerIds, payload) {
   return broadcastMesh(api, config, peerIds, 'mesh-proj-board', payload);
 }
 
-/**
- * @param {object} api
- * @param {object} config
- * @param {number[]} peerIds
- * @param {object} payload
- */
 export async function broadcastMeshCanvas(api, config, peerIds, payload) {
   return broadcastMesh(api, config, peerIds, 'mesh-proj-canvas', payload);
 }
 
-/**
- * @param {object} api
- * @param {object} config
- * @param {number[]} peerIds
- * @param {object} payload
- */
 export async function broadcastMeshClipboard(api, config, peerIds, payload) {
   return broadcastMesh(api, config, peerIds, 'mesh-proj-clipboard', payload);
 }
 
-/**
- * @param {object} api
- * @param {object} config
- * @param {number[]} peerIds
- */
 export async function requestMeshClipboardPull(api, config, peerIds) {
   const myId = Number(config.blipId);
   for (const to of peerIds || []) {
@@ -91,11 +62,6 @@ export async function requestMeshClipboardPull(api, config, peerIds) {
   }
 }
 
-/**
- * @param {object} api
- * @param {object} config
- * @param {number} requesterId
- */
 export async function respondMeshClipboardPull(api, config, requesterId) {
   const cap = clipLimitForTier(uiShowsPremiumTier(config));
   const st = getClipState(MESH_PROJECT_SCOPE);

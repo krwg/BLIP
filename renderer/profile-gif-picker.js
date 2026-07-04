@@ -70,10 +70,6 @@ async function saveLocalGifFile(file) {
   return true;
 }
 
-/**
- * @param {{ onSelected?: () => void }} [opts]
- * @returns {Promise<boolean>} true if selection changed
- */
 export function openProfileGifPicker(opts = {}) {
   return new Promise((resolve) => {
     let changed = false;
