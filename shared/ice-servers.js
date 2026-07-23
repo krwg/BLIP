@@ -1,12 +1,3 @@
-/**
- * Optional STUN/TURN for WebRTC (off by default — pure LAN host candidates).
- *
- * Line format (Settings → Network):
- *   stun:host:port
- *   turn:host:port|username|credential
- * Blank lines and # comments ignored. Commas also split entries.
- */
-
 export function parseIceServerLines(text) {
   const servers = [];
   const raw = String(text || '');

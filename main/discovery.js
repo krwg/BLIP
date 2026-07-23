@@ -215,8 +215,6 @@ export class Discovery {
       return;
     }
 
-    // Reject unsigned / forged announces (Ed25519 meshAnnounceSig). Metadata is still
-    // cleartext on the LAN; authenticity is enforced here.
     if (!shouldAcceptAnnounce(data)) {
       return;
     }

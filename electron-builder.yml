@@ -39,7 +39,6 @@ extraResources:
       - '**/*'
 win:
   icon: icon.ico
-  # Display name for unsigned installers; Authenticode subject may still read krwg on older signed builds.
   publisherName: krwg
   legalTrademarks: BLIP
   target:
@@ -58,7 +57,6 @@ nsis:
   createDesktopShortcut: always
   createStartMenuShortcut: true
   shortcutName: BLIP
-  # false = show «Launch BLIP» checkbox on finish (customFinishPage defines MUI_FINISHPAGE_RUN)
   runAfterFinish: false
   uninstallDisplayName: BLIP
   artifactName: ${productName}-Setup-${version}.${ext}
