@@ -31,10 +31,9 @@ import {
   noteGroupCallStarted,
   clearGroupCallRoster,
 } from './group-call-roster.js';
+import { rtcConfiguration } from '../shared/ice-servers.js';
 
 export { getOngoingGroupCall };
-
-const ICE = [];
 
 const peers = new Map();
 
@@ -828,7 +827,7 @@ async function flushCandidates(remoteId, pc) {
 async function createPc(remoteId, groupId, initiator) {
   const rid = peerNum(remoteId);
   if (peers.has(rid)) return peers.get(rid);
-  const pc = new RTCPeerConnection({ iceServers: ICE });
+  const pc = new RTCPeerConnection(rtcConfiguration(configRef));
   peers.set(rid, pc);
   pendingCandidates.set(rid, []);
 

@@ -2765,6 +2765,33 @@ function buildSettingsNetworkPanel() {
     buildSettingsFieldWithHint('clipboard.mode', 'clipboard.hint', clipSelect)
   );
 
+  const iceRow = document.createElement('div');
+  iceRow.className = 'settings-toggle-with-hint';
+  const iceLines = document.createElement('textarea');
+  iceLines.className = 'input settings-textarea';
+  iceLines.rows = 4;
+  iceLines.placeholder = t('settings.ice_lines_placeholder');
+  iceLines.dataset.i18nPlaceholder = 'settings.ice_lines_placeholder';
+  iceLines.value = state.config?.iceServerLines || '';
+  iceLines.disabled = !state.config?.iceEnabled;
+  iceLines.addEventListener('change', async () => {
+    state.config = await api.saveConfig({ iceServerLines: iceLines.value });
+  });
+  const iceToggle = createPixelToggle({
+    checked: !!state.config?.iceEnabled,
+    labelKey: 'settings.ice_enabled',
+    onChange: async (checked) => {
+      iceLines.disabled = !checked;
+      state.config = await api.saveConfig({ iceEnabled: checked });
+    },
+  });
+  iceRow.appendChild(iceToggle.el);
+  iceRow.appendChild(createPixelHintIcon('settings.ice_hint'));
+  frag.appendChild(iceRow);
+  frag.appendChild(
+    buildSettingsFieldWithHint('settings.ice_lines', 'settings.ice_lines_hint', iceLines)
+  );
+
   const projClipRow = document.createElement('div');
   projClipRow.className = 'settings-toggle-with-hint';
   const projClipToggle = createPixelToggle({

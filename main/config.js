@@ -85,6 +85,10 @@ const DEFAULT_CONFIG = {
 
   clipboardSyncMode: 'off',
 
+  /** Optional STUN/TURN for WebRTC across VPN segments. Default off = LAN host ICE only. */
+  iceEnabled: false,
+  iceServerLines: '',
+
   knownPeerKeys: {},
 
   receiveBetaUpdates: false,

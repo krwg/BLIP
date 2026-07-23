@@ -13,8 +13,7 @@ import { openScreenPickerDialog } from './screen-picker-dialog.js';
 import { captureDisplayStream } from './display-capture.js';
 import { getVoiceMediaStream, getVoiceAudioConstraints } from './audio-capture.js';
 import { dispatchReactiveAudio } from './reactive-wallpaper.js';
-
-const ICE_SERVERS = [];
+import { rtcConfiguration } from '../shared/ice-servers.js';
 
 let activeCall = null;
 let pendingCandidates = [];
@@ -49,8 +48,8 @@ function normalizeCandidate(candidate) {
   return null;
 }
 
-function createPeerConnection(onRemoteStream) {
-  const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+function createPeerConnection(onRemoteStream, cfg) {
+  const pc = new RTCPeerConnection(rtcConfiguration(cfg));
 
   pc.ontrack = (e) => {
     if (e.streams[0]) onRemoteStream(e.streams[0]);
@@ -956,13 +955,14 @@ export function createCallUI(config, api, options = {}) {
         localVideo.classList.add('call-video--camera');
       }
 
+      const iceCfg = (await api.getConfig?.()) || config;
       pc = createPeerConnection((stream) => {
         attachRemoteStream(stream);
-      });
+      }, iceCfg);
 
       localStream.getTracks().forEach((tr) => pc.addTrack(tr, localStream));
       const camSender = getVideoSender();
-      if (camSender) void tuneVideoSender(camSender, { screenShare: false, config });
+      if (camSender) void tuneVideoSender(camSender, { screenShare: false, config: iceCfg });
 
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
@@ -1040,13 +1040,14 @@ export function createCallUI(config, api, options = {}) {
         localVideo.classList.add('call-video--camera');
       }
 
+      const iceCfg = (await api.getConfig?.()) || config;
       pc = createPeerConnection((stream) => {
         attachRemoteStream(stream);
-      });
+      }, iceCfg);
 
       localStream.getTracks().forEach((tr) => pc.addTrack(tr, localStream));
       const camSender = getVideoSender();
-      if (camSender) void tuneVideoSender(camSender, { screenShare: false, config });
+      if (camSender) void tuneVideoSender(camSender, { screenShare: false, config: iceCfg });
 
       await setRemoteDescription(offer);
       const answer = await pc.createAnswer();

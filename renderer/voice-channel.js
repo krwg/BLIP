@@ -18,7 +18,7 @@ import {
 import { openScreenPickerDialog } from './screen-picker-dialog.js';
 import { captureDisplayStream } from './display-capture.js';
 import { getVoiceMediaStream } from './audio-capture.js';
-const ICE = [];
+import { rtcConfiguration } from '../shared/ice-servers.js';
 
 let clientConnectInFlight = false;
 
@@ -424,7 +424,7 @@ async function flushClientIce(pc) {
 
 async function createHostPeer(remoteId, groupId) {
   const rid = peerNum(remoteId);
-  const pc = new RTCPeerConnection({ iceServers: ICE });
+  const pc = new RTCPeerConnection(rtcConfiguration(configRef));
   hostPeers.set(rid, pc);
   hostPendingIce.set(rid, []);
 
@@ -619,7 +619,7 @@ function wireMeshPc(pc, remoteId, groupId) {
 async function createMeshOffer(remoteId, groupId) {
   const rid = peerNum(remoteId);
   if (meshPeers.has(rid) || !localStream) return;
-  const pc = new RTCPeerConnection({ iceServers: ICE });
+  const pc = new RTCPeerConnection(rtcConfiguration(configRef));
   meshPeers.set(rid, pc);
   meshPendingIce.set(rid, []);
   wireMeshPc(pc, rid, groupId);
@@ -639,7 +639,7 @@ async function handleMeshOffer(remoteId, groupId, offer) {
 
   try {
     disconnectMeshPeer(rid);
-    const pc = new RTCPeerConnection({ iceServers: ICE });
+    const pc = new RTCPeerConnection(rtcConfiguration(configRef));
     meshPeers.set(rid, pc);
     meshPendingIce.set(rid, []);
     wireMeshPc(pc, rid, groupId);
@@ -692,7 +692,7 @@ async function ensureClientToHost(group, { force = false } = {}) {
     }
     stopRemotePeerAudio(hostId);
 
-    clientPc = new RTCPeerConnection({ iceServers: ICE });
+    clientPc = new RTCPeerConnection(rtcConfiguration(configRef));
     clientPendingIce = [];
 
     localStream.getTracks().forEach((tr) => clientPc.addTrack(tr, localStream));

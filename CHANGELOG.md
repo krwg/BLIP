@@ -25,6 +25,10 @@ Development line **Morse**. No GitHub Release until explicitly cut — see [`doc
 - **Announce authenticity** — peers with invalid/missing Ed25519 announce signatures are ignored (no peer row).
 - **LAN clipboard** — enabling sync from Off requires an explicit risk confirm dialog.
 
+### Added
+
+- **Optional STUN/TURN** — Settings → Network; off by default; shared ICE list for 1:1, group, and voice-channel calls.
+
 ### Fixed
 
 - **BEACON publish** — `beaconPublishFromPath` was missing from `initBeaconMesh` API (always failed with «browser file» for large ZIP); native file dialog + main-process ingest.

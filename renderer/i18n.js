@@ -691,6 +691,14 @@ const locales = {
     'clipboard.enable_confirm':
       'Enable LAN clipboard sync? Text you copy can be sent to peers in the active chat (passwords, tokens, secrets). Only continue on networks and peers you trust.',
     'clipboard.received': 'Clipboard from #{id}',
+    'settings.ice_enabled': 'STUN / TURN (WebRTC)',
+    'settings.ice_hint':
+      'Off by default: calls use LAN host candidates only. Enable for Tailscale / multi-subnet VPN when pure LAN ICE fails. You need reachable STUN or TURN URLs.',
+    'settings.ice_lines': 'ICE server list',
+    'settings.ice_lines_hint':
+      'One entry per line: stun:host:port or turn:host:port|user|password. Applies to new 1:1, group, and voice-channel calls.',
+    'settings.ice_lines_placeholder':
+      'stun:stun.example.com:3478\nturn:turn.example.com:3478|user|pass',
     'settings.call_hint':
       'Stream quality sets capture resolution and LAN bitrate (higher = sharper, more CPU/bandwidth). Fullscreen resolution is the theater target when you press F.',
     'settings.noise_suppression': 'Noise suppression (mic)',
@@ -1683,6 +1691,14 @@ const locales = {
     'clipboard.enable_confirm':
       'Включить синхронизацию буфера по ЛАН? Скопированный текст (пароли, токены, секреты) может уйти абоненту в активном чате. Продолжайте только в доверенной сети и с доверенными пирами.',
     'clipboard.received': 'Буфер от #{id}',
+    'settings.ice_enabled': 'STUN / TURN (WebRTC)',
+    'settings.ice_hint':
+      'По умолчанию выкл: звонки только на LAN host-кандидатах. Включите для Tailscale / VPN на разных подсетях, если чистый LAN ICE не сходится. Нужны доступные URL STUN или TURN.',
+    'settings.ice_lines': 'Список ICE-серверов',
+    'settings.ice_lines_hint':
+      'По одному в строке: stun:host:port или turn:host:port|user|password. Для новых звонков 1:1, группы и голосовых каналов.',
+    'settings.ice_lines_placeholder':
+      'stun:stun.example.com:3478\nturn:turn.example.com:3478|user|pass',
     'settings.call_hint':
       'Качество трансляции — разрешение захвата и битрейт по ЛАН (выше = чётче, больше нагрузка). Разрешение полноэкранное — цель в режиме театра (клавиша F).',
     'settings.noise_suppression': 'Шумоподавление (микрофон)',

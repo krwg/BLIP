@@ -371,9 +371,10 @@ blip/
 4. If you are not using a mesh VPN, try disabling unrelated VPN clients that isolate broadcast.
 
 ### Call does not connect
-1. BLIP WebRTC uses **host candidates only** (no public STUN/TURN by default) — same LAN/VPN segment required.
-2. Check that no corporate firewall blocks peer-to-peer UDP between the devices.
-3. Retry after both peers show online in **Peers** with a fresh Mesh Pulse latency.
+1. By default BLIP WebRTC uses **host candidates only** (STUN/TURN off) — same L2 / VPN segment required.
+2. On Tailscale or multi-subnet VPN: **Settings → Network → STUN / TURN**, enable, and add `stun:` / `turn:` lines; start a **new** call after saving.
+3. Check that no corporate firewall blocks peer-to-peer UDP between the devices.
+4. Retry after both peers show online in **Peers** with a fresh Mesh Pulse latency.
 
 ### File transfer fails
 1. Check **Settings → Network** size limit (1–100 GB).
@@ -671,9 +672,10 @@ blip/
 4. Если mesh-VPN не нужен — отключите посторонние VPN, которые режут broadcast.
 
 ### Звонок не устанавливается
-1. WebRTC в BLIP — **только host-кандидаты** (публичный STUN/TURN по умолчанию выключен): нужна одна LAN/VPN-сегмент.
-2. Проверьте, что корпоративный firewall не блокирует P2P UDP между устройствами.
-3. Убедитесь, что оба пира online в **Абоненты** и есть свежий Mesh Pulse.
+1. По умолчанию WebRTC — **только host-кандидаты** (STUN/TURN выкл): нужна одна L2 / VPN-сегмент.
+2. Tailscale или разные подсети: **Настройки → Сеть → STUN / TURN**, включите и добавьте строки `stun:` / `turn:`; начните **новый** звонок после сохранения.
+3. Проверьте, что корпоративный firewall не блокирует P2P UDP между устройствами.
+4. Убедитесь, что оба пира online в **Абоненты** и есть свежий Mesh Pulse.
 
 ### Файл не передаётся
 1. Проверьте лимит в **Настройки → Сеть** (1–100 ГБ).

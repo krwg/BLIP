@@ -14,8 +14,9 @@ GitHub Release / installers are **not** cut until explicitly requested — versi
 
 ## Tracked issues (living list)
 
-- [#41](https://github.com/krwg/blip/issues/41) — core unit tests (UDP / TCP / i18n)
-- [#38](https://github.com/krwg/blip/issues/38) — UDP announce HMAC + clipboard enable warning
+- [#41](https://github.com/krwg/blip/issues/41) — core unit tests (UDP / TCP / i18n) ✅
+- [#38](https://github.com/krwg/blip/issues/38) — UDP announce reject + clipboard enable warning ✅
+- [#46](https://github.com/krwg/blip/issues/46) — NSIS assisted wizard ✅
 - [#39](https://github.com/krwg/blip/issues/39) — optional STUN/TURN
 - [#40](https://github.com/krwg/blip/issues/40) — TypeScript migration (`shared/` + IPC)
 

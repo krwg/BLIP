@@ -291,5 +291,5 @@ Static showcase: [`docs/index.html`](index.html) → [krwg.github.io/blip](https
 
 ## Future seams
 
-- CI packaging smoke jobs, mobile client, optional STUN/TURN only if LAN host candidates fail across complex VPN topologies (host-candidate / no public STUN by default).
+- CI packaging smoke jobs, mobile client. Optional STUN/TURN is available in **Settings → Network** (`iceEnabled` / `iceServerLines`, off by default) via `shared/ice-servers.js`.
 - macOS/Linux autostart parity beyond Windows login items.
