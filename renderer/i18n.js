@@ -80,6 +80,7 @@ const locales = {
     'chat.file_too_big': 'File is too large (max 16 MB).',
     'chat.file_too_big_dynamic': 'File is too large (max {limit}).',
     'chat.group_file_limit': 'Group files must be under 768 KB (use direct chat for larger).',
+    'chat.group_file_chunked': 'Large files go to each member over LAN (see MESH TRANSFER).',
     'chat.image_sent': '[IMG]',
     'chat.image_preview': '[IMG]',
     'chat.reply': 'Reply',
@@ -983,6 +984,7 @@ const locales = {
     'chat.title': 'CHAT',
     'chat.pick_peer': 'Open a peer from PEERS or dial an ID.',
     'chat.open_failed': 'Could not open this chat. Try again.',
+    'chat.no_chats': 'No chats',
     'chat.no_active': 'No conversation selected.',
     'call.connected': 'ON CALL',
     'toast.new_message': 'NEW MESSAGE',
@@ -1979,7 +1981,21 @@ const locales = {
   },
 };
 
-let currentLang = localStorage.getItem('blip_lang') || 'en';
+function readStoredLang() {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      return localStorage.getItem('blip_lang') || 'en';
+    }
+  } catch {
+    /* Node / restricted storage */
+  }
+  return 'en';
+}
+
+let currentLang = readStoredLang();
+
+/** Locale dictionaries — exported for parity tests / tooling. */
+export { locales };
 
 export function getLang() {
   return currentLang;
@@ -1988,7 +2004,13 @@ export function getLang() {
 export function setLang(lang) {
   if (locales[lang]) {
     currentLang = lang;
-    localStorage.setItem('blip_lang', lang);
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('blip_lang', lang);
+      }
+    } catch {
+      /* ignore */
+    }
   }
 }
 

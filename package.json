@@ -31,7 +31,9 @@
     "release:assets": "node scripts/publish-release-notes.mjs",
     "electron:build:dir": "npm run build && node scripts/sync-giphy-key.mjs && node scripts/sync-mesh-public-key.mjs && node scripts/sync-build-info.mjs && npm run build:icons && node scripts/run-electron-builder.mjs --win --dir",
     "mesh-plus:keygen": "node scripts/mesh-plus-keygen.mjs",
-    "setup:build-secrets": "node scripts/setup-build-secrets.mjs"
+    "setup:build-secrets": "node scripts/setup-build-secrets.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "devDependencies": {
     "@fontsource/press-start-2p": "^5.2.7",
@@ -43,6 +45,7 @@
     "to-ico": "^1.1.5",
     "typeface-minecraft": "^1.0.0",
     "vite": "^6.2.6",
+    "vitest": "^3.2.7",
     "wait-on": "^8.0.3"
   },
   "dependencies": {

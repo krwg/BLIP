@@ -15,6 +15,10 @@ Development line **Morse**. No GitHub Release until explicitly cut — see [`doc
 
 - Opened **2.0.0 Morse** version line (`app-metadata.json` / docs). Last published installers remain **1.1.1 Beacon**.
 
+### Added
+
+- **Vitest** core suite — UDP announce sign/verify round-trip, TCP line framing, EN/RU i18n key parity (`npm test` in CI).
+
 ### Fixed
 
 - **BEACON publish** — `beaconPublishFromPath` was missing from `initBeaconMesh` API (always failed with «browser file» for large ZIP); native file dialog + main-process ingest.
