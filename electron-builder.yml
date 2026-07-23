@@ -9,7 +9,7 @@ extraMetadata:
 publish:
   - provider: github
     owner: krwg
-    repo: BLIP
+    repo: blip
     releaseType: release
 directories:
   output: dist-electron
@@ -48,15 +48,17 @@ win:
 nsis:
   oneClick: false
   perMachine: false
+  selectPerMachineByDefault: false
   allowToChangeInstallationDirectory: true
   allowElevation: true
+  packElevateHelper: true
   installerIcon: icon.ico
   uninstallerIcon: icon.ico
   installerHeaderIcon: icon.ico
-  createDesktopShortcut: true
+  createDesktopShortcut: always
   createStartMenuShortcut: true
   shortcutName: BLIP
-  # false = show “Launch BLIP” checkbox on finish page (customFinishPage defines MUI_FINISHPAGE_RUN)
+  # false = show «Launch BLIP» checkbox on finish (customFinishPage defines MUI_FINISHPAGE_RUN)
   runAfterFinish: false
   uninstallDisplayName: BLIP
   artifactName: ${productName}-Setup-${version}.${ext}
@@ -68,6 +70,11 @@ nsis:
     - ru_RU
   include: build/installer.nsh
   license: LICENSE
+  removeDefaultUninstallWelcomePage: true
+  uninstallUrlInfoAbout: https://krwg.github.io/blip/
+  uninstallUrlHelp: https://github.com/krwg/blip#readme
+  uninstallUrlReadme: https://github.com/krwg/blip#readme
+  uninstallUrlUpdateInfo: https://github.com/krwg/blip/releases
 portable:
   artifactName: ${productName}-${version}-Portable.${ext}
 

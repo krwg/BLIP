@@ -236,7 +236,7 @@ Icons: root `icon.svg` → `npm run build:icons` → `build/icon.ico`.
 | `npm run electron:publish:win` | Build + upload to GitHub Releases (`GH_TOKEN`) |
 | `npm run electron:build:dir` | `dist-electron/win-unpacked/BLIP.exe` (debug folder) |
 
-- **Installer (NSIS):** choose install folder, Start Menu shortcut, optional desktop shortcut, icon from `icon.svg`.
+- **Installer (NSIS, assisted):** language → welcome → network tips → GPL license → per-user/per-machine → **choose folder** → install → finish (Launch BLIP). Desktop + Start Menu shortcuts. Uninstaller can optionally wipe `%APPDATA%\BLIP`.
 - **Portable:** one `.exe`, copy anywhere; settings live in `%APPDATA%`.
 
 <h3 id="en-scripts">npm scripts</h3>
@@ -543,7 +543,7 @@ npx electron .
 | `npm run electron:publish:win` | Сборка + выкладка на GitHub Releases (`GH_TOKEN`) |
 | `npm run electron:build:dir` | `dist-electron/win-unpacked/BLIP.exe` |
 
-- **Установщик:** выбор папки, ярлык в «Пуск», опция ярлыка на рабочем столе.
+- **Установщик (NSIS, мастер):** язык → приветствие → советы по сети → GPL → для пользователя / для ПК → **выбор папки** → установка → финиш (запуск BLIP). Ярлыки Desktop + «Пуск». В удалении можно стереть `%APPDATA%\BLIP`.
 - **Portable:** один `.exe`, настройки в `%APPDATA%`.
 
 <h3 id="ru-scripts">Скрипты npm</h3>
