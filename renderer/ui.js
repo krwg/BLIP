@@ -1,4 +1,6 @@
 import { t, setLang, getLang, applyLangChange, onLangChange, applyI18n } from './i18n.js';
+import { releaseMarkdownToHtml, bindReleaseMarkdownLinks } from './release-markdown.js';
+import { openReleaseNotesOverlay } from './release-overlay.js';
 import { createIdGrid } from './grid.js';
 import { createChatView, getMessages, addMessage } from './chat.js';
 import { isFavorite, toggleFavorite, comparePeersFavoriteFirst } from './peer-favorites.js';
@@ -3637,13 +3639,6 @@ function buildSettingsUpdatesPanel() {
     }
   }
 
-  function excerptBody(body, max = 220) {
-    if (!body) return '';
-    const one = body.replace(/\r\n/g, '\n').trim();
-    if (one.length <= max) return one;
-    return `${one.slice(0, max).trim()}…`;
-  }
-
   void window.blip.getGithubReleases?.(8).then((result) => {
     releasesFeed.innerHTML = '';
     if (!result?.ok || !result.releases?.length) {
@@ -3658,6 +3653,32 @@ function buildSettingsUpdatesPanel() {
     for (const r of feed) {
       const card = document.createElement('article');
       card.className = 'settings-release-card';
+      card.tabIndex = 0;
+      card.setAttribute('role', 'button');
+      card.setAttribute(
+        'aria-label',
+        t('settings.updates_open_notes').replace('{v}', r.tag || r.name || ''),
+      );
+
+      const openNotes = () => {
+        openReleaseNotesOverlay({
+          tag: r.tag,
+          name: r.name,
+          body: r.body,
+          url: r.url,
+        });
+      };
+
+      card.addEventListener('click', (e) => {
+        if (e.target.closest('button, a')) return;
+        openNotes();
+      });
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          openNotes();
+        }
+      });
 
       const head = document.createElement('div');
       head.className = 'settings-release-head';
@@ -3685,9 +3706,10 @@ function buildSettingsUpdatesPanel() {
       }
 
       if (r.body) {
-        const body = document.createElement('p');
-        body.className = 'settings-release-body';
-        body.textContent = excerptBody(r.body);
+        const body = document.createElement('div');
+        body.className = 'settings-release-body release-md release-md--preview';
+        body.innerHTML = releaseMarkdownToHtml(r.body);
+        bindReleaseMarkdownLinks(body, (href) => window.blip.openExternal?.(href));
         card.appendChild(body);
       }
 
@@ -3697,7 +3719,10 @@ function buildSettingsUpdatesPanel() {
         link.className = 'btn btn-lang settings-release-link';
         link.dataset.i18n = 'settings.updates_open_release';
         link.textContent = t('settings.updates_open_release');
-        link.addEventListener('click', () => window.blip.openExternal?.(r.url));
+        link.addEventListener('click', (e) => {
+          e.stopPropagation();
+          window.blip.openExternal?.(r.url);
+        });
         card.appendChild(link);
       }
 

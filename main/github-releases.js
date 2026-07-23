@@ -6,9 +6,9 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const appMetaPath = join(__dirname, '..', 'app-metadata.json');
 
 function parseGithubRepo(url) {
-  if (!url || typeof url !== 'string') return 'krwg/BLIP';
+  if (!url || typeof url !== 'string') return 'krwg/blip';
   const m = url.match(/github\.com\/([^/]+\/[^/]+)/i);
-  return m ? m[1].replace(/\.git$/, '') : 'krwg/BLIP';
+  return m ? m[1].replace(/\.git$/, '') : 'krwg/blip';
 }
 
 export function loadGithubRepo() {
@@ -20,12 +20,12 @@ export function loadGithubRepo() {
   } catch {
 
   }
-  return 'krwg/BLIP';
+  return 'krwg/blip';
 }
 
 export function getGithubPublishConfig() {
   const [owner, repo] = loadGithubRepo().split('/');
-  return { provider: 'github', owner: owner || 'krwg', repo: repo || 'BLIP' };
+  return { provider: 'github', owner: owner || 'krwg', repo: repo || 'blip' };
 }
 
 export function releaseTagCandidates(tag) {

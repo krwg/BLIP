@@ -1659,6 +1659,12 @@ select.blip-select:focus {
   padding: 10px 12px;
   margin: 0;
   border-bottom: 1px solid color-mix(in srgb, var(--blip-glass-border) 30%, transparent);
+  cursor: pointer;
+}
+
+.settings-release-card:focus-visible {
+  outline: 2px solid var(--blip-accent);
+  outline-offset: 2px;
 }
 
 .settings-releases-feed .settings-release-card:last-child {
@@ -1696,12 +1702,223 @@ select.blip-select:focus {
   margin: 8px 0 0;
   font-size: 11px;
   color: var(--blip-muted);
-  white-space: pre-wrap;
-  line-height: 1.4;
+  line-height: 1.45;
+}
+
+.settings-release-body.release-md--preview {
+  max-height: 7.2em;
+  overflow: hidden;
+  position: relative;
+  mask-image: linear-gradient(to bottom, #000 55%, transparent 100%);
 }
 
 .settings-release-link {
   margin-top: 8px;
+}
+
+.release-md {
+  color: var(--blip-fg, inherit);
+  word-break: break-word;
+}
+
+.release-md > :first-child {
+  margin-top: 0;
+}
+
+.release-md > :last-child {
+  margin-bottom: 0;
+}
+
+.release-md h1,
+.release-md h2,
+.release-md h3,
+.release-md h4 {
+  margin: 0.85em 0 0.4em;
+  color: var(--blip-accent);
+  font-size: 13px;
+  line-height: 1.3;
+  text-transform: none;
+}
+
+.release-md h1 {
+  font-size: 15px;
+}
+
+.release-md h2 {
+  font-size: 14px;
+}
+
+.release-md p,
+.release-md ul,
+.release-md ol,
+.release-md blockquote,
+.release-md pre {
+  margin: 0.55em 0;
+}
+
+.release-md ul,
+.release-md ol {
+  padding-left: 1.35em;
+}
+
+.release-md li + li {
+  margin-top: 0.2em;
+}
+
+.release-md a {
+  color: var(--blip-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.release-md img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0.75em 0;
+  border: 1px solid color-mix(in srgb, var(--blip-glass-border) 40%, transparent);
+}
+
+.release-md table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.75em 0;
+  font-size: 11px;
+  overflow-x: auto;
+  display: block;
+}
+
+.release-md th,
+.release-md td {
+  border: 1px solid color-mix(in srgb, var(--blip-glass-border) 55%, transparent);
+  padding: 6px 8px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.release-md th {
+  color: var(--blip-accent);
+  background: color-mix(in srgb, var(--blip-accent) 8%, transparent);
+}
+
+.release-md code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.92em;
+  padding: 0.1em 0.35em;
+  background: color-mix(in srgb, var(--blip-glass-border) 28%, transparent);
+}
+
+.release-md pre {
+  overflow-x: auto;
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--blip-glass-border) 22%, transparent);
+  border: 1px solid color-mix(in srgb, var(--blip-glass-border) 40%, transparent);
+}
+
+.release-md pre code {
+  padding: 0;
+  background: none;
+}
+
+.release-md blockquote {
+  margin-left: 0;
+  padding-left: 12px;
+  border-left: 3px solid var(--blip-accent);
+  color: var(--blip-muted);
+}
+
+.release-md hr {
+  border: none;
+  border-top: 1px solid color-mix(in srgb, var(--blip-glass-border) 45%, transparent);
+  margin: 1em 0;
+}
+
+.release-notes-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 520;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  background: rgba(0, 0, 0, 0.55);
+  padding: 0;
+  animation: release-notes-fade 160ms ease-out;
+}
+
+.release-notes-sheet {
+  width: 100%;
+  max-height: min(88vh, 920px);
+  display: flex;
+  flex-direction: column;
+  border-bottom: 2px solid var(--blip-accent);
+  border-radius: 0 0 10px 10px;
+  padding: 14px 16px 16px;
+  animation: release-notes-slide 200ms ease-out;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+}
+
+.release-notes-sheet__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-shrink: 0;
+  margin-bottom: 12px;
+}
+
+.release-notes-sheet__titles {
+  min-width: 0;
+}
+
+.release-notes-sheet__tag {
+  margin: 0;
+  color: var(--blip-accent);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.release-notes-sheet__name {
+  margin: 4px 0 0;
+  font-size: 14px;
+  line-height: 1.3;
+}
+
+.release-notes-sheet__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.release-notes-sheet__body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 4px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+@keyframes release-notes-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes release-notes-slide {
+  from {
+    transform: translateY(-18px);
+    opacity: 0.85;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .settings-network-list {
