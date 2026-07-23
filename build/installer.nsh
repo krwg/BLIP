@@ -1,8 +1,3 @@
-; BLIP NSIS — electron-builder include
-; https://www.electron.build/nsis.html
-; Assisted wizard: Language → Welcome → Tips → License → Install mode → Directory → Install → Finish
-; Uninstall: Welcome → optional Remove AppData → Remove files → Finish
-
 !include "nsDialogs.nsh"
 
 Var BlipTipsDialog

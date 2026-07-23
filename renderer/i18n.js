@@ -2006,15 +2006,12 @@ function readStoredLang() {
     if (typeof localStorage !== 'undefined') {
       return localStorage.getItem('blip_lang') || 'en';
     }
-  } catch {
-    /* Node / restricted storage */
-  }
+  } catch {}
   return 'en';
 }
 
 let currentLang = readStoredLang();
 
-/** Locale dictionaries — exported for parity tests / tooling. */
 export { locales };
 
 export function getLang() {
@@ -2028,9 +2025,7 @@ export function setLang(lang) {
       if (typeof localStorage !== 'undefined') {
         localStorage.setItem('blip_lang', lang);
       }
-    } catch {
-      /* ignore */
-    }
+    } catch {}
   }
 }
 
