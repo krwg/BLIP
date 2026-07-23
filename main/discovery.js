@@ -7,6 +7,7 @@ import {
   announceCanonical,
   signCanonical,
   verifyAnnouncePayload,
+  shouldAcceptAnnounce,
 } from './mesh-identity.js';
 import { resolveEntitlementState } from './mesh-plus-license.js';
 import {
@@ -214,6 +215,12 @@ export class Discovery {
       return;
     }
 
+    // Reject unsigned / forged announces (Ed25519 meshAnnounceSig). Metadata is still
+    // cleartext on the LAN; authenticity is enforced here.
+    if (!shouldAcceptAnnounce(data)) {
+      return;
+    }
+
     const { tcpPort, udpPort } = resolvePorts(this.config);
     const peerTcp = Number(data.tcpPort) || tcpPort;
     const peerUdp = Number(data.udpPort) || udpPort;
@@ -222,14 +229,10 @@ export class Discovery {
     const presence =
       data.presence === 'away' || data.presence === 'busy' ? data.presence : 'online';
     const presenceText = sanitizePresenceText(data.presenceText);
-    let meshVerified = false;
-    let meshLegacy = Number(data.meshProto) !== MESH_PROTO;
+    const check = verifyAnnouncePayload(data);
+    const meshVerified = check.ok;
+    const meshLegacy = false;
     const meshPubkey = String(data.meshPubkey || '');
-    if (Number(data.meshProto) === MESH_PROTO) {
-      const check = verifyAnnouncePayload(data);
-      meshVerified = check.ok;
-      meshLegacy = !check.ok;
-    }
 
     const peer = {
       blipId: data.blipId,

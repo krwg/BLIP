@@ -20,6 +20,11 @@ Development line **Morse**. No GitHub Release until explicitly cut — see [`doc
 - **Vitest** core suite — UDP announce sign/verify round-trip, TCP line framing, EN/RU i18n key parity (`npm test` in CI).
 - **NSIS Setup wizard** — network tips page, richer welcome/finish, uninstall optional AppData wipe, publish repo `krwg/blip`.
 
+### Security
+
+- **Announce authenticity** — peers with invalid/missing Ed25519 announce signatures are ignored (no peer row).
+- **LAN clipboard** — enabling sync from Off requires an explicit risk confirm dialog.
+
 ### Fixed
 
 - **BEACON publish** — `beaconPublishFromPath` was missing from `initBeaconMesh` API (always failed with «browser file» for large ZIP); native file dialog + main-process ingest.

@@ -688,6 +688,8 @@ const locales = {
     'clipboard.mode_trusted': 'Trusted peers',
     'clipboard.hint':
       'LAN clipboard sync: copy on your PC → peers in an open 1:1 chat receive it instantly (max 32 KB). No cloud. Off = disabled; Active = only while that chat is open. Use only on networks you trust.',
+    'clipboard.enable_confirm':
+      'Enable LAN clipboard sync? Text you copy can be sent to peers in the active chat (passwords, tokens, secrets). Only continue on networks and peers you trust.',
     'clipboard.received': 'Clipboard from #{id}',
     'settings.call_hint':
       'Stream quality sets capture resolution and LAN bitrate (higher = sharper, more CPU/bandwidth). Fullscreen resolution is the theater target when you press F.',
@@ -1678,6 +1680,8 @@ const locales = {
     'clipboard.mode_trusted': 'Доверенные абоненты',
     'clipboard.hint':
       'Синхронизация буфера по ЛАН: скопировал у себя — абонент в открытом личном чате мгновенно получает текст (до 32 КБ). Без облака. Выкл = отключено; Активно = только пока чат открыт. Только в сетях, которым доверяешь.',
+    'clipboard.enable_confirm':
+      'Включить синхронизацию буфера по ЛАН? Скопированный текст (пароли, токены, секреты) может уйти абоненту в активном чате. Продолжайте только в доверенной сети и с доверенными пирами.',
     'clipboard.received': 'Буфер от #{id}',
     'settings.call_hint':
       'Качество трансляции — разрешение захвата и битрейт по ЛАН (выше = чётче, больше нагрузка). Разрешение полноэкранное — цель в режиме театра (клавиша F).',

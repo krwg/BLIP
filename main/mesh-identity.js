@@ -153,6 +153,11 @@ export function verifyAnnouncePayload(data) {
   return { ok: true, meshPubkey };
 }
 
+/** Morse+: unsigned / wrong-proto / bad-sig announces must not become peers. */
+export function shouldAcceptAnnounce(data) {
+  return verifyAnnouncePayload(data).ok;
+}
+
 export function rememberPeerPubkey(config, blipId, meshPubkey) {
   if (!meshPubkey) return config;
   const known = { ...(config.knownPeerKeys || {}) };

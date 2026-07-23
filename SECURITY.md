@@ -27,6 +27,12 @@ Include:
 
 We aim to acknowledge within a few days; timelines depend on maintainer availability.
 
+## Threat model notes (Morse)
+
+- **UDP announce** carries `blipId`, display name, and IP in **cleartext** (LAN broadcast). Peers **must** present a valid **Ed25519** `meshAnnounceSig` over the canonical announce string; unsigned or forged packets are **ignored** and do not create peer entries.
+- **LAN clipboard sync** can forward secrets. It stays **off** by default; enabling it from Settings → Network requires an explicit **confirm** dialog.
+- Treat the broadcast domain as hostile unless you control it (same guidance as the hardening tips below).
+
 ## Scope (in scope)
 
 - Remote code execution, unsafe IPC, or unsafe `shell.openExternal` usage
