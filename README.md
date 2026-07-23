@@ -10,7 +10,7 @@
 
 <br>
 
-[![Version](https://img.shields.io/badge/version-1.1.1_Beacon-00ffc8?style=for-the-badge&labelColor=0a0a0a)](https://github.com/krwg/blip/releases)
+[![Version](https://img.shields.io/badge/version-2.0.0_Morse-00ffc8?style=for-the-badge&labelColor=0a0a0a)](https://github.com/krwg/blip/releases)
 [![Electron](https://img.shields.io/badge/Electron-35-47848F?style=for-the-badge&logo=electron&logoColor=white&labelColor=0a0a0a)](https://www.electronjs.org/)
 [![License](https://img.shields.io/badge/License-GPLv3-00ffc8?style=for-the-badge&labelColor=0a0a0a)](LICENSE)
 [![Platform](https://img.shields.io/badge/Windows-10%2F11-0078D6?style=for-the-badge&logo=windows&logoColor=white&labelColor=0a0a0a)]()
@@ -75,7 +75,7 @@ Quick VM flow: host runs BLIP (ID **1**), VM runs BLIP (ID **2**), same subnet v
 | | |
 |---|---|
 | **What** | Desktop app: text, voice, and video over LAN / Hamachi / Radmin VPN |
-| **Release** | **1.1.1 — Beacon** (see [`CHANGELOG.md`](CHANGELOG.md); [Releases](https://github.com/krwg/blip/releases)) |
+| **Release** | **2.0.0 — Morse** (in development; see [`CHANGELOG.md`](CHANGELOG.md); last published: [1.1.1 Beacon](https://github.com/krwg/blip/releases/tag/1.1.1)) |
 | **Identity** | BLIP ID **1–64** (8×8 grid, Minecraft-style chunk metaphor) |
 | **Servers** | None — UDP broadcast, TCP, and WebRTC peer-to-peer only |
 | **Sign-up** | None |
@@ -326,7 +326,7 @@ blip/
 │   └── assets/fonts/  # Minecraft woff2/ttf
 ├── docs/              # ARCHITECTURE.md + GitHub Pages landing
 ├── build/             # icon.ico, icon.png (generated)
-├── app-metadata.json  # version 1.1.1, codename Beacon
+├── app-metadata.json  # version 2.0.0, codename Morse
 ├── docs/MESH-PLUS.md  # MESH+ feature list
 ├── ach-icons/         # achievement SVGs (bundled in renderer)
 ├── preload.cjs        # IPC bridge
@@ -357,8 +357,9 @@ blip/
 | [CHANGELOG.md](CHANGELOG.md) | Release history |
 | [docs/MESH-PLUS.md](docs/MESH-PLUS.md) | MESH+ tier — what’s included |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Technical map |
-| [docs/ROADMAP-1.1-BEACON.md](docs/ROADMAP-1.1-BEACON.md) | 1.1.0 Beacon scope |
-| [docs/release-notes-v1.1.1-github.md](docs/release-notes-v1.1.1-github.md) | GitHub Release body (1.1.1) |
+| [docs/ROADMAP-2.0-MORSE.md](docs/ROADMAP-2.0-MORSE.md) | 2.0.0 Morse development line |
+| [docs/ROADMAP-1.1-BEACON.md](docs/ROADMAP-1.1-BEACON.md) | 1.1.0 Beacon scope (shipped) |
+| [docs/release-notes-v1.1.1-github.md](docs/release-notes-v1.1.1-github.md) | GitHub Release body (1.1.1, last published) |
 | [Landing site (Pages)](https://krwg.github.io/blip/) | Static showcase (`docs/index.html`) |
 
 <h3 id="en-troubleshooting">Troubleshooting</h3>
@@ -411,7 +412,7 @@ The **Minecraft** font is licensed separately under [MIT](https://github.com/bs-
 | | |
 |---|---|
 | **Что это** | Desktop-приложение: текст, голос и видео по LAN / Hamachi / Radmin VPN |
-| **Релиз** | **1.1.1 — Beacon** (см. [`CHANGELOG.md`](CHANGELOG.md); [Releases](https://github.com/krwg/blip/releases)) |
+| **Релиз** | **2.0.0 — Morse** (в разработке; см. [`CHANGELOG.md`](CHANGELOG.md); последний опубликованный: [1.1.1 Beacon](https://github.com/krwg/blip/releases/tag/1.1.1)) |
 | **Идентификация** | BLIP ID **1–64** (сетка 8×8) |
 | **Серверы** | Нет — только UDP broadcast, TCP и WebRTC между пирами |
 | **Регистрация** | Нет |
@@ -631,7 +632,7 @@ blip/
 │   ├── group-call-roster.js · group-call-client.js
 │   └── assets/fonts/
 ├── docs/              # ARCHITECTURE.md + лендинг Pages
-├── app-metadata.json  # version 1.1.1, codename Beacon
+├── app-metadata.json  # version 2.0.0, codename Morse
 ├── build/ · preload.cjs · scripts/ · icon.svg · dist/
 ```
 
@@ -656,8 +657,9 @@ blip/
 | [SECURITY.md](SECURITY.md) | Как сообщить об уязвимости |
 | [CHANGELOG.md](CHANGELOG.md) | История версий |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Архитектура кода |
-| [docs/ROADMAP-1.1-BEACON.md](docs/ROADMAP-1.1-BEACON.md) | Скоуп 1.1.0 Beacon |
-| [docs/release-notes-v1.1.1-github.md](docs/release-notes-v1.1.1-github.md) | Текст GitHub Release (1.1.1) |
+| [docs/ROADMAP-2.0-MORSE.md](docs/ROADMAP-2.0-MORSE.md) | Линия разработки 2.0.0 Morse |
+| [docs/ROADMAP-1.1-BEACON.md](docs/ROADMAP-1.1-BEACON.md) | Скоуп 1.1.0 Beacon (выпущен) |
+| [docs/release-notes-v1.1.1-github.md](docs/release-notes-v1.1.1-github.md) | Текст GitHub Release (1.1.1, последний опубликованный) |
 | [Landing (Pages)](https://krwg.github.io/blip/) | Статический сайт-витрина (`docs/index.html`) |
 
 <h3 id="ru-troubleshooting">Устранение неполадок</h3>

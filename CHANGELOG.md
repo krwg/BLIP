@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Release **version numbers** track [`app-metadata.json`](app-metadata.json) (synced into `package.json` on build).
 
-## [Unreleased]
+## [Unreleased] — 2.0.0 Morse
+
+Development line **Morse**. No GitHub Release until explicitly cut — see [`docs/ROADMAP-2.0-MORSE.md`](docs/ROADMAP-2.0-MORSE.md).
+
+### Changed
+
+- Opened **2.0.0 Morse** version line (`app-metadata.json` / docs). Last published installers remain **1.1.1 Beacon**.
 
 ### Fixed
 
