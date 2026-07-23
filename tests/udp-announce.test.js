@@ -4,6 +4,7 @@ import {
   announceCanonical,
   ensureMeshIdentity,
   signCanonical,
+  shouldAcceptAnnounce,
   verifyAnnouncePayload,
 } from '../main/mesh-identity.js';
 
@@ -65,13 +66,30 @@ describe('UDP announce (mesh-identity)', () => {
     expect(verifyAnnouncePayload(packet).ok).toBe(false);
   });
 
-  it('rejects missing signature fields', () => {
-    expect(
-      verifyAnnouncePayload({
-        meshProto: MESH_PROTO,
-        blipId: 1,
-        meshPubkey: 'x',
-      }).ok,
-    ).toBe(false);
-  });
+    it('rejects missing signature fields', () => {
+      expect(
+        verifyAnnouncePayload({
+          meshProto: MESH_PROTO,
+          blipId: 1,
+          meshPubkey: 'x',
+        }).ok,
+      ).toBe(false);
+    });
+
+    it('shouldAcceptAnnounce is false for unsigned payloads', () => {
+      expect(
+        shouldAcceptAnnounce({
+          type: 'announce',
+          meshProto: MESH_PROTO,
+          blipId: 9,
+          displayName: 'x',
+        }),
+      ).toBe(false);
+    });
+
+    it('shouldAcceptAnnounce is true for a valid signed packet', () => {
+      const config = ensureMeshIdentity({});
+      const { packet } = buildSignedAnnounce(config, { blipId: 4 });
+      expect(shouldAcceptAnnounce(packet)).toBe(true);
+    });
 });

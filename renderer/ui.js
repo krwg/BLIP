@@ -2745,6 +2745,18 @@ function buildSettingsNetworkPanel() {
     clipOpts,
     normalizeClipboardSyncMode(state.config.clipboardSyncMode),
     async (mode) => {
+      const prev = normalizeClipboardSyncMode(state.config.clipboardSyncMode);
+      if (prev === 'off' && mode !== 'off') {
+        const ok = await openConfirmDialog({
+          title: t('clipboard.mode'),
+          body: t('clipboard.enable_confirm'),
+          danger: true,
+        });
+        if (!ok) {
+          clipSelect.value = 'off';
+          return;
+        }
+      }
       state.config = await api.saveConfig({ clipboardSyncMode: mode });
       restartClipboardSync();
     }
