@@ -122,6 +122,12 @@ export function labelBg(id) {
   return label === key ? id : label;
 }
 
+export const UI_SKINS = ['pixel', 'nest'];
+
+export function normalizeUiSkin(raw) {
+  return raw === 'nest' ? 'nest' : 'pixel';
+}
+
 export function normalizeCustomAccentHex(raw) {
   const s = String(raw || '').trim();
   if (/^#[0-9A-Fa-f]{6}$/.test(s)) return s.toLowerCase();
@@ -150,11 +156,13 @@ export function applyAppearance(config) {
   const accent = normalizeAccentId(config?.accentId, config?.themeId);
   const bg = normalizeBgId(config?.animatedBgId);
   const effective = resolveEffectiveTheme(mode);
+  const skin = normalizeUiSkin(config?.uiSkin);
 
   html.dataset.themeMode = mode;
   html.dataset.theme = effective;
   html.dataset.accent = accent;
   html.dataset.animatedBg = bg;
+  html.dataset.uiSkin = skin;
   delete html.dataset.callWindow;
   html.dataset.reactiveBg =
     config?.reactiveBackground === true && bg !== 'none' ? '1' : '0';
@@ -189,6 +197,7 @@ export function applyCallWindowAppearance(config) {
   html.dataset.animatedBg = 'none';
   html.dataset.callWindow = '1';
   html.dataset.reactiveBg = '0';
+  html.dataset.uiSkin = normalizeUiSkin(config?.uiSkin);
   applyCustomAccentVars(html, config);
   syncReducedMotion(config);
 }

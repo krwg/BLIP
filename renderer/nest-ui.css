@@ -1,0 +1,177 @@
+@import '../../shared/floke-kit/theme-tokens.css';
+
+html[data-ui-skin='nest'] {
+  --blip-font: var(--floke-font-main);
+  --blip-mono: var(--floke-font-mono);
+  --nest-radius-sm: var(--floke-radius-sm);
+  --nest-radius-md: var(--floke-radius-md);
+  --nest-radius-lg: var(--floke-radius-lg);
+  --nest-radius-xl: var(--floke-radius-xl);
+  --blip-bg: var(--floke-bg-secondary);
+  --blip-text: var(--floke-text-primary);
+  --blip-muted: var(--floke-text-secondary);
+  --blip-danger: var(--floke-accent-red);
+  --blip-glass: color-mix(in srgb, var(--floke-bg-primary) 82%, transparent);
+  --blip-chat-incoming: color-mix(in srgb, var(--floke-bg-primary) 90%, transparent);
+  --blip-toast-bg: color-mix(in srgb, var(--floke-bg-primary) 94%, transparent);
+  --blip-input-bg: color-mix(in srgb, var(--floke-bg-primary) 70%, transparent);
+  --blip-bg-layer-opacity: 0.32;
+  -webkit-font-smoothing: antialiased;
+  font-smooth: always;
+  text-rendering: optimizeLegibility;
+}
+
+html[data-ui-skin='nest'][data-theme='light'] {
+  --blip-bg: var(--floke-bg-secondary);
+}
+
+html[data-ui-skin='nest'][data-theme='dark'] {
+  --blip-bg: var(--floke-bg-secondary);
+}
+
+html[data-ui-skin='nest'],
+html[data-ui-skin='nest'] body {
+  font-family: var(--floke-font-main);
+  letter-spacing: -0.01em;
+  line-height: 1.4;
+}
+
+html[data-ui-skin='nest'] .btn,
+html[data-ui-skin='nest'] .input,
+html[data-ui-skin='nest'] .blip-select,
+html[data-ui-skin='nest'] .glass,
+html[data-ui-skin='nest'] .card,
+html[data-ui-skin='nest'] .settings-panel,
+html[data-ui-skin='nest'] .settings-list-panel,
+html[data-ui-skin='nest'] .settings-release-card,
+html[data-ui-skin='nest'] .peer-row,
+html[data-ui-skin='nest'] .chat-block,
+html[data-ui-skin='nest'] .nav-btn,
+html[data-ui-skin='nest'] .side-nav,
+html[data-ui-skin='nest'] .titlebar,
+html[data-ui-skin='nest'] .toast,
+html[data-ui-skin='nest'] .blip-modal,
+html[data-ui-skin='nest'] .blip-modal-backdrop .glass,
+html[data-ui-skin='nest'] .call-overlay,
+html[data-ui-skin='nest'] .id-cell,
+html[data-ui-skin='nest'] .pixel-toggle,
+html[data-ui-skin='nest'] .pixel-hint-btn,
+html[data-ui-skin='nest'] .settings-dropdown,
+html[data-ui-skin='nest'] .release-notes-sheet,
+html[data-ui-skin='nest'] .chat-input-row input,
+html[data-ui-skin='nest'] .chat-input-row textarea,
+html[data-ui-skin='nest'] button,
+html[data-ui-skin='nest'] input,
+html[data-ui-skin='nest'] select,
+html[data-ui-skin='nest'] textarea {
+  border-radius: var(--nest-radius-md) !important;
+  font-family: var(--floke-font-main);
+  transition:
+    background var(--floke-duration-fast) var(--floke-ease),
+    border-color var(--floke-duration-fast) var(--floke-ease),
+    color var(--floke-duration-fast) var(--floke-ease),
+    box-shadow var(--floke-duration-fast) var(--floke-ease);
+}
+
+html[data-ui-skin='nest'] .btn,
+html[data-ui-skin='nest'] .nav-btn,
+html[data-ui-skin='nest'] .pixel-toggle,
+html[data-ui-skin='nest'] .pixel-hint-btn {
+  border-width: 1px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  box-shadow: var(--floke-shadow-sm);
+}
+
+html[data-ui-skin='nest'] .btn:hover,
+html[data-ui-skin='nest'] .nav-btn:hover {
+  box-shadow: var(--floke-shadow-md);
+}
+
+html[data-ui-skin='nest'] .glass {
+  border-width: 1px;
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  box-shadow: var(--floke-shadow-md);
+}
+
+html[data-ui-skin='nest'] .titlebar,
+html[data-ui-skin='nest'] .side-nav {
+  border-width: 1px;
+}
+
+html[data-ui-skin='nest'] .section-subtitle,
+html[data-ui-skin='nest'] .settings-panel-title,
+html[data-ui-skin='nest'] .settings-field-label {
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+html[data-ui-skin='nest'] .pixel-glyph--file,
+html[data-ui-skin='nest'] .pixel-glyph--upload,
+html[data-ui-skin='nest'] .pixel-glyph--reply,
+html[data-ui-skin='nest'] .pixel-glyph--play,
+html[data-ui-skin='nest'] .pixel-glyph--pause {
+  border: none !important;
+  box-shadow: none !important;
+  background: currentColor;
+  transform: none !important;
+  border-radius: var(--nest-radius-sm) !important;
+}
+
+html[data-ui-skin='nest'] .pixel-glyph--file {
+  width: 14px;
+  height: 16px;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm1 7V3.5L19.5 9H15z'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm1 7V3.5L19.5 9H15z'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+
+html[data-ui-skin='nest'] .pixel-glyph--upload {
+  width: 14px;
+  height: 14px;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M12 3l5 5h-3v6h-4V8H7l5-5zm-7 14h14v2H5v-2z'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M12 3l5 5h-3v6h-4V8H7l5-5zm-7 14h14v2H5v-2z'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+
+html[data-ui-skin='nest'] .pixel-glyph--reply {
+  width: 14px;
+  height: 14px;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+
+html[data-ui-skin='nest'] .pixel-glyph--play {
+  width: 14px;
+  height: 14px;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M8 5v14l11-7L8 5z'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M8 5v14l11-7L8 5z'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+
+html[data-ui-skin='nest'] .pixel-glyph--pause {
+  width: 14px;
+  height: 14px;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M6 5h4v14H6V5zm8 0h4v14h-4V5z'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M6 5h4v14H6V5zm8 0h4v14h-4V5z'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+
+html[data-ui-skin='nest'] .id-cell {
+  border-radius: var(--nest-radius-lg) !important;
+}
+
+html[data-ui-skin='nest'] .avatar,
+html[data-ui-skin='nest'] .peer-avatar,
+html[data-ui-skin='nest'] img.avatar {
+  border-radius: var(--floke-radius-full) !important;
+}

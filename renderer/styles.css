@@ -31,6 +31,11 @@
 *::before,
 *::after {
   box-sizing: border-box;
+}
+
+html:not([data-ui-skin='nest']) *,
+html:not([data-ui-skin='nest']) *::before,
+html:not([data-ui-skin='nest']) *::after {
   border-radius: 0 !important;
 }
 
