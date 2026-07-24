@@ -79,7 +79,6 @@ html[data-ui-skin='nest'] .id-cell,
 html[data-ui-skin='nest'] .pixel-toggle,
 html[data-ui-skin='nest'] .pixel-hint-btn,
 html[data-ui-skin='nest'] .settings-dropdown,
-html[data-ui-skin='nest'] .release-notes-sheet,
 html[data-ui-skin='nest'] .chat-input-row input,
 html[data-ui-skin='nest'] .chat-input-row textarea,
 html[data-ui-skin='nest'] button,
@@ -190,11 +189,20 @@ html[data-ui-skin='nest'] .blip-modal {
   -webkit-backdrop-filter: blur(32px) saturate(1.5);
 }
 
-html[data-ui-skin='nest'] .toast,
-html[data-ui-skin='nest'] .release-notes-sheet {
+html[data-ui-skin='nest'] .toast {
   border-width: 0.5px;
   border-radius: var(--nest-radius-xl) !important;
   box-shadow: var(--nest-shadow-lg);
+  backdrop-filter: blur(28px) saturate(1.4);
+  -webkit-backdrop-filter: blur(28px) saturate(1.4);
+}
+
+html[data-ui-skin='nest'] .release-notes-sheet {
+  height: 100%;
+  max-height: 100%;
+  border-width: 0;
+  border-radius: 0 !important;
+  box-shadow: none;
   backdrop-filter: blur(28px) saturate(1.4);
   -webkit-backdrop-filter: blur(28px) saturate(1.4);
 }
