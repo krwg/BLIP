@@ -284,6 +284,9 @@ const locales = {
     'settings.appearance': 'Look & background',
     'settings.appearance_theme': 'Theme',
     'settings.appearance_accent': 'Color accent',
+    'settings.nest_ui': 'NestUI 1.0',
+    'settings.nest_ui_hint':
+      'Alternate UI design: soft system look instead of the pixel mesh skin. Same layout and controls — only the visual language changes.',
     'settings.bg_animated': 'Animated background',
     'settings.bg_animated_mesh_hint': 'Ember and Rift scenes require MESH+.',
     'settings.bg_art': 'Art background',
@@ -1293,6 +1296,9 @@ const locales = {
     'settings.appearance': 'Внешний вид и фон',
     'settings.appearance_theme': 'Тема',
     'settings.appearance_accent': 'Цветовой акцент',
+    'settings.nest_ui': 'NestUI 1.0',
+    'settings.nest_ui_hint':
+      'Другой дизайн интерфейса: мягкий системный вид вместо пиксельной сетки. Раскладка и элементы те же — меняется только визуальный язык.',
     'settings.bg_animated': 'Анимированный фон',
     'settings.bg_animated_mesh_hint': 'Сцены «Угли» и «Разлом» — только с МЭШ ПЛЮС.',
     'settings.bg_art': 'Арт-фон',

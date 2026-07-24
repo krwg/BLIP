@@ -18,6 +18,8 @@ Development line **Morse**. No GitHub Release until explicitly cut — see [`doc
 
 ### Added
 
+- **NestUI 1.0** — Settings → Appearance toggle for an alternate soft system design (`data-ui-skin=nest`) via `shared/floke-kit` tokens; layout unchanged; accent preserved.
+- **Chat Markdown** — GFM formatting in regular messages (bold/lists/code/links) via sanitized `marked` + DOMPurify; release notes sheet fills the window with improved tables/images.
 - **Vitest** core suite — UDP announce sign/verify round-trip, TCP line framing, EN/RU i18n key parity (`npm test` in CI).
 - **NSIS Setup wizard** — network tips page, richer welcome/finish, uninstall optional AppData wipe, publish repo `krwg/blip`.
 - **Release notes Markdown** — Settings → Updates renders GitHub release bodies (tables, images, links); click a release for a top sheet with the full notes.

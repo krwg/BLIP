@@ -1,0 +1,313 @@
+@import '../shared/floke-kit/theme-tokens.css';
+
+html[data-ui-skin='nest'] {
+  --blip-font: var(--floke-font-main);
+  --blip-mono: var(--floke-font-mono);
+  --nest-radius-sm: 10px;
+  --nest-radius-md: 14px;
+  --nest-radius-lg: 18px;
+  --nest-radius-xl: 24px;
+  --nest-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.03);
+  --nest-shadow-md: 0 4px 14px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
+  --nest-shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.14), 0 4px 12px rgba(0, 0, 0, 0.06);
+  --blip-bg: #f5f5f7;
+  --blip-text: var(--floke-text-primary);
+  --blip-muted: var(--floke-text-secondary);
+  --blip-danger: var(--floke-accent-red);
+  --blip-glass: rgba(255, 255, 255, 0.72);
+  --blip-chat-incoming: rgba(255, 255, 255, 0.88);
+  --blip-toast-bg: rgba(255, 255, 255, 0.92);
+  --blip-input-bg: rgba(255, 255, 255, 0.55);
+  --blip-bg-layer-opacity: 0.28;
+  --blip-on-accent: #ffffff;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-smooth: always;
+  text-rendering: optimizeLegibility;
+}
+
+html[data-ui-skin='nest'][data-theme='light'] {
+  --blip-bg: #f5f5f7;
+  --blip-glass: rgba(255, 255, 255, 0.72);
+  --blip-chat-incoming: rgba(255, 255, 255, 0.9);
+  --blip-toast-bg: rgba(255, 255, 255, 0.94);
+  --blip-input-bg: rgba(255, 255, 255, 0.62);
+  --nest-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.03);
+  --nest-shadow-md: 0 4px 14px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
+  --nest-shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12), 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+html[data-ui-skin='nest'][data-theme='dark'] {
+  --blip-bg: #000000;
+  --blip-text: #f5f5f7;
+  --blip-muted: #98989d;
+  --blip-glass: rgba(28, 28, 30, 0.72);
+  --blip-chat-incoming: rgba(44, 44, 46, 0.92);
+  --blip-toast-bg: rgba(28, 28, 30, 0.94);
+  --blip-input-bg: rgba(44, 44, 46, 0.7);
+  --nest-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --nest-shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --nest-shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.55);
+}
+
+html[data-ui-skin='nest'],
+html[data-ui-skin='nest'] body {
+  font-family: var(--floke-font-main);
+  letter-spacing: -0.015em;
+  line-height: 1.45;
+  font-weight: 400;
+}
+
+html[data-ui-skin='nest'] .btn,
+html[data-ui-skin='nest'] .input,
+html[data-ui-skin='nest'] .blip-select,
+html[data-ui-skin='nest'] .glass,
+html[data-ui-skin='nest'] .card,
+html[data-ui-skin='nest'] .settings-panel,
+html[data-ui-skin='nest'] .settings-list-panel,
+html[data-ui-skin='nest'] .settings-release-card,
+html[data-ui-skin='nest'] .peer-row,
+html[data-ui-skin='nest'] .chat-block,
+html[data-ui-skin='nest'] .nav-btn,
+html[data-ui-skin='nest'] .side-nav,
+html[data-ui-skin='nest'] .titlebar,
+html[data-ui-skin='nest'] .toast,
+html[data-ui-skin='nest'] .blip-modal,
+html[data-ui-skin='nest'] .blip-modal-backdrop .glass,
+html[data-ui-skin='nest'] .call-overlay,
+html[data-ui-skin='nest'] .id-cell,
+html[data-ui-skin='nest'] .pixel-toggle,
+html[data-ui-skin='nest'] .pixel-hint-btn,
+html[data-ui-skin='nest'] .settings-dropdown,
+html[data-ui-skin='nest'] .chat-input-row input,
+html[data-ui-skin='nest'] .chat-input-row textarea,
+html[data-ui-skin='nest'] button,
+html[data-ui-skin='nest'] input,
+html[data-ui-skin='nest'] select,
+html[data-ui-skin='nest'] textarea {
+  border-radius: var(--nest-radius-md) !important;
+  font-family: var(--floke-font-main);
+  transition:
+    background 180ms var(--floke-ease),
+    border-color 180ms var(--floke-ease),
+    color 180ms var(--floke-ease),
+    box-shadow 220ms var(--floke-ease),
+    transform 180ms var(--floke-ease),
+    opacity 180ms var(--floke-ease);
+}
+
+html[data-ui-skin='nest'] .btn,
+html[data-ui-skin='nest'] .nav-btn,
+html[data-ui-skin='nest'] .pixel-toggle,
+html[data-ui-skin='nest'] .pixel-hint-btn {
+  border-width: 0.5px;
+  border-color: color-mix(in srgb, var(--blip-accent) 28%, transparent);
+  font-weight: 510;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  box-shadow: var(--nest-shadow-sm);
+}
+
+html[data-ui-skin='nest'] .btn:hover,
+html[data-ui-skin='nest'] .nav-btn:hover {
+  box-shadow: var(--nest-shadow-md);
+  transform: translateY(-0.5px);
+}
+
+html[data-ui-skin='nest'] .btn:active,
+html[data-ui-skin='nest'] .nav-btn:active {
+  transform: scale(0.98);
+  box-shadow: var(--nest-shadow-sm);
+}
+
+html[data-ui-skin='nest'] .nav-btn.active {
+  border-radius: 999px !important;
+  box-shadow: none;
+  font-weight: 600;
+}
+
+html[data-ui-skin='nest'] .glass {
+  border-width: 0.5px;
+  border-color: color-mix(in srgb, var(--floke-border-light) 55%, transparent);
+  backdrop-filter: blur(28px) saturate(1.45);
+  -webkit-backdrop-filter: blur(28px) saturate(1.45);
+  box-shadow: var(--nest-shadow-md);
+}
+
+html[data-ui-skin='nest'] .titlebar,
+html[data-ui-skin='nest'] .side-nav {
+  border-width: 0.5px;
+  border-color: color-mix(in srgb, var(--floke-border-light) 65%, transparent);
+  backdrop-filter: blur(24px) saturate(1.35);
+  -webkit-backdrop-filter: blur(24px) saturate(1.35);
+}
+
+html[data-ui-skin='nest'] .settings-panel,
+html[data-ui-skin='nest'] .settings-list-panel {
+  border-width: 0.5px;
+  box-shadow: var(--nest-shadow-sm);
+}
+
+html[data-ui-skin='nest'] .peer-row,
+html[data-ui-skin='nest'] .chat-block {
+  border-width: 0.5px;
+  box-shadow: none;
+}
+
+html[data-ui-skin='nest'] .chat-block {
+  border-radius: var(--nest-radius-lg) !important;
+}
+
+html[data-ui-skin='nest'] .input,
+html[data-ui-skin='nest'] .blip-select,
+html[data-ui-skin='nest'] .settings-dropdown,
+html[data-ui-skin='nest'] input,
+html[data-ui-skin='nest'] select,
+html[data-ui-skin='nest'] textarea {
+  border-width: 0.5px;
+  border-color: color-mix(in srgb, var(--floke-border-medium) 70%, transparent);
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.02);
+}
+
+html[data-ui-skin='nest'] .input:focus,
+html[data-ui-skin='nest'] .blip-select:focus,
+html[data-ui-skin='nest'] input:focus,
+html[data-ui-skin='nest'] select:focus,
+html[data-ui-skin='nest'] textarea:focus {
+  border-color: color-mix(in srgb, var(--blip-accent) 70%, transparent);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--blip-accent) 22%, transparent),
+    inset 0 1px 1px rgba(0, 0, 0, 0.02);
+  outline: none;
+}
+
+html[data-ui-skin='nest'] .blip-modal {
+  border-width: 0.5px;
+  border-radius: var(--nest-radius-xl) !important;
+  box-shadow: var(--nest-shadow-lg);
+  backdrop-filter: blur(32px) saturate(1.5);
+  -webkit-backdrop-filter: blur(32px) saturate(1.5);
+}
+
+html[data-ui-skin='nest'] .toast {
+  border-width: 0.5px;
+  border-radius: var(--nest-radius-xl) !important;
+  box-shadow: var(--nest-shadow-lg);
+  backdrop-filter: blur(28px) saturate(1.4);
+  -webkit-backdrop-filter: blur(28px) saturate(1.4);
+}
+
+html[data-ui-skin='nest'] .release-notes-sheet {
+  height: 100%;
+  max-height: 100%;
+  border-width: 0;
+  border-radius: 0 !important;
+  box-shadow: none;
+  backdrop-filter: blur(28px) saturate(1.4);
+  -webkit-backdrop-filter: blur(28px) saturate(1.4);
+}
+
+html[data-ui-skin='nest'] .section-subtitle,
+html[data-ui-skin='nest'] .settings-panel-title,
+html[data-ui-skin='nest'] .settings-field-label {
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  text-transform: none;
+}
+
+html[data-ui-skin='nest'] .settings-panel-title {
+  font-size: 1.15em;
+  font-weight: 700;
+}
+
+html[data-ui-skin='nest'] .hint,
+html[data-ui-skin='nest'] .settings-release-date {
+  color: var(--floke-text-tertiary);
+  letter-spacing: -0.01em;
+}
+
+html[data-ui-skin='nest'] .pixel-glyph--file,
+html[data-ui-skin='nest'] .pixel-glyph--upload,
+html[data-ui-skin='nest'] .pixel-glyph--reply,
+html[data-ui-skin='nest'] .pixel-glyph--play,
+html[data-ui-skin='nest'] .pixel-glyph--pause {
+  border: none !important;
+  box-shadow: none !important;
+  background: currentColor;
+  transform: none !important;
+  border-radius: 4px !important;
+  opacity: 0.92;
+}
+
+html[data-ui-skin='nest'] .pixel-glyph--file {
+  width: 14px;
+  height: 16px;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm1 7V3.5L19.5 9H15z'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm1 7V3.5L19.5 9H15z'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+
+html[data-ui-skin='nest'] .pixel-glyph--upload {
+  width: 14px;
+  height: 14px;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M12 3l5 5h-3v6h-4V8H7l5-5zm-7 14h14v2H5v-2z'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M12 3l5 5h-3v6h-4V8H7l5-5zm-7 14h14v2H5v-2z'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+
+html[data-ui-skin='nest'] .pixel-glyph--reply {
+  width: 14px;
+  height: 14px;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+
+html[data-ui-skin='nest'] .pixel-glyph--play {
+  width: 14px;
+  height: 14px;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M8 5v14l11-7L8 5z'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M8 5v14l11-7L8 5z'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+
+html[data-ui-skin='nest'] .pixel-glyph--pause {
+  width: 14px;
+  height: 14px;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M6 5h4v14H6V5zm8 0h4v14h-4V5z'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M6 5h4v14H6V5zm8 0h4v14h-4V5z'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+
+html[data-ui-skin='nest'] .id-cell {
+  border-radius: var(--nest-radius-xl) !important;
+  border-width: 0.5px;
+  box-shadow: var(--nest-shadow-sm);
+}
+
+html[data-ui-skin='nest'] .avatar,
+html[data-ui-skin='nest'] .peer-avatar,
+html[data-ui-skin='nest'] img.avatar {
+  border-radius: var(--floke-radius-full) !important;
+  box-shadow: 0 0 0 0.5px color-mix(in srgb, var(--floke-border-light) 80%, transparent);
+}
+
+html[data-ui-skin='nest'][data-theme='dark'] .glass,
+html[data-ui-skin='nest'][data-theme='dark'] .titlebar,
+html[data-ui-skin='nest'][data-theme='dark'] .side-nav {
+  border-color: color-mix(in srgb, #48484a 70%, transparent);
+}
+
+html[data-ui-skin='nest'][data-theme='dark'] .input,
+html[data-ui-skin='nest'][data-theme='dark'] .blip-select,
+html[data-ui-skin='nest'][data-theme='dark'] input,
+html[data-ui-skin='nest'][data-theme='dark'] select,
+html[data-ui-skin='nest'][data-theme='dark'] textarea {
+  border-color: color-mix(in srgb, #48484a 80%, transparent);
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.25);
+}

@@ -123,6 +123,8 @@ const DEFAULT_CONFIG = {
 
   chatFontScale: 1,
 
+  uiSkin: 'pixel',
+
   typingSoundEnabled: false,
 
   idleAwayMinutes: 5,

@@ -1,6 +1,7 @@
 
 import { t } from './i18n.js';
 import { appendLinkifiedText } from './linkify.js';
+import { chatMarkdownToHtml, bindMarkdownInteractions } from './release-markdown.js';
 import { formatFileSize } from './file-transfer.js';
 import { formatTransferSpeed } from './file-transfer-speed.js';
 import { isImageAttachment, isVideoAttachment, isMediaPlaceholderText } from './chat-attachments.js';
@@ -13,6 +14,70 @@ import {
 
 function openExternalUrl(url) {
   if (window.blip?.openExternal) void window.blip.openExternal(url);
+}
+
+function looksLikeMarkdown(text) {
+  const s = String(text || '');
+  if (!s.trim()) return false;
+  return /(^|\n)\s{0,3}(#{1,4}\s|[-*+]\s|\d+\.\s|>\s|```|~~~)|(\*\*|__|~~|`[^`]+`|\[[^\]]+\]\([^)]+\))/.test(
+    s,
+  );
+}
+
+function appendMarkdownOrPlain(parent, text) {
+  const src = String(text || '');
+  if (!src) return;
+  if (!looksLikeMarkdown(src)) {
+    appendLinkifiedText(parent, src, openExternalUrl);
+    return;
+  }
+  const html = chatMarkdownToHtml(src);
+  if (!html) {
+    appendLinkifiedText(parent, src, openExternalUrl);
+    return;
+  }
+  parent.classList.add('chat-md');
+  parent.innerHTML = html;
+  bindMarkdownInteractions(parent, { openExternal: openExternalUrl, allowImages: false });
+}
+
+function appendTextWithEmbeds(block, text) {
+  const src = String(text || '').trim();
+  if (!src) return;
+  const yts = findYoutubeInText(src);
+  if (!yts.length) {
+    const span = document.createElement('span');
+    span.className = 'chat-text';
+    appendMarkdownOrPlain(span, src);
+    block.appendChild(span);
+    return;
+  }
+
+  let last = 0;
+  for (const yt of yts) {
+    if (yt.index > last) {
+      const chunk = src.slice(last, yt.index).trim();
+      if (chunk) {
+        const span = document.createElement('span');
+        span.className = 'chat-text';
+        appendMarkdownOrPlain(span, chunk);
+        block.appendChild(span);
+      }
+    }
+    appendYoutubeEmbed(block, yt, {
+      onPlay: () => openYoutubeViewer(yt.id),
+    });
+    last = yt.index + yt.raw.length;
+  }
+  if (last < src.length) {
+    const tail = src.slice(last).trim();
+    if (tail) {
+      const span = document.createElement('span');
+      span.className = 'chat-text';
+      appendMarkdownOrPlain(span, tail);
+      block.appendChild(span);
+    }
+  }
 }
 
 export function appendForwardBlock(block, forwardFrom) {
@@ -198,45 +263,6 @@ function appendVideoBubble(block, attachment) {
   }
   btn.addEventListener('click', () => openVideoAttachment(attachment));
   block.appendChild(btn);
-}
-
-function appendTextWithEmbeds(block, text) {
-  const src = String(text || '').trim();
-  if (!src) return;
-  const yts = findYoutubeInText(src);
-  if (!yts.length) {
-    const span = document.createElement('span');
-    span.className = 'chat-text';
-    appendLinkifiedText(span, src, openExternalUrl);
-    block.appendChild(span);
-    return;
-  }
-
-  let last = 0;
-  for (const yt of yts) {
-    if (yt.index > last) {
-      const chunk = src.slice(last, yt.index).trim();
-      if (chunk) {
-        const span = document.createElement('span');
-        span.className = 'chat-text';
-        appendLinkifiedText(span, chunk, openExternalUrl);
-        block.appendChild(span);
-      }
-    }
-    appendYoutubeEmbed(block, yt, {
-      onPlay: () => openYoutubeViewer(yt.id),
-    });
-    last = yt.index + yt.raw.length;
-  }
-  if (last < src.length) {
-    const tail = src.slice(last).trim();
-    if (tail) {
-      const span = document.createElement('span');
-      span.className = 'chat-text';
-      appendLinkifiedText(span, tail, openExternalUrl);
-      block.appendChild(span);
-    }
-  }
 }
 
 export function appendChatMessageBody(block, m, opts = {}) {
