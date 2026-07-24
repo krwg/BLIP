@@ -1,4 +1,4 @@
-@import '../../shared/floke-kit/theme-tokens.css';
+@import '../shared/floke-kit/theme-tokens.css';
 
 html[data-ui-skin='nest'] {
   --blip-font: var(--floke-font-main);
