@@ -149,7 +149,7 @@ All UI audio is synthesized in the renderer via **Web Audio** (no asset files).
 
 Config: `uiSoundsEnabled`, `uiSoundsVolume`, `uiSoundPack`, `uiMelodyPack`. **Settings → Sound** — pack toggles + preview grid (`sounds.preview()` resumes `AudioContext` on user click).
 
-## Mesh Handshake (0.5.0)
+## Mesh Handshake
 
 Codename **Handshake**. Each client has an Ed25519 keypair in `blip-config.json` (`meshPublicKey` / `meshPrivateKey`).
 
@@ -174,7 +174,7 @@ Legacy peers without `meshProto` appear with `meshLegacy` — TCP mesh with 0.5 
 
 Images use `kind: 'image'` (JPEG resize). Group `group-msg` relays inline attachments; large files use chunked mesh to each member.
 
-## BEACON — mesh file library (1.1.0)
+## BEACON — mesh file library
 
 Codename **Beacon** / UI **BEACON** (EN) · **МАЯК** (RU). LAN-wide seeds separate from 1:1 chat file offers.
 
@@ -191,7 +191,7 @@ Wire: TCP `seed-request`, `seed-chunk`, `seed-chunks-batch`, `seed-have`; defaul
 
 Updates: packaged **NSIS** builds use `electron-updater` with a **generic** GitHub feed (`latest.yml` per release tag). **Portable** exe does not apply in-app updates.
 
-## LAN clipboard (0.5.8+)
+## LAN clipboard
 
 Config `clipboardSyncMode`: `off` | `active` (open 1:1 chat) | `trusted`. Renderer `clipboard-sync.js` sends `clipboard-push` (text, max 32 KB). Main forwards like other TCP types.
 
@@ -204,7 +204,7 @@ Config `clipboardSyncMode`: `off` | `active` (open 1:1 chat) | `trusted`. Render
 
 Peers show whichever the remote has advertised; fallback to pixel art when no photo.
 
-## Appearance (0.7.2+)
+## Appearance
 
 `renderer/appearance.js` drives `html[data-theme]` (light / dark / auto) and `html[data-accent]` (16 presets including **slate** `#94a3b8`).
 
@@ -216,7 +216,7 @@ Peers show whichever the remote has advertised; fallback to pixel art when no ph
 
 Legacy theme IDs (e.g. `dark-void`) map to mode + accent (`dark-void` → dark + **slate**). **Settings → Appearance** — mode, accent grid, background picker, reduce motion, reactive wallpaper (mic pulse in calls).
 
-## Chat media & quotes (0.7.1+)
+## Chat media & quotes
 
 | Feature | Module |
 |---------|--------|
@@ -226,15 +226,15 @@ Legacy theme IDs (e.g. `dark-void`) map to mode + accent (`dark-void` → dark +
 
 Images use `chat-attachments.js` (JPEG resize); large files use chunked `file-*` wire types (see File transfer).
 
-## Call window IPC (0.6.1)
+## Call window IPC
 
 Secondary windows (`call-window.html`, `group-call-window.html`) call `reportCallWindowReady` / `reportGroupCallWindowReady` after boot. Main queues `call-outgoing`, `incoming-call`, `group-call-join`, and `group-call-tcp` until ready, then flushes.
 
-## Presence text (0.4.8)
+## Presence text
 
 UDP/mDNS announce includes optional `presenceText` (max 48 chars, sanitized). Shown on the **Peers** list instead of pulse line when the peer is online. Config key: `presenceText`.
 
-## Voice channels (0.7.0+)
+## Voice channels
 
 Persistent voice rooms inside a group (Discord-style), rendered in **`group-community-view.js`** on the main window. Separate from the legacy **group call window** (`group-call.js`).
 
@@ -251,14 +251,14 @@ Wire types: `voice-ch-roster`, `voice-ch-signal` (`offer` / `answer` / `candidat
 ## Group mesh
 
 - **Group chat**: host relays `group-msg` to all members; `group-invite` / `group-host` for membership and host failover.
-- **Group call (0.6.0)**:
+- **Group call**:
   - **UI + WebRTC** in `group-call-window.html` (`renderer/group-call.js`).
   - **Main window** uses `group-call-client.js` → IPC `openGroupCall` / `openGroupCallIncoming`; roster in `group-call-roster.js` drives hub **VOICE** badge and join bar (`blip-group-call-state` event).
   - **Signaling**: `group-call-signal` is peer-to-peer (`originFrom`); main process forwards signals only to the group-call window.
   - **State**: `group-call-state` lists participants + mute/deafen/screen flags; `group-call-start` / `group-call-end` for invites and teardown.
   - Ongoing calls: non-participants can join anytime (Discord-style bar in `group-chat.js`).
 
-## Autostart (0.6.0)
+## Autostart
 
 Windows: `config.launchAtLogin` → `app.setLoginItemSettings({ openAtLogin })` in main on load and on `save-config`. Toggle in **Settings → System**.
 
@@ -272,7 +272,7 @@ While the app is running with a BLIP ID, the renderer pings every **online, non-
 - Typing line in chat UI and under peer name on **Peers**.
 - Unread message counts per peer; red badge on **Chat** nav and hub rows until the conversation is opened.
 
-## Mesh messages (0.4.0)
+## Mesh messages
 
 - Each chat message has a stable `id` (`renderer/message-id.js`).
 - Incoming messages trigger `receipt: delivered`; opening the thread sends `receipt: read` for peer messages.

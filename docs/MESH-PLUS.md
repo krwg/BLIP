@@ -53,6 +53,6 @@ Enable **Settings → Developer → Projects** to show **PROJECTS** in the nav.
 
 LAN relay, MESH+ Bridge, bandwidth priority — not implemented yet.
 
-**App version:** `1.1.1` · codename **Beacon** (`app-metadata.json`).
+**App version:** `2.0.0` · codename **Morse** (`app-metadata.json`). Last published installer line remains **1.1.1 Beacon** until a Morse GitHub Release is cut.
 
 *BLIP · FREE for everyone · MESH+ — free keys via [blipteam@icloud.com](mailto:blipteam@icloud.com)*

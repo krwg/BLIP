@@ -14,6 +14,7 @@ Development line **Morse**. No GitHub Release until explicitly cut — see [`doc
 ### Changed
 
 - Opened **2.0.0 Morse** version line (`app-metadata.json` / docs). Last published installers remain **1.1.1 Beacon**.
+- **Docs hygiene** — README badges expanded; MESH-PLUS / ARCHITECTURE version pins aligned with **2.0.0 Morse**.
 
 ### Added
 
