@@ -14,6 +14,10 @@
 [![Electron](https://img.shields.io/badge/Electron-35-47848F?style=for-the-badge&logo=electron&logoColor=white&labelColor=0a0a0a)](https://www.electronjs.org/)
 [![License](https://img.shields.io/badge/License-GPLv3-00ffc8?style=for-the-badge&labelColor=0a0a0a)](LICENSE)
 [![Platform](https://img.shields.io/badge/Windows-10%2F11-0078D6?style=for-the-badge&logo=windows&logoColor=white&labelColor=0a0a0a)]()
+[![P2P](https://img.shields.io/badge/P2P-LAN%20%2F%20VPN-00ffc8?style=for-the-badge&labelColor=0a0a0a)]()
+[![WebRTC](https://img.shields.io/badge/WebRTC-voice%20%2B%20video-00ffc8?style=for-the-badge&labelColor=0a0a0a)]()
+[![Offline](https://img.shields.io/badge/offline--first-yes-00ffc8?style=for-the-badge&labelColor=0a0a0a)]()
+[![Vite](https://img.shields.io/badge/Vite-6-646CFF?style=for-the-badge&logo=vite&logoColor=white&labelColor=0a0a0a)](https://vitejs.dev/)
 [![i18n](https://img.shields.io/badge/i18n-EN%20%7C%20RU-e0e0e0?style=for-the-badge&labelColor=0a0a0a)]()
 
 <!-- Dynamic stats row -->
@@ -21,6 +25,8 @@
 [![Downloads](https://img.shields.io/github/downloads/krwg/blip/total?style=for-the-badge&labelColor=0a0a0a&color=00ffc8&logo=github)](https://github.com/krwg/blip/releases)
 [![Last Commit](https://img.shields.io/github/last-commit/krwg/blip?style=for-the-badge&labelColor=0a0a0a&color=00ffc8&logo=github)](https://github.com/krwg/blip/commits/main)
 [![Issues](https://img.shields.io/github/issues/krwg/blip?style=for-the-badge&labelColor=0a0a0a&color=ff3366&logo=github)](https://github.com/krwg/blip/issues)
+[![PRs](https://img.shields.io/github/issues-pr/krwg/blip?style=for-the-badge&labelColor=0a0a0a&color=00ffc8&logo=github)](https://github.com/krwg/blip/pulls)
+[![Contributors](https://img.shields.io/github/contributors/krwg/blip?style=for-the-badge&labelColor=0a0a0a&color=00ffc8&logo=github)](https://github.com/krwg/blip/graphs/contributors)
 
 <br>
  
